@@ -3,39 +3,13 @@ import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { STATUS_LABELS, waNumberFor, timeAgo } from "../lib/leadConstants";
+import { todayStr, fmtTime, fmtHours, getLocation } from "../lib/attendance";
 import LeadFormModal from "../components/leads/LeadFormModal";
 import LeadDetailModal from "../components/leads/LeadDetailModal";
 import ScheduleVisitModal from "../components/leads/ScheduleVisitModal";
 import ScheduleCallModal from "../components/leads/ScheduleCallModal";
 import CallOutcomeWatcher from "../components/leads/CallOutcomeWatcher";
 import { ReviewTokenModal } from "./Plots";
-
-function todayStr() {
-  return new Date().toISOString().slice(0, 10);
-}
-function fmtTime(iso) {
-  return iso ? new Date(iso).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" }) : "";
-}
-function fmtHours(inIso, outIso) {
-  if (!inIso || !outIso) return "";
-  const ms = new Date(outIso) - new Date(inIso);
-  const h = Math.floor(ms / 3600000);
-  const m = Math.round((ms % 3600000) / 60000);
-  return `${h}h ${m}m`;
-}
-function getLocation() {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error("Location services are not available on this device or browser."));
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve(pos.coords),
-      () => reject(new Error("Could not get your location. Please enable location access and try again.")),
-      { enableHighAccuracy: true, timeout: 15000 }
-    );
-  });
-}
 
 export default function Today() {
   const { user, profile, isAdmin } = useAuth();

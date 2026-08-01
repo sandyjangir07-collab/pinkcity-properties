@@ -18,6 +18,25 @@ export default function Layout() {
           <NavLink to="/today" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
             Today
           </NavLink>
+          <NavLink to="/attendance" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
+            Attendance
+          </NavLink>
+          <NavLink to="/schedule" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
+            Schedule
+          </NavLink>
+          <NavLink to="/quotation" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
+            Quotation
+          </NavLink>
+          {isAdmin && (
+            <NavLink to="/performance" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
+              Performance
+            </NavLink>
+          )}
+          {isAdmin && (
+            <NavLink to="/blogs" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
+              Blogs
+            </NavLink>
+          )}
           <NavLink to="/leads" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
             Leads
           </NavLink>

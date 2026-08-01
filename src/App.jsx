@@ -6,6 +6,11 @@ import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import Today from "./pages/Today";
+import Attendance from "./pages/Attendance";
+import Schedule from "./pages/Schedule";
+import Quotation from "./pages/Quotation";
+import Performance from "./pages/Performance";
+import Blogs from "./pages/Blogs";
 import EmployeeProfile from "./pages/EmployeeProfile";
 import Leads from "./pages/Leads";
 import Listings from "./pages/Listings";
@@ -29,6 +34,25 @@ export default function App() {
             >
               <Route path="/" element={<Home />} />
               <Route path="/today" element={<Today />} />
+              <Route path="/attendance" element={<Attendance />} />
+              <Route path="/schedule" element={<Schedule />} />
+              <Route path="/quotation" element={<Quotation />} />
+              <Route
+                path="/performance"
+                element={
+                  <RequireAdmin>
+                    <Performance />
+                  </RequireAdmin>
+                }
+              />
+              <Route
+                path="/blogs"
+                element={
+                  <RequireAdmin>
+                    <Blogs />
+                  </RequireAdmin>
+                }
+              />
               <Route path="/employees/:id" element={<EmployeeProfile />} />
               <Route path="/leads" element={<Leads />} />
               <Route path="/listings" element={<Listings />} />
