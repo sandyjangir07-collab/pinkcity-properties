@@ -15,23 +15,34 @@ export default function Directory() {
   const [addOpen, setAddOpen] = useState(false);
   const showToast = useToast();
 
-  async function load() {
-    const [{ data: emps }, { data: hier }, { data: docs }, { data: approvedTokens }] = await Promise.all([
-      sb.from("employees").select("*").order("full_name"),
-      sb.from("employee_hierarchy").select("*").eq("status", "approved"),
-      sb.from("employee_documents").select("employee_id, document_type, status"),
-      sb.from("token_submissions").select("sale_amount").eq("status", "approved"),
-    ]);
-    setEmployees(emps || []);
-    setHierarchy(hier || []);
-    setTotalSales((approvedTokens || []).reduce((sum, t) => sum + (Number(t.sale_amount) || 0), 0));
+  const [errorMsg, setErrorMsg] = useState(null);
 
-    const byEmp = {};
-    (docs || []).forEach((d) => {
-      byEmp[d.employee_id] = byEmp[d.employee_id] || {};
-      byEmp[d.employee_id][d.document_type] = d.status;
-    });
-    setDocStatusByEmployee(byEmp);
+  async function load() {
+    setErrorMsg(null);
+    try {
+      const [{ data: emps, error: e1 }, { data: hier, error: e2 }, { data: docs, error: e3 }, { data: approvedTokens, error: e4 }] = await Promise.all([
+        sb.from("employees").select("*").order("full_name"),
+        sb.from("employee_hierarchy").select("*").eq("status", "approved"),
+        sb.from("employee_documents").select("employee_id, document_type, status"),
+        sb.from("token_submissions").select("sale_amount").eq("status", "approved"),
+      ]);
+      const firstError = e1 || e2 || e3 || e4;
+      if (firstError) throw firstError;
+      setEmployees(emps || []);
+      setHierarchy(hier || []);
+      setTotalSales((approvedTokens || []).reduce((sum, t) => sum + (Number(t.sale_amount) || 0), 0));
+
+      const byEmp = {};
+      (docs || []).forEach((d) => {
+        byEmp[d.employee_id] = byEmp[d.employee_id] || {};
+        byEmp[d.employee_id][d.document_type] = d.status;
+      });
+      setDocStatusByEmployee(byEmp);
+    } catch (e) {
+      console.error("Directory load failed:", e);
+      setErrorMsg(e.message || "Something went wrong loading the directory.");
+      setEmployees([]);
+    }
   }
 
   useEffect(() => {
