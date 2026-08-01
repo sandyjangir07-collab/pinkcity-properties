@@ -18,6 +18,9 @@ export default function Layout() {
           <NavLink to="/leads" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
             Leads
           </NavLink>
+          <NavLink to="/listings" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
+            Listings
+          </NavLink>
           <NavLink to="/plots" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
             Plots &amp; Tokens
           </NavLink>
