@@ -6,6 +6,7 @@ import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import EmployeeProfile from "./pages/EmployeeProfile";
+import Leads from "./pages/Leads";
 import Plots from "./pages/Plots";
 import Approvals from "./pages/Approvals";
 import CommissionSlabs from "./pages/CommissionSlabs";
@@ -26,6 +27,7 @@ export default function App() {
             >
               <Route path="/" element={<Home />} />
               <Route path="/employees/:id" element={<EmployeeProfile />} />
+              <Route path="/leads" element={<Leads />} />
               <Route path="/plots" element={<Plots />} />
               <Route
                 path="/approvals"
