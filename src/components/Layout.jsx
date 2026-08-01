@@ -15,6 +15,9 @@ export default function Layout() {
           <NavLink to="/" end className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
             Team
           </NavLink>
+          <NavLink to="/today" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
+            Today
+          </NavLink>
           <NavLink to="/leads" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
             Leads
           </NavLink>

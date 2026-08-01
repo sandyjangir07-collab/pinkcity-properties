@@ -316,7 +316,7 @@ function SubmitTokenModal({ target, onClose, profile, onSubmitted }) {
   );
 }
 
-function ReviewTokenModal({ unitId, onClose, profile, onDecided }) {
+export function ReviewTokenModal({ unitId, onClose, profile, onDecided }) {
   const [submission, setSubmission] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [mode, setMode] = useState(null); // "approve" | "reject" | null

@@ -5,6 +5,7 @@ import { RequireAuth, RequireAdmin } from "./components/RouteGuards";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
+import Today from "./pages/Today";
 import EmployeeProfile from "./pages/EmployeeProfile";
 import Leads from "./pages/Leads";
 import Listings from "./pages/Listings";
@@ -27,6 +28,7 @@ export default function App() {
               }
             >
               <Route path="/" element={<Home />} />
+              <Route path="/today" element={<Today />} />
               <Route path="/employees/:id" element={<EmployeeProfile />} />
               <Route path="/leads" element={<Leads />} />
               <Route path="/listings" element={<Listings />} />
