@@ -5,7 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { compressImageFile, fileToUploadableBuffer, initials } from "../lib/utils";
 import { PROPERTY_IMAGES_BUCKET } from "../lib/constants";
-import { IconCamera, IconPhone } from "../components/ui/Icons";
+import { Button } from "../components/ui/button";
 import CommissionSection from "../components/profile/CommissionSection";
 import ComplianceSection from "../components/profile/ComplianceSection";
 import PersonalSection from "../components/profile/PersonalSection";
@@ -63,110 +63,73 @@ export default function EmployeeProfile() {
 
   if (notFound) {
     return (
-      <div className="page">
-        <div className="card empty-state">
-          <div className="empty-title">Profile not available</div>
-          <p>This profile doesn't exist, or you don't have permission to view it.</p>
-        </div>
+      <div className="max-w-2xl mx-auto px-5 py-20 text-center">
+        <div className="font-display text-2xl text-ink mb-2">Profile not available</div>
+        <p className="text-ink/50 text-sm">This profile doesn&apos;t exist, or you don&apos;t have permission to view it.</p>
       </div>
     );
   }
 
   if (!employee) {
     return (
-      <div className="page">
-        <div className="center-loading">
-          <div className="spinner" />
-        </div>
+      <div className="max-w-2xl mx-auto px-5 py-20 flex justify-center">
+        <div className="w-6 h-6 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="page" style={{ maxWidth: 640, paddingBottom: 120 }}>
-      {/* Identity */}
-      <div style={{ textAlign: "center", marginBottom: 20 }}>
-        <div style={{ position: "relative", width: 88, height: 88, margin: "0 auto 14px" }}>
-          <div className="avatar" style={{ width: 88, height: 88, fontSize: 26 }}>
-            {employee.photo_url ? <img src={employee.photo_url} alt="" /> : initials(employee.full_name)}
+    <div className="max-w-2xl mx-auto px-5 pt-10 pb-32">
+      <div className="text-center mb-6">
+        <div className="relative w-24 h-24 mx-auto mb-4">
+          <div className="w-24 h-24 rounded-full bg-stone-50 text-stone-600 flex items-center justify-center text-2xl font-medium overflow-hidden">
+            {employee.photo_url ? <img src={employee.photo_url} alt="" className="w-full h-full object-cover" /> : initials(employee.full_name)}
           </div>
           {canEdit && (
             <>
-              <input
-                type="file"
-                accept="image/*"
-                ref={photoInput}
-                style={{ display: "none" }}
-                onChange={(e) => handlePhotoUpload(e.target.files[0])}
-              />
+              <input type="file" accept="image/*" ref={photoInput} className="hidden" onChange={(e) => handlePhotoUpload(e.target.files[0])} />
               <button
                 onClick={() => photoInput.current?.click()}
                 disabled={uploadingPhoto}
-                style={{
-                  position: "absolute",
-                  bottom: -2,
-                  right: -2,
-                  width: 30,
-                  height: 30,
-                  borderRadius: "50%",
-                  background: "var(--primary)",
-                  border: "2px solid var(--background)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                }}
+                className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-stone-600 border-2 border-sand flex items-center justify-center"
               >
-                <IconCamera size={13} stroke="white" />
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                  <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                  <circle cx="12" cy="13" r="3" />
+                </svg>
               </button>
             </>
           )}
         </div>
-        <div style={{ fontFamily: "var(--font-display)", fontSize: 26 }}>{employee.full_name}</div>
-        <div style={{ fontSize: 13.5, color: "var(--muted-foreground)", marginTop: 2 }}>
+        <div className="font-display text-2xl text-ink">{employee.full_name}</div>
+        <div className="text-sm text-ink/45 mt-1">
           {employee.designation || "—"}
           {employee.employee_code ? ` · ${employee.employee_code}` : ""}
         </div>
       </div>
 
-      <CommissionSection employee={employee} isAdmin={isAdmin} refreshKey={refreshKey} />
-      <ComplianceSection employee={employee} isAdmin={isAdmin} canEdit={canEdit} refreshKey={refreshKey} />
-      <PersonalSection employee={employee} canEdit={canEdit} onUpdated={() => { load(); setRefreshKey((k) => k + 1); }} />
-      <EmploymentSection employee={employee} isAdmin={isAdmin} onUpdated={() => { load(); setRefreshKey((k) => k + 1); }} />
-      <HierarchySection employee={employee} isAdmin={isAdmin} canEdit={canEdit} refreshKey={refreshKey} />
-      <ActivitySection employee={employee} refreshKey={refreshKey} />
+      <div className="space-y-4">
+        <CommissionSection employee={employee} isAdmin={isAdmin} refreshKey={refreshKey} />
+        <ComplianceSection employee={employee} isAdmin={isAdmin} canEdit={canEdit} refreshKey={refreshKey} />
+        <PersonalSection employee={employee} canEdit={canEdit} onUpdated={() => { load(); setRefreshKey((k) => k + 1); }} />
+        <EmploymentSection employee={employee} isAdmin={isAdmin} onUpdated={() => { load(); setRefreshKey((k) => k + 1); }} />
+        <HierarchySection employee={employee} isAdmin={isAdmin} canEdit={canEdit} refreshKey={refreshKey} />
+        <ActivitySection employee={employee} refreshKey={refreshKey} />
+      </div>
 
       {employee.mobile && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 16,
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "calc(100% - 32px)",
-            maxWidth: 420,
-            background: "var(--card)",
-            border: "1px solid color-mix(in oklab, var(--border) 60%, transparent)",
-            borderRadius: 28,
-            boxShadow: "var(--shadow-elev)",
-            padding: 10,
-            display: "flex",
-            gap: 8,
-          }}
-        >
-          <a
-            href={`tel:${employee.mobile}`}
-            className="btn btn-primary"
-            style={{ flex: 1, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-          >
-            <IconPhone size={15} stroke="white" /> Call
-          </a>
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-md bg-white rounded-3xl shadow-[0_20px_50px_-24px_rgba(43,21,18,0.25)] p-2.5 flex gap-2">
+          <Button as="a" href={`tel:${employee.mobile}`} className="flex-1 no-underline">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+            </svg>
+            Call
+          </Button>
           <a
             href={`https://wa.me/91${employee.mobile.replace(/\D/g, "").slice(-10)}`}
             target="_blank"
             rel="noreferrer"
-            className="btn btn-secondary"
-            style={{ flex: 1, textDecoration: "none" }}
+            className="flex-1 flex items-center justify-center rounded-full border border-ink/10 text-ink text-sm font-medium"
           >
             WhatsApp
           </a>

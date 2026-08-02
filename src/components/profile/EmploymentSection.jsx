@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { sb } from "../../lib/supabase";
 import { formatDate } from "../../lib/utils";
-import { IconBriefcase, IconCalendar } from "../ui/Icons";
-import { Modal, ModalHero } from "../ui/Modal";
+import { Card, SectionTitle, Pill } from "../ui/primitives";
+import { Sheet, SheetHeader, Field } from "../ui/Sheet";
+import { Button } from "../ui/button";
 import { useToast } from "../../hooks/useToast";
 
 const EMPLOYMENT_TYPES = ["full_time", "part_time", "contract", "intern"];
@@ -26,52 +27,28 @@ export default function EmploymentSection({ employee, isAdmin, onUpdated }) {
   const exp = experienceLabel(employee.joining_date);
 
   return (
-    <div className="card">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-        <h2 className="section-title" style={{ margin: 0 }}>
-          Employment
-        </h2>
-        {isAdmin && (
-          <button className="btn btn-secondary" style={{ padding: "8px 14px", fontSize: 13 }} onClick={() => setEditOpen(true)}>
-            Edit
-          </button>
-        )}
-      </div>
-      <div className="info-row">
-        <div className="info-row-icon">
-          <IconBriefcase size={16} />
-        </div>
-        <div>
-          <div className="info-row-label">Designation &amp; Department</div>
-          <div className="info-row-value">
-            {employee.designation || "—"}
-            {employee.department ? ` · ${employee.department}` : ""}
-          </div>
-        </div>
-      </div>
-      <div className="info-row">
-        <div className="info-row-icon">
-          <IconBriefcase size={16} />
-        </div>
-        <div>
-          <div className="info-row-label">Type &amp; Status</div>
-          <div className="info-row-value" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            {(employee.employment_type || "full_time").replace("_", " ")}
-            <StatusPill status={employee.status} />
-          </div>
-        </div>
-      </div>
-      <div className="info-row">
-        <div className="info-row-icon">
-          <IconCalendar size={16} />
-        </div>
-        <div>
-          <div className="info-row-label">Joined &amp; Experience</div>
-          <div className="info-row-value">
-            {formatDate(employee.joining_date)}
-            {exp ? ` · ${exp}` : ""}
-          </div>
-        </div>
+    <Card>
+      <SectionTitle
+        action={
+          isAdmin && (
+            <button onClick={() => setEditOpen(true)} className="text-xs font-medium text-stone-600 hover:text-stone-700">Edit</button>
+          )
+        }
+      >
+        Employment
+      </SectionTitle>
+      <div className="space-y-4">
+        <Row label="Designation & Department" value={`${employee.designation || "—"}${employee.department ? ` · ${employee.department}` : ""}`} />
+        <Row
+          label="Type & Status"
+          value={
+            <span className="flex items-center gap-2">
+              {(employee.employment_type || "full_time").replace("_", " ")}
+              <StatusPill status={employee.status} />
+            </span>
+          }
+        />
+        <Row label="Joined & Experience" value={`${formatDate(employee.joining_date)}${exp ? ` · ${exp}` : ""}`} />
       </div>
 
       <EditEmploymentModal
@@ -84,13 +61,22 @@ export default function EmploymentSection({ employee, isAdmin, onUpdated }) {
           onUpdated && onUpdated();
         }}
       />
+    </Card>
+  );
+}
+
+function Row({ label, value }) {
+  return (
+    <div>
+      <div className="text-xs text-ink/40 mb-0.5">{label}</div>
+      <div className="text-sm font-medium text-ink">{value}</div>
     </div>
   );
 }
 
 function StatusPill({ status }) {
-  const cls = status === "active" ? "pill-green" : status === "inactive" ? "pill-yellow" : "pill-red";
-  return <span className={"pill " + cls}>{status || "active"}</span>;
+  const tone = status === "active" ? "green" : status === "inactive" ? "yellow" : "red";
+  return <Pill tone={tone}>{status || "active"}</Pill>;
 }
 
 function EditEmploymentModal({ open, onClose, employee, onSaved }) {
@@ -131,48 +117,31 @@ function EditEmploymentModal({ open, onClose, employee, onSaved }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <ModalHero title="Edit Employment" />
-      <div className="modal-body">
-        <form onSubmit={submit}>
-          <div className="field-grid-2">
-            <div className="field">
-              <label className="fl">Designation</label>
-              <input className="fi" value={form.designation} onChange={(e) => set("designation", e.target.value)} />
-            </div>
-            <div className="field">
-              <label className="fl">Department</label>
-              <input className="fi" value={form.department} onChange={(e) => set("department", e.target.value)} />
-            </div>
-          </div>
-          <div className="field-grid-2">
-            <div className="field">
-              <label className="fl">Employment Type</label>
-              <select className="fsel" value={form.employment_type} onChange={(e) => set("employment_type", e.target.value)}>
-                {EMPLOYMENT_TYPES.map((t) => (
-                  <option key={t} value={t}>{t.replace("_", " ")}</option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
-              <label className="fl">Status</label>
-              <select className="fsel" value={form.status} onChange={(e) => set("status", e.target.value)}>
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="field" style={{ minWidth: 0 }}>
-            <label className="fl">Joining Date</label>
-            <input className="fi" type="date" style={{ minWidth: 0 }} value={form.joining_date} onChange={(e) => set("joining_date", e.target.value)} />
-          </div>
-          {err && <div className="form-err show" style={{ marginBottom: 10 }}>{err}</div>}
-          <button className="btn btn-primary" disabled={busy} type="submit">
-            {busy ? "Saving…" : "Save Changes"}
-          </button>
-        </form>
-      </div>
-    </Modal>
+    <Sheet open={open} onClose={onClose}>
+      <SheetHeader title="Edit Employment" />
+      <form onSubmit={submit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Designation"><input className="field-input" value={form.designation} onChange={(e) => set("designation", e.target.value)} /></Field>
+          <Field label="Department"><input className="field-input" value={form.department} onChange={(e) => set("department", e.target.value)} /></Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Employment Type">
+            <select className="field-input" value={form.employment_type} onChange={(e) => set("employment_type", e.target.value)}>
+              {EMPLOYMENT_TYPES.map((t) => (<option key={t} value={t}>{t.replace("_", " ")}</option>))}
+            </select>
+          </Field>
+          <Field label="Status">
+            <select className="field-input" value={form.status} onChange={(e) => set("status", e.target.value)}>
+              {STATUSES.map((s) => (<option key={s} value={s}>{s}</option>))}
+            </select>
+          </Field>
+        </div>
+        <Field label="Joining Date">
+          <input className="field-input" type="date" value={form.joining_date} onChange={(e) => set("joining_date", e.target.value)} />
+        </Field>
+        {err && <p className="text-sm text-red-600">{err}</p>}
+        <Button disabled={busy} type="submit" className="w-full">{busy ? "Saving…" : "Save Changes"}</Button>
+      </form>
+    </Sheet>
   );
 }

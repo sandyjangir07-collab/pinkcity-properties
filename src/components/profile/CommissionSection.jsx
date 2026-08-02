@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { sb } from "../../lib/supabase";
 import { computeCommission } from "../../lib/commission";
 import { formatDate } from "../../lib/utils";
-import { Modal, ModalHero } from "../ui/Modal";
+import { Card, SectionTitle } from "../ui/primitives";
+import { Sheet, SheetHeader, Field } from "../ui/Sheet";
+import { Button } from "../ui/button";
 import { useToast } from "../../hooks/useToast";
 
 export default function CommissionSection({ employee, isAdmin, refreshKey }) {
@@ -36,56 +38,43 @@ export default function CommissionSection({ employee, isAdmin, refreshKey }) {
   if (!stats) return null;
 
   return (
-    <div className="card">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <h2 className="section-title" style={{ margin: 0 }}>
-          Commission
-        </h2>
-        {isAdmin && (
-          <button className="btn btn-secondary" style={{ padding: "8px 14px", fontSize: 13 }} onClick={() => setAssignOpen(true)}>
-            Assign New Slab
-          </button>
-        )}
-      </div>
-      <div className="stat-grid">
-        <div className="stat-card">
-          <div className="stat-label">Rate / Gaj</div>
-          <div className="stat-value">{stats.currentRate != null ? `₹${stats.currentRate.toLocaleString("en-IN")}` : "—"}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Total Deals</div>
-          <div className="stat-value">{stats.totalDeals}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Total Sales</div>
-          <div className="stat-value">₹{stats.totalSales.toLocaleString("en-IN")}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">This Month</div>
-          <div className="stat-value">₹{stats.thisMonthCommission.toLocaleString("en-IN")}</div>
-        </div>
+    <Card>
+      <SectionTitle
+        action={
+          isAdmin && (
+            <button onClick={() => setAssignOpen(true)} className="text-xs font-medium text-stone-600 hover:text-stone-700">
+              Assign New Slab
+            </button>
+          )
+        }
+      >
+        Commission
+      </SectionTitle>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <MiniStat label="Rate / Gaj" value={stats.currentRate != null ? `₹${stats.currentRate.toLocaleString("en-IN")}` : "—"} />
+        <MiniStat label="Total Deals" value={stats.totalDeals} />
+        <MiniStat label="Total Sales" value={`₹${stats.totalSales.toLocaleString("en-IN")}`} />
+        <MiniStat label="This Month" value={`₹${stats.thisMonthCommission.toLocaleString("en-IN")}`} />
       </div>
       {stats.assignments.length > 0 && (
         <>
-          <div className="divider" />
-          <div className="hierarchy-group-label" style={{ margin: "0 0 8px" }}>
-            Slab History
-          </div>
-          {[...stats.assignments]
-            .sort((a, b) => new Date(b.effective_date) - new Date(a.effective_date))
-            .map((a) => {
-              const slab = stats.slabs.find((s) => s.id === a.commission_slab_id);
-              return (
-                <div key={a.id} className="info-row" style={{ padding: "6px 0" }}>
-                  <div>
-                    <div className="info-row-value">
+          <div className="h-px bg-ink/[0.06] my-5" />
+          <div className="text-[10px] font-semibold tracking-wide uppercase text-ink/35 mb-2">Slab History</div>
+          <div className="space-y-2.5">
+            {[...stats.assignments]
+              .sort((a, b) => new Date(b.effective_date) - new Date(a.effective_date))
+              .map((a) => {
+                const slab = stats.slabs.find((s) => s.id === a.commission_slab_id);
+                return (
+                  <div key={a.id}>
+                    <div className="text-sm font-medium text-ink">
                       {slab?.name || "—"} · ₹{Number(slab?.commission_per_gaj || 0).toLocaleString("en-IN")}/Gaj
                     </div>
-                    <div className="info-row-label">From {formatDate(a.effective_date)}</div>
+                    <div className="text-xs text-ink/40">From {formatDate(a.effective_date)}</div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+          </div>
         </>
       )}
 
@@ -100,6 +89,15 @@ export default function CommissionSection({ employee, isAdmin, refreshKey }) {
           load();
         }}
       />
+    </Card>
+  );
+}
+
+function MiniStat({ label, value }) {
+  return (
+    <div className="bg-stone-50/60 rounded-2xl p-3.5">
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-ink/35 mb-1">{label}</div>
+      <div className="font-display text-lg text-ink">{value}</div>
     </div>
   );
 }
@@ -134,35 +132,28 @@ function AssignSlabModal({ open, onClose, slabs, employeeId, onAssigned }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <ModalHero title="Assign Commission Slab" sub="Old slabs remain in the history and still apply to deals approved while they were active." />
-      <div className="modal-body">
-        <form onSubmit={submit}>
-          <div className="field">
-            <label className="fl">Slab *</label>
-            <select className="fsel" value={slabId} onChange={(e) => setSlabId(e.target.value)}>
-              <option value="">Select…</option>
-              {slabs.filter((s) => s.is_active).map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} — ₹{Number(s.commission_per_gaj).toLocaleString("en-IN")}/Gaj
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="field">
-            <label className="fl">Effective Date</label>
-            <input className="fi" type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} />
-          </div>
-          <div className="field">
-            <label className="fl">Remarks</label>
-            <textarea className="fi" rows={3} value={remarks} onChange={(e) => setRemarks(e.target.value)} />
-          </div>
-          {err && <div className="form-err show" style={{ marginBottom: 10 }}>{err}</div>}
-          <button className="btn btn-primary" disabled={busy} type="submit">
-            {busy ? "Assigning…" : "Assign Slab"}
-          </button>
-        </form>
-      </div>
-    </Modal>
+    <Sheet open={open} onClose={onClose}>
+      <SheetHeader title="Assign Commission Slab" sub="Old slabs remain in the history and still apply to deals approved while they were active." />
+      <form onSubmit={submit} className="space-y-4">
+        <Field label="Slab *">
+          <select className="field-input" value={slabId} onChange={(e) => setSlabId(e.target.value)}>
+            <option value="">Select…</option>
+            {slabs.filter((s) => s.is_active).map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name} — ₹{Number(s.commission_per_gaj).toLocaleString("en-IN")}/Gaj
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Effective Date">
+          <input className="field-input" type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} />
+        </Field>
+        <Field label="Remarks">
+          <textarea className="field-input min-h-[80px]" value={remarks} onChange={(e) => setRemarks(e.target.value)} />
+        </Field>
+        {err && <p className="text-sm text-red-600">{err}</p>}
+        <Button disabled={busy} type="submit" className="w-full">{busy ? "Assigning…" : "Assign Slab"}</Button>
+      </form>
+    </Sheet>
   );
 }

@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { sb } from "../../lib/supabase";
 import { initials } from "../../lib/utils";
-import { IconUsers, IconPlus, IconCheck, IconX } from "../ui/Icons";
-import { Modal, ModalHero } from "../ui/Modal";
+import { Card, SectionTitle } from "../ui/primitives";
+import { Sheet, SheetHeader } from "../ui/Sheet";
 import { useToast } from "../../hooks/useToast";
 
 export default function HierarchySection({ employee, isAdmin, canEdit, refreshKey }) {
@@ -51,49 +51,46 @@ export default function HierarchySection({ employee, isAdmin, canEdit, refreshKe
   }
 
   return (
-    <div className="card">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-        <h2 className="section-title" style={{ margin: 0 }}>
-          Hierarchy
-        </h2>
-        {canEdit && (
-          <div style={{ display: "flex", gap: 8 }}>
-            <button className="btn btn-secondary" style={{ padding: "8px 12px", fontSize: 12.5 }} onClick={() => setRequestMode("senior")}>
-              + Senior
-            </button>
-            <button className="btn btn-secondary" style={{ padding: "8px 12px", fontSize: 12.5 }} onClick={() => setRequestMode("associate")}>
-              + Associate
-            </button>
-          </div>
-        )}
-      </div>
+    <Card>
+      <SectionTitle
+        action={
+          canEdit && (
+            <div className="flex gap-2">
+              <button onClick={() => setRequestMode("senior")} className="text-xs font-medium text-stone-600 border border-stone-200 rounded-full px-3 py-1.5">+ Senior</button>
+              <button onClick={() => setRequestMode("associate")} className="text-xs font-medium text-stone-600 border border-stone-200 rounded-full px-3 py-1.5">+ Associate</button>
+            </div>
+          )
+        }
+      >
+        Hierarchy
+      </SectionTitle>
 
-      <PersonList title="Senior" items={seniors.map((r) => names[r.senior_id])} icon={<IconUsers size={16} />} />
-      <PersonList title="Associates" items={associates.map((r) => names[r.junior_id])} icon={<IconUsers size={16} />} />
+      <PersonList title="Senior" items={seniors.map((r) => names[r.senior_id])} />
+      <PersonList title="Associates" items={associates.map((r) => names[r.junior_id])} />
 
       {pending.length > 0 && isAdmin && (
         <>
-          <div className="divider" />
-          <div className="hierarchy-group-label" style={{ margin: "0 0 8px" }}>Pending Requests</div>
-          {pending.map((r) => {
-            const other = names[r.junior_id === employee.id ? r.senior_id : r.junior_id];
-            const asSenior = r.junior_id === employee.id;
-            return (
-              <div key={r.id} className="info-row" style={{ justifyContent: "space-between" }}>
-                <div className="info-row-value">
-                  {other?.full_name || "Unknown"} as {asSenior ? "senior" : "associate"}
+          <div className="h-px bg-ink/[0.06] my-4" />
+          <div className="text-[10px] font-semibold tracking-wide uppercase text-ink/35 mb-2">Pending Requests</div>
+          <div className="space-y-2">
+            {pending.map((r) => {
+              const other = names[r.junior_id === employee.id ? r.senior_id : r.junior_id];
+              const asSenior = r.junior_id === employee.id;
+              return (
+                <div key={r.id} className="flex items-center justify-between">
+                  <div className="text-sm text-ink">{other?.full_name || "Unknown"} as {asSenior ? "senior" : "associate"}</div>
+                  <div className="flex gap-1.5">
+                    <button onClick={() => respond(r.id, true)} className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                    </button>
+                    <button onClick={() => respond(r.id, false)} className="w-8 h-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                    </button>
+                  </div>
                 </div>
-                <div style={{ display: "flex", gap: 6 }}>
-                  <button className="btn-approve" style={{ padding: "6px 10px" }} onClick={() => respond(r.id, true)}>
-                    <IconCheck size={13} />
-                  </button>
-                  <button className="btn-reject" style={{ padding: "6px 10px" }} onClick={() => respond(r.id, false)}>
-                    <IconX size={13} />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </>
       )}
 
@@ -107,26 +104,30 @@ export default function HierarchySection({ employee, isAdmin, canEdit, refreshKe
           load();
         }}
       />
-    </div>
+    </Card>
   );
 }
 
-function PersonList({ title, items, icon }) {
+function PersonList({ title, items }) {
   const valid = items.filter(Boolean);
   return (
-    <>
-      <div className="hierarchy-group-label" style={{ margin: "10px 0 6px" }}>{title}</div>
-      {valid.length === 0 && <div className="info-row-label" style={{ paddingLeft: 4 }}>None</div>}
-      {valid.map((p) => (
-        <Link key={p.id} to={`/employees/${p.id}`} className="person-row">
-          <div className="avatar">{p.photo_url ? <img src={p.photo_url} alt="" /> : initials(p.full_name)}</div>
-          <div>
-            <div className="person-row-name">{p.full_name}</div>
-            <div className="person-row-meta">{p.designation || "—"}</div>
-          </div>
-        </Link>
-      ))}
-    </>
+    <div className="mb-3">
+      <div className="text-[10px] font-semibold tracking-wide uppercase text-ink/35 mb-2 mt-3">{title}</div>
+      {valid.length === 0 && <div className="text-sm text-ink/35">None</div>}
+      <div className="space-y-1">
+        {valid.map((p) => (
+          <Link key={p.id} to={`/employees/${p.id}`} className="flex items-center gap-3 -mx-2 px-2 py-2 rounded-xl hover:bg-ink/[0.03]">
+            <div className="w-9 h-9 rounded-full bg-stone-50 text-stone-600 flex items-center justify-center text-xs font-medium overflow-hidden shrink-0">
+              {p.photo_url ? <img src={p.photo_url} alt="" className="w-full h-full object-cover" /> : initials(p.full_name)}
+            </div>
+            <div>
+              <div className="text-sm font-medium text-ink">{p.full_name}</div>
+              <div className="text-xs text-ink/40">{p.designation || "—"}</div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -171,26 +172,25 @@ function RequestLinkModal({ mode, onClose, employeeId, onSent }) {
   }
 
   return (
-    <Modal open={!!mode} onClose={onClose}>
-      <ModalHero
-        icon={<IconPlus size={20} stroke="var(--primary)" />}
+    <Sheet open={!!mode} onClose={onClose}>
+      <SheetHeader
         title={mode === "senior" ? "Request a Senior" : "Add an Associate"}
         sub="Search the team directory — this needs admin approval before it takes effect."
       />
-      <div className="modal-body">
-        <div className="field">
-          <input className="fi" placeholder="Search by name…" value={query} onChange={(e) => setQuery(e.target.value)} autoFocus />
-        </div>
+      <input className="field-input mb-3" placeholder="Search by name…" value={query} onChange={(e) => setQuery(e.target.value)} autoFocus />
+      <div className="space-y-1">
         {results.map((r) => (
-          <div key={r.id} className="person-row" onClick={() => !busy && pick(r.id)} style={{ cursor: "pointer" }}>
-            <div className="avatar">{r.photo_url ? <img src={r.photo_url} alt="" /> : initials(r.full_name)}</div>
+          <div key={r.id} onClick={() => !busy && pick(r.id)} className="flex items-center gap-3 -mx-2 px-2 py-2 rounded-xl hover:bg-ink/[0.03] cursor-pointer">
+            <div className="w-9 h-9 rounded-full bg-stone-50 text-stone-600 flex items-center justify-center text-xs font-medium overflow-hidden shrink-0">
+              {r.photo_url ? <img src={r.photo_url} alt="" className="w-full h-full object-cover" /> : initials(r.full_name)}
+            </div>
             <div>
-              <div className="person-row-name">{r.full_name}</div>
-              <div className="person-row-meta">{r.designation || "—"}</div>
+              <div className="text-sm font-medium text-ink">{r.full_name}</div>
+              <div className="text-xs text-ink/40">{r.designation || "—"}</div>
             </div>
           </div>
         ))}
       </div>
-    </Modal>
+    </Sheet>
   );
 }

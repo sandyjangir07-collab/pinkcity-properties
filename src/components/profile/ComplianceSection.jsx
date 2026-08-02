@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { sb } from "../../lib/supabase";
 import { DOCUMENT_TYPES, EMPLOYEE_DOCUMENTS_BUCKET } from "../../lib/constants";
 import { compressImageFile, fileToUploadableBuffer } from "../../lib/utils";
-import { IconFile, IconCheck, IconX } from "../ui/Icons";
-import { Modal, ModalHero } from "../ui/Modal";
+import { Card, SectionTitle, Pill } from "../ui/primitives";
+import { Sheet, SheetHeader, Field } from "../ui/Sheet";
 import { useToast } from "../../hooks/useToast";
 
 export default function ComplianceSection({ employee, isAdmin, canEdit, refreshKey }) {
@@ -57,52 +57,45 @@ export default function ComplianceSection({ employee, isAdmin, canEdit, refreshK
   if (!docs) return null;
 
   return (
-    <div className="card">
-      <h2 className="section-title">Compliance</h2>
-      <div className="compliance-grid">
+    <Card>
+      <SectionTitle>Compliance</SectionTitle>
+      <div className="grid grid-cols-2 gap-3">
         {DOCUMENT_TYPES.map(({ type, label }) => {
           const doc = docs.find((d) => d.document_type === type);
           const status = doc?.status;
           return (
-            <div key={type} className="compliance-card">
-              <div className="cc-top">
-                <IconFile size={18} stroke="var(--primary)" />
+            <div key={type} className="bg-stone-50/60 rounded-2xl p-4 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#C43868" strokeWidth="1.8">
+                  <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" /><path d="M8 7h8M8 11h8M8 15h5" />
+                </svg>
                 <StatusPill status={status} />
               </div>
-              <div style={{ fontSize: 13.5, fontWeight: 600 }}>{label}</div>
+              <div className="text-sm font-medium text-ink">{label}</div>
               {doc && signedUrls[type] && (
-                <a href={signedUrls[type]} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "var(--primary)" }}>
-                  View file
-                </a>
+                <a href={signedUrls[type]} target="_blank" rel="noreferrer" className="text-xs text-stone-600">View file</a>
               )}
-              {doc?.admin_remarks && status === "rejected" && (
-                <div style={{ fontSize: 11.5, color: "#dc2626" }}>{doc.admin_remarks}</div>
-              )}
-              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+              {doc?.admin_remarks && status === "rejected" && <div className="text-xs text-red-600">{doc.admin_remarks}</div>}
+              <div className="flex gap-2 mt-0.5">
                 {canEdit && (status !== "approved" || !doc) && (
                   <>
                     <input
                       type="file"
                       accept="image/*"
-                      style={{ display: "none" }}
+                      className="hidden"
                       ref={(el) => (fileInputs.current[type] = el)}
                       onChange={(e) => handleUpload(type, e.target.files[0])}
                     />
                     <button
-                      className="btn btn-secondary"
-                      style={{ fontSize: 12, padding: "8px 12px" }}
                       onClick={() => fileInputs.current[type].click()}
+                      className="text-xs font-medium text-ink/60 border border-ink/10 rounded-full px-3 py-1.5"
                     >
                       {doc ? "Re-upload" : "Upload"}
                     </button>
                   </>
                 )}
                 {isAdmin && doc && status === "pending" && (
-                  <button
-                    className="btn btn-secondary"
-                    style={{ fontSize: 12, padding: "8px 12px" }}
-                    onClick={() => setReviewTarget(doc)}
-                  >
+                  <button onClick={() => setReviewTarget(doc)} className="text-xs font-medium text-stone-600 border border-stone-200 rounded-full px-3 py-1.5">
                     Review
                   </button>
                 )}
@@ -121,15 +114,15 @@ export default function ComplianceSection({ employee, isAdmin, canEdit, refreshK
           load();
         }}
       />
-    </div>
+    </Card>
   );
 }
 
 function StatusPill({ status }) {
-  if (status === "approved") return <span className="pill pill-green">Approved</span>;
-  if (status === "rejected") return <span className="pill pill-red">Rejected</span>;
-  if (status === "pending") return <span className="pill pill-yellow">Pending</span>;
-  return <span className="pill pill-neutral">Not Uploaded</span>;
+  if (status === "approved") return <Pill tone="green">Approved</Pill>;
+  if (status === "rejected") return <Pill tone="red">Rejected</Pill>;
+  if (status === "pending") return <Pill tone="yellow">Pending</Pill>;
+  return <Pill>Not Uploaded</Pill>;
 }
 
 function ReviewDocumentModal({ doc, signedUrl, onClose, onReviewed }) {
@@ -158,29 +151,28 @@ function ReviewDocumentModal({ doc, signedUrl, onClose, onReviewed }) {
   }
 
   return (
-    <Modal open={!!doc} onClose={onClose}>
-      <ModalHero title="Review Document" />
-      <div className="modal-body">
-        {signedUrl && (
-          <img src={signedUrl} alt="" style={{ width: "100%", borderRadius: 14, marginBottom: 14, maxHeight: 320, objectFit: "cover" }} />
-        )}
-        <div className="field">
-          <label className="fl">Remarks (required if rejecting)</label>
-          <textarea className="fi" rows={3} value={remarks} onChange={(e) => setRemarks(e.target.value)} />
-        </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button className="btn-approve" disabled={busy} onClick={() => decide("approved")}>
-            <IconCheck size={14} /> Approve
-          </button>
-          <button
-            className="btn-reject"
-            disabled={busy || !remarks.trim()}
-            onClick={() => decide("rejected")}
-          >
-            <IconX size={14} /> Reject
-          </button>
-        </div>
+    <Sheet open={!!doc} onClose={onClose}>
+      <SheetHeader title="Review Document" />
+      {signedUrl && <img src={signedUrl} alt="" className="w-full rounded-2xl mb-4 max-h-80 object-cover" />}
+      <Field label="Remarks (required if rejecting)">
+        <textarea className="field-input min-h-[80px]" value={remarks} onChange={(e) => setRemarks(e.target.value)} />
+      </Field>
+      <div className="flex gap-3 mt-4">
+        <button
+          disabled={busy}
+          onClick={() => decide("approved")}
+          className="flex-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 py-3 text-sm font-semibold disabled:opacity-50"
+        >
+          ✓ Approve
+        </button>
+        <button
+          disabled={busy || !remarks.trim()}
+          onClick={() => decide("rejected")}
+          className="flex-1 rounded-full bg-red-50 text-red-600 border border-red-200 py-3 text-sm font-semibold disabled:opacity-50"
+        >
+          ✕ Reject
+        </button>
       </div>
-    </Modal>
+    </Sheet>
   );
 }
