@@ -4,6 +4,8 @@ import { sb } from "../lib/supabase";
 import { Button } from "../components/ui/button";
 import JaliPattern from "../components/JaliPattern";
 
+const PUBLIC_SITE_URL = "https://pinkcity-front-end.vercel.app";
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -74,6 +76,13 @@ export default function Login() {
           {err && <p className="text-sm text-red-600">{err}</p>}
           <Button disabled={busy} type="submit" className="w-full">{busy ? "Signing in…" : "Sign In"}</Button>
         </form>
+
+        <a
+          href={PUBLIC_SITE_URL}
+          className="block text-center text-xs text-ink/40 hover:text-ink/60 transition-colors mt-6"
+        >
+          ← Back to website
+        </a>
       </motion.div>
     </div>
   );
