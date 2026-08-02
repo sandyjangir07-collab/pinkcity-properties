@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { sb } from "../lib/supabase";
 import { initials } from "../lib/utils";
 import { useToast } from "../hooks/useToast";
-import { IconCheck, IconX } from "../components/ui/Icons";
+import { Card, SectionTitle } from "../components/ui/primitives";
 
 export default function Approvals() {
   const [pendingProfiles, setPendingProfiles] = useState(null);
@@ -51,60 +51,66 @@ export default function Approvals() {
 
   if (pendingProfiles === null) {
     return (
-      <div className="page">
-        <div className="center-loading"><div className="spinner" /></div>
+      <div className="max-w-2xl mx-auto px-5 py-20 flex justify-center">
+        <div className="w-6 h-6 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="page">
-      <div className="page-eyebrow">Admin</div>
-      <h1 className="page-title">Pending Approvals</h1>
-      <p className="page-sub">New profiles and hierarchy requests waiting for review.</p>
+    <div className="max-w-2xl mx-auto px-5 py-10">
+      <div className="text-xs font-medium tracking-widest2 uppercase text-stone-500 mb-3">Admin</div>
+      <h1 className="font-display text-3xl text-ink mb-2">Pending Approvals</h1>
+      <p className="text-ink/50 text-sm mb-8">New profiles and hierarchy requests waiting for review.</p>
 
-      <div className="card">
-        <h2 className="section-title">Pending Profiles</h2>
-        {pendingProfiles.length === 0 && <div className="info-row-label">Nothing pending.</div>}
-        {pendingProfiles.map((p) => (
-          <div key={p.id} className="info-row" style={{ justifyContent: "space-between" }}>
-            <Link to={`/employees/${p.id}`} style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", color: "inherit" }}>
-              <div className="avatar">{p.photo_url ? <img src={p.photo_url} alt="" /> : initials(p.full_name)}</div>
-              <div>
-                <div className="person-row-name">{p.full_name}</div>
-                <div className="person-row-meta">{p.email || p.mobile || "—"}</div>
+      <div className="space-y-4">
+        <Card>
+          <SectionTitle>Pending Profiles</SectionTitle>
+          {pendingProfiles.length === 0 && <div className="text-sm text-ink/40">Nothing pending.</div>}
+          <div className="space-y-3">
+            {pendingProfiles.map((p) => (
+              <div key={p.id} className="flex items-center justify-between gap-2">
+                <Link to={`/employees/${p.id}`} className="flex items-center gap-3 min-w-0 no-underline text-inherit">
+                  <div className="w-10 h-10 rounded-full bg-stone-50 text-stone-600 flex items-center justify-center text-xs font-medium overflow-hidden shrink-0">
+                    {p.photo_url ? <img src={p.photo_url} alt="" className="w-full h-full object-cover" /> : initials(p.full_name)}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-ink truncate">{p.full_name}</div>
+                    <div className="text-xs text-ink/45 truncate">{p.email || p.mobile || "—"}</div>
+                  </div>
+                </Link>
+                <div className="flex gap-1.5 shrink-0">
+                  <button onClick={() => respondProfile(p.id, true)} className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                  </button>
+                  <button onClick={() => respondProfile(p.id, false)} className="w-8 h-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                  </button>
+                </div>
               </div>
-            </Link>
-            <div style={{ display: "flex", gap: 6 }}>
-              <button className="btn-approve" style={{ padding: "8px 12px" }} onClick={() => respondProfile(p.id, true)}>
-                <IconCheck size={14} />
-              </button>
-              <button className="btn-reject" style={{ padding: "8px 12px" }} onClick={() => respondProfile(p.id, false)}>
-                <IconX size={14} />
-              </button>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </Card>
 
-      <div className="card">
-        <h2 className="section-title">Pending Hierarchy Requests</h2>
-        {pendingHierarchy.length === 0 && <div className="info-row-label">Nothing pending.</div>}
-        {pendingHierarchy.map((h) => (
-          <div key={h.id} className="info-row" style={{ justifyContent: "space-between" }}>
-            <div className="info-row-value">
-              {names[h.junior_id]?.full_name || "—"} reports to {names[h.senior_id]?.full_name || "—"}
-            </div>
-            <div style={{ display: "flex", gap: 6 }}>
-              <button className="btn-approve" style={{ padding: "8px 12px" }} onClick={() => respondHierarchy(h.id, true)}>
-                <IconCheck size={14} />
-              </button>
-              <button className="btn-reject" style={{ padding: "8px 12px" }} onClick={() => respondHierarchy(h.id, false)}>
-                <IconX size={14} />
-              </button>
-            </div>
+        <Card>
+          <SectionTitle>Pending Hierarchy Requests</SectionTitle>
+          {pendingHierarchy.length === 0 && <div className="text-sm text-ink/40">Nothing pending.</div>}
+          <div className="space-y-3">
+            {pendingHierarchy.map((h) => (
+              <div key={h.id} className="flex items-center justify-between gap-2">
+                <div className="text-sm text-ink">{names[h.junior_id]?.full_name || "—"} reports to {names[h.senior_id]?.full_name || "—"}</div>
+                <div className="flex gap-1.5 shrink-0">
+                  <button onClick={() => respondHierarchy(h.id, true)} className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                  </button>
+                  <button onClick={() => respondHierarchy(h.id, false)} className="w-8 h-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+        </Card>
       </div>
     </div>
   );

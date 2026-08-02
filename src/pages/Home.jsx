@@ -9,10 +9,8 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="page">
-        <div className="center-loading">
-          <div className="spinner" />
-        </div>
+      <div className="max-w-2xl mx-auto px-5 py-20 flex justify-center">
+        <div className="w-6 h-6 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" />
       </div>
     );
   }
