@@ -5,6 +5,7 @@ import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { TYPE_LABEL, EMOJI } from "../lib/listingConstants";
+import { Phone, Building2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Pill } from "../components/ui/primitives";
 import ListingFormModal from "../components/listings/ListingFormModal";
@@ -127,7 +128,7 @@ function ListingCard({ listing: l, index, isAdmin, onEdit, onApprove, onReject, 
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: (index % 9) * 0.04, ease: EASE }}
-      className="bg-white rounded-3xl overflow-hidden"
+      className="bg-white rounded-3xl overflow-hidden transition-transform"
     >
       <div
         className="h-36 flex items-center justify-center text-4xl bg-stone-50"
@@ -148,11 +149,11 @@ function ListingCard({ listing: l, index, isAdmin, onEdit, onApprove, onReject, 
           <Pill tone={tone}>{badgeText}</Pill>
           <span className="text-[11px] text-ink/35">{isAdmin ? `by ${l.submitter_name || "Team"} · ${date}` : date}</span>
         </div>
-        {isAdmin && l.submitter_phone && <div className="text-xs text-ink/45 mb-1.5">📞 {l.submitter_phone}</div>}
+        {isAdmin && l.submitter_phone && <div className="text-xs text-ink/45 mb-1.5 flex items-center gap-1.5"><Phone className="w-3 h-3" /> {l.submitter_phone}</div>}
         {imgs.length > 1 && <div className="text-[11px] text-ink/35 mb-2">📷 {imgs.length} photos</div>}
         <div className="flex flex-wrap gap-1.5 mt-2">
           {l.type === "colony" && (
-            <Link to="/plots" className="text-xs font-medium text-stone-600 border border-stone-200 rounded-full px-3 py-1.5 no-underline">🏘️ Manage Availability</Link>
+            <Link to="/plots" className="text-xs font-medium text-stone-600 border border-stone-200 rounded-full px-3 py-1.5 no-underline inline-flex items-center gap-1.5"><Building2 className="w-3 h-3" /> Manage Availability</Link>
           )}
           {isAdmin && l.status === "pending" && (
             <>

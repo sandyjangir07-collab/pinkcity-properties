@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { STATUS_LABELS, waNumberFor, timeAgo } from "../lib/leadConstants";
 import { todayStr, fmtTime, fmtHours, getLocation } from "../lib/attendance";
+import { Phone, MessageCircle, Key, Search } from "lucide-react";
 import { Card, SectionTitle, Pill } from "../components/ui/primitives";
 import { Button } from "../components/ui/button";
 import LeadFormModal from "../components/leads/LeadFormModal";
@@ -162,13 +163,13 @@ export default function Today() {
                   const listingTitle = listingTitles[t.listing_id] || "";
                   return (
                     <div key={t.id} onClick={() => setReviewUnitId(t.unit_id)} className="bg-stone-50/60 rounded-2xl p-3.5 flex gap-3 cursor-pointer">
-                      <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-sm shrink-0">🔑</div>
+                      <div className="w-9 h-9 rounded-2xl bg-white flex items-center justify-center shrink-0"><Key className="w-4 h-4 text-stone-600" /></div>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-ink">{unitLabel}{listingTitle ? ` · ${listingTitle}` : ""}</div>
                         <div className="text-xs text-ink/45">{t.buyer_name || "—"}{t.associate_name ? ` · ${t.associate_name}` : ""}</div>
                         <div className="text-[11px] text-ink/35 mt-1">Submitted {timeAgo(t.submitted_at)}</div>
                       </div>
-                      <Pill tone="stone">🔍 Review</Pill>
+                      <Pill tone="stone"><span className="inline-flex items-center gap-1"><Search className="w-3 h-3" /> Review</span></Pill>
                     </div>
                   );
                 })}
@@ -232,7 +233,7 @@ function FollowupCard({ lead: l, onOpen }) {
 
   return (
     <div onClick={onOpen} className="bg-stone-50/60 rounded-2xl p-3.5 flex gap-3 cursor-pointer">
-      <div className="w-9 h-9 rounded-full bg-white text-stone-600 flex items-center justify-center text-xs font-medium shrink-0">{initials}</div>
+      <div className="w-9 h-9 rounded-2xl bg-white text-stone-600 flex items-center justify-center text-xs font-medium shrink-0">{initials}</div>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-ink">{l.name} <span className="text-xs font-medium text-ink/35">PC{l.lead_number}</span></div>
         <div className="text-xs text-ink/45">{l.phone}{l.preferred_location ? ` · ${l.preferred_location}` : ""}</div>
@@ -245,8 +246,8 @@ function FollowupCard({ lead: l, onOpen }) {
         <div className="text-[11px] text-ink/35 mt-1.5">Last contacted: {timeAgo(l.updated_at || l.created_at)}</div>
       </div>
       <div className="flex gap-1.5 items-start" onClick={(e) => e.stopPropagation()}>
-        <a href={`tel:${l.phone}`} data-lead-id={l.id} data-lead-name={l.name || ""} className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-sm" title="Call">📞</a>
-        <a href={`https://wa.me/${waNum}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-sm" title="WhatsApp">💬</a>
+        <a href={`tel:${l.phone}`} data-lead-id={l.id} data-lead-name={l.name || ""} className="w-8 h-8 rounded-full bg-white flex items-center justify-center active:scale-90 transition-transform" title="Call"><Phone className="w-3.5 h-3.5 text-ink/60" /></a>
+        <a href={`https://wa.me/${waNum}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-white flex items-center justify-center active:scale-90 transition-transform" title="WhatsApp"><MessageCircle className="w-3.5 h-3.5 text-ink/60" /></a>
       </div>
     </div>
   );
@@ -257,14 +258,14 @@ function VisitCard({ visit: v }) {
   const waNum = waNumberFor(v.client_phone);
   return (
     <div className="bg-stone-50/60 rounded-2xl p-3.5 flex gap-3">
-      <div className="w-9 h-9 rounded-full bg-white text-stone-600 flex items-center justify-center text-xs font-medium shrink-0">{initials}</div>
+      <div className="w-9 h-9 rounded-2xl bg-white text-stone-600 flex items-center justify-center text-xs font-medium shrink-0">{initials}</div>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-ink">{v.client_name}</div>
         <div className="text-xs text-ink/45">{v.listing_title || ""}{v.visit_time ? ` · ${v.visit_time}` : ""}</div>
       </div>
       <div className="flex gap-1.5 items-start">
-        <a href={`tel:${v.client_phone}`} className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-sm" title="Call">📞</a>
-        <a href={`https://wa.me/${waNum}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-sm" title="WhatsApp">💬</a>
+        <a href={`tel:${v.client_phone}`} className="w-8 h-8 rounded-full bg-white flex items-center justify-center active:scale-90 transition-transform" title="Call"><Phone className="w-3.5 h-3.5 text-ink/60" /></a>
+        <a href={`https://wa.me/${waNum}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-white flex items-center justify-center active:scale-90 transition-transform" title="WhatsApp"><MessageCircle className="w-3.5 h-3.5 text-ink/60" /></a>
       </div>
     </div>
   );

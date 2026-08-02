@@ -82,7 +82,7 @@ export default function EmployeeProfile() {
     <div className="max-w-2xl mx-auto px-5 pt-10 pb-32">
       <div className="text-center mb-6">
         <div className="relative w-24 h-24 mx-auto mb-4">
-          <div className="w-24 h-24 rounded-full bg-stone-50 text-stone-600 flex items-center justify-center text-2xl font-medium overflow-hidden">
+          <div className="w-24 h-24 rounded-[32px] bg-stone-50 text-stone-600 flex items-center justify-center text-2xl font-medium overflow-hidden">
             {employee.photo_url ? <img src={employee.photo_url} alt="" className="w-full h-full object-cover" /> : initials(employee.full_name)}
           </div>
           {canEdit && (

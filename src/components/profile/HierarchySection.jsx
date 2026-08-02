@@ -117,7 +117,7 @@ function PersonList({ title, items }) {
       <div className="space-y-1">
         {valid.map((p) => (
           <Link key={p.id} to={`/employees/${p.id}`} className="flex items-center gap-3 -mx-2 px-2 py-2 rounded-xl hover:bg-ink/[0.03]">
-            <div className="w-9 h-9 rounded-full bg-stone-50 text-stone-600 flex items-center justify-center text-xs font-medium overflow-hidden shrink-0">
+            <div className="w-9 h-9 rounded-2xl bg-stone-50 text-stone-600 flex items-center justify-center text-xs font-medium overflow-hidden shrink-0">
               {p.photo_url ? <img src={p.photo_url} alt="" className="w-full h-full object-cover" /> : initials(p.full_name)}
             </div>
             <div>
@@ -181,7 +181,7 @@ function RequestLinkModal({ mode, onClose, employeeId, onSent }) {
       <div className="space-y-1">
         {results.map((r) => (
           <div key={r.id} onClick={() => !busy && pick(r.id)} className="flex items-center gap-3 -mx-2 px-2 py-2 rounded-xl hover:bg-ink/[0.03] cursor-pointer">
-            <div className="w-9 h-9 rounded-full bg-stone-50 text-stone-600 flex items-center justify-center text-xs font-medium overflow-hidden shrink-0">
+            <div className="w-9 h-9 rounded-2xl bg-stone-50 text-stone-600 flex items-center justify-center text-xs font-medium overflow-hidden shrink-0">
               {r.photo_url ? <img src={r.photo_url} alt="" className="w-full h-full object-cover" /> : initials(r.full_name)}
             </div>
             <div>

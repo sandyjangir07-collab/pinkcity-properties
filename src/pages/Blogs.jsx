@@ -66,7 +66,7 @@ export default function Blogs() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35, delay: (i % 9) * 0.04, ease: EASE }}
-                className="bg-white rounded-3xl overflow-hidden"
+                className="bg-white rounded-3xl overflow-hidden hover:shadow-soft transition-shadow"
               >
                 <div
                   className="h-28 flex items-center justify-center text-3xl bg-stone-50"

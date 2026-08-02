@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { Phone, MessageCircle } from "lucide-react";
 import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { STATUS_LABELS, SOURCE_LABELS, STATUS_TEXT, isStaleLead, timeAgo, waNumberFor } from "../lib/leadConstants";
@@ -154,9 +155,9 @@ function LeadCard({ lead: l, index, onOpen }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: (index % 10) * 0.03, ease: EASE }}
       onClick={onOpen}
-      className="bg-white rounded-2xl p-4 flex gap-3 cursor-pointer hover:shadow-[0_12px_28px_-16px_rgba(43,21,18,0.15)] transition-shadow"
+      className="bg-white rounded-2xl p-4 flex gap-3 cursor-pointer hover:shadow-[0_12px_28px_-16px_rgba(43,21,18,0.15)] transition-all active:scale-[0.99]"
     >
-      <div className="w-10 h-10 rounded-full bg-stone-50 text-stone-600 flex items-center justify-center text-xs font-medium shrink-0">{initials}</div>
+      <div className="w-10 h-10 shrink-0 rounded-2xl bg-stone-50 text-stone-600 flex items-center justify-center text-xs font-medium">{initials}</div>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-ink">
           {l.name} <span className="text-xs font-medium text-ink/35">PC{l.lead_number}</span>
@@ -175,8 +176,8 @@ function LeadCard({ lead: l, index, onOpen }) {
       <div className="flex flex-col items-end gap-2 shrink-0">
         <div className="text-[11px] text-ink/35">{dateStr}</div>
         <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
-          <a href={`tel:${l.phone}`} data-lead-id={l.id} data-lead-name={l.name || ""} className="w-8 h-8 rounded-full bg-ink/[0.04] flex items-center justify-center text-sm" title="Call">📞</a>
-          <a href={`https://wa.me/${waNum}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-ink/[0.04] flex items-center justify-center text-sm" title="WhatsApp">💬</a>
+          <a href={`tel:${l.phone}`} data-lead-id={l.id} data-lead-name={l.name || ""} className="w-8 h-8 rounded-full bg-ink/[0.04] flex items-center justify-center active:scale-90 transition-transform" title="Call"><Phone className="w-3.5 h-3.5 text-ink/60" /></a>
+          <a href={`https://wa.me/${waNum}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-ink/[0.04] flex items-center justify-center active:scale-90 transition-transform" title="WhatsApp"><MessageCircle className="w-3.5 h-3.5 text-ink/60" /></a>
         </div>
       </div>
     </motion.div>

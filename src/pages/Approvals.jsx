@@ -71,7 +71,7 @@ export default function Approvals() {
             {pendingProfiles.map((p) => (
               <div key={p.id} className="flex items-center justify-between gap-2">
                 <Link to={`/employees/${p.id}`} className="flex items-center gap-3 min-w-0 no-underline text-inherit">
-                  <div className="w-10 h-10 rounded-full bg-stone-50 text-stone-600 flex items-center justify-center text-xs font-medium overflow-hidden shrink-0">
+                  <div className="w-10 h-10 rounded-2xl bg-stone-50 text-stone-600 flex items-center justify-center text-xs font-medium overflow-hidden shrink-0">
                     {p.photo_url ? <img src={p.photo_url} alt="" className="w-full h-full object-cover" /> : initials(p.full_name)}
                   </div>
                   <div className="min-w-0">

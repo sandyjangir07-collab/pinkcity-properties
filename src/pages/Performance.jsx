@@ -107,7 +107,7 @@ export default function Performance() {
               className="bg-white rounded-3xl p-5 cursor-pointer hover:shadow-[0_16px_36px_-20px_rgba(43,21,18,0.2)] transition-shadow"
             >
               <div className="flex items-center gap-2.5 mb-4">
-                <div className="w-10 h-10 rounded-full bg-stone-50 text-stone-600 flex items-center justify-center text-sm font-medium shrink-0">{initials(m.name)}</div>
+                <div className="w-10 h-10 rounded-2xl bg-stone-50 text-stone-600 flex items-center justify-center text-sm font-medium shrink-0">{initials(m.name)}</div>
                 <div className="min-w-0">
                   <div className="text-sm font-semibold text-ink truncate">{m.name}</div>
                   <div className="text-xs text-ink/40 truncate">{m.email}</div>

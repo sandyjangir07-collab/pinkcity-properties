@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { downloadQuotationPDF, formatINRQ } from "../lib/quotationPdf";
 import { Card, SectionTitle } from "../components/ui/primitives";
+import { FileDown, MessageCircle } from "lucide-react";
 import { Button } from "../components/ui/button";
 
 function computeQuotation(sizeStr, rateStr, corner, park) {
@@ -164,7 +165,7 @@ export default function Quotation() {
 
           <div className="grid grid-cols-2 gap-3">
             <button onClick={handleDownload} disabled={downloading} className="text-sm font-medium text-ink/70 border border-ink/10 rounded-full py-3 disabled:opacity-50">
-              {downloading ? "Generating…" : "📄 Download PDF"}
+              {downloading ? "Generating…" : <span className="inline-flex items-center gap-1.5"><FileDown className="w-4 h-4" /> Download PDF</span>}
             </button>
             <Button onClick={handleSave} disabled={saving}>{saving ? "Saving…" : "Save Quotation"}</Button>
           </div>
@@ -192,8 +193,8 @@ export default function Quotation() {
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <span className="text-sm font-semibold text-stone-600">{formatINRQ(item.total_price)}</span>
-                      <button onClick={() => handleDownloadFromHistory(item)} className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center text-sm" title="Download PDF">📄</button>
-                      <a href={`https://wa.me/?text=${waText}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center text-sm" title="Share on WhatsApp">💬</a>
+                      <button onClick={() => handleDownloadFromHistory(item)} className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center active:scale-90 transition-transform" title="Download PDF"><FileDown className="w-3.5 h-3.5 text-ink/60" /></button>
+                      <a href={`https://wa.me/?text=${waText}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center active:scale-90 transition-transform" title="Share on WhatsApp"><MessageCircle className="w-3.5 h-3.5 text-ink/60" /></a>
                       <button onClick={() => handleDeleteHistory(item.id)} className="text-xs text-ink/40 px-1.5">✕</button>
                     </div>
                   </div>

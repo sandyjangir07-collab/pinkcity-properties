@@ -6,6 +6,7 @@ import { useToast } from "../hooks/useToast";
 import { todayStr } from "../lib/attendance";
 import { waNumberFor } from "../lib/leadConstants";
 import { Button } from "../components/ui/button";
+import { Phone, MessageCircle } from "lucide-react";
 import { Pill } from "../components/ui/primitives";
 import ScheduleVisitModal from "../components/leads/ScheduleVisitModal";
 
@@ -134,8 +135,8 @@ function SchedCard({ visit: v, isToday, onDone, onCancel }) {
       <div className="flex flex-col gap-1.5 items-end shrink-0">
         {v.client_phone && (
           <div className="flex gap-1.5">
-            <a href={`tel:${v.client_phone}`} className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center text-sm" title="Call">📞</a>
-            <a href={`https://wa.me/${waNum}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center text-sm" title="WhatsApp">💬</a>
+            <a href={`tel:${v.client_phone}`} className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center active:scale-90 transition-transform" title="Call"><Phone className="w-3.5 h-3.5 text-ink/60" /></a>
+            <a href={`https://wa.me/${waNum}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center active:scale-90 transition-transform" title="WhatsApp"><MessageCircle className="w-3.5 h-3.5 text-ink/60" /></a>
           </div>
         )}
         {v.status === "scheduled" && (
