@@ -1,5 +1,5 @@
 export function Card({ children, className = "" }) {
-  return <div className={`bg-white rounded-3xl p-6 ${className}`}>{children}</div>;
+  return <div className={`bg-surface rounded-3xl border border-ink/[0.06] shadow-soft p-6 ${className}`}>{children}</div>;
 }
 
 export function SectionTitle({ children, action }) {

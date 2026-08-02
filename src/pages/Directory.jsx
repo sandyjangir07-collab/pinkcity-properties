@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
+import { Users, ShieldCheck, TrendingUp, ChevronRight, UserPlus } from "lucide-react";
 import { sb } from "../lib/supabase";
 import { DOCUMENT_TYPES } from "../lib/constants";
 import { initials } from "../lib/utils";
 import { Button } from "../components/ui/button";
+import { Sheet, SheetHeader, Field } from "../components/ui/Sheet";
 import { useToast } from "../hooks/useToast";
 
 const EASE = [0.22, 1, 0.36, 1];
@@ -76,21 +78,21 @@ export default function Directory() {
 
   return (
     <div className="max-w-3xl mx-auto px-5 py-10">
-      <div className="text-xs font-medium tracking-widest2 uppercase text-stone-500 mb-3">PinkCity Properties</div>
-      <h1 className="font-display text-3xl text-ink mb-2">Team Directory</h1>
-      <p className="text-ink/50 text-sm mb-8">Employees, hierarchy, documents and commission — all in one place.</p>
+      <div className="text-[11px] font-semibold tracking-widest2 uppercase text-stone-500 mb-3">PinkCity Properties</div>
+      <h1 className="font-display text-[32px] leading-[1.05] text-ink mb-2">Team Directory</h1>
+      <p className="text-[13.5px] text-ink/50 mb-8">Employees, hierarchy, documents and commission — all in one place.</p>
 
       {errorMsg && <div className="mb-6 rounded-2xl bg-red-50 text-red-600 text-sm px-5 py-4">{errorMsg}</div>}
 
-      <div className="grid grid-cols-3 gap-3 mb-8">
-        <Stat label="Members" value={employees.length} />
-        <Stat label="Fully Verified" value={fullyVerifiedCount} />
-        <Stat label="Total Sales" value={`₹${totalSales.toLocaleString("en-IN")}`} />
+      <div className="grid grid-cols-3 gap-2.5 mb-8">
+        <Stat n={String(employees.length)} label="Members" Icon={Users} />
+        <Stat n={`${fullyVerifiedCount}/${employees.length}`} label="Fully verified" Icon={ShieldCheck} />
+        <Stat n={`₹${totalSales.toLocaleString("en-IN")}`} label="Total Sales" Icon={TrendingUp} />
       </div>
 
-      <div className="bg-white rounded-3xl p-3">
+      <div className="space-y-2.5">
         {tree.length === 0 && (
-          <div className="text-center py-16 text-ink/40">
+          <div className="bg-surface border border-ink/[0.06] shadow-soft rounded-3xl text-center py-16 text-ink/40">
             <div className="font-display text-lg text-ink mb-1">No team members yet</div>
             <p className="text-sm">Add your first team member to get started.</p>
           </div>
@@ -101,24 +103,29 @@ export default function Directory() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: i * 0.04, ease: EASE }}
+            className="space-y-2.5"
           >
             <PersonRow employee={employee} verified={isFullyVerified(employee.id)} />
             {children.length > 0 && (
-              <div className="text-[10px] font-semibold tracking-wide uppercase text-ink/35 px-4 pt-3 pb-1">
+              <div className="text-[10.5px] font-semibold tracking-[0.14em] uppercase text-ink/35 pl-4 pt-1">
                 Reports to {employee.full_name}
               </div>
             )}
-            {children.map((c) => (
-              <PersonRow key={c.id} employee={c} verified={isFullyVerified(c.id)} indent />
-            ))}
+            {children.length > 0 && (
+              <div className="ml-4 space-y-2 border-l border-ink/[0.08] pl-3.5">
+                {children.map((c) => (
+                  <PersonRow key={c.id} employee={c} verified={isFullyVerified(c.id)} junior />
+                ))}
+              </div>
+            )}
           </motion.div>
         ))}
 
         <button
           onClick={() => setAddOpen(true)}
-          className="w-full mt-2 flex items-center justify-center gap-2 rounded-2xl border border-dashed border-ink/15 text-ink/50 hover:text-stone-600 hover:border-stone-300 py-3.5 text-sm font-medium transition-colors"
+          className="w-full mt-2 flex items-center justify-center gap-2 rounded-2xl border border-dashed border-ink/15 text-ink/50 hover:text-stone-600 hover:border-stone-300 py-3.5 text-[13.5px] font-medium transition-colors active:scale-[0.99]"
         >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
+          <UserPlus className="w-4 h-4" />
           Add team member
         </button>
       </div>
@@ -136,34 +143,36 @@ export default function Directory() {
   );
 }
 
-function Stat({ label, value }) {
+function Stat({ n, label, Icon }) {
   return (
-    <div className="bg-white rounded-2xl p-4">
-      <div className="text-[10px] font-semibold uppercase tracking-wide text-ink/35 mb-1">{label}</div>
-      <div className="font-display text-2xl text-ink">{value}</div>
+    <div className="rounded-[22px] border border-ink/[0.06] bg-surface p-3.5 shadow-soft">
+      <Icon className="w-4 h-4 text-stone-600" />
+      <div className="mt-2 font-display text-[20px] leading-none text-ink">{n}</div>
+      <div className="mt-1.5 text-[10.5px] leading-tight text-ink/45">{label}</div>
     </div>
   );
 }
 
-function PersonRow({ employee, verified, indent }) {
+function PersonRow({ employee, verified, junior }) {
   return (
     <Link
       to={`/employees/${employee.id}`}
-      className={`flex items-center gap-3 rounded-2xl px-4 py-3 hover:bg-ink/[0.03] transition-colors ${indent ? "ml-6" : ""}`}
+      className={`flex items-center gap-3 rounded-[22px] border border-ink/[0.06] bg-surface px-3.5 py-3.5 transition-transform active:scale-[0.99] ${junior ? "shadow-none" : "shadow-soft"}`}
     >
-      <div className="w-10 h-10 rounded-full bg-stone-50 text-stone-600 flex items-center justify-center font-medium text-sm overflow-hidden shrink-0">
+      <span
+        className="inline-flex shrink-0 items-center justify-center rounded-2xl bg-stone-50 text-stone-600 font-display overflow-hidden"
+        style={{ height: junior ? 38 : 46, width: junior ? 38 : 46, fontSize: (junior ? 38 : 46) * 0.36 }}
+      >
         {employee.photo_url ? <img src={employee.photo_url} alt="" className="w-full h-full object-cover" /> : initials(employee.full_name)}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium text-ink truncate">{employee.full_name}</div>
-        <div className="text-xs text-ink/45 truncate">{employee.designation || "—"}</div>
-      </div>
-      <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full shrink-0 ${verified ? "bg-emerald-50 text-emerald-700" : "bg-ink/[0.05] text-ink/45"}`}>
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[14.5px] font-semibold text-ink">{employee.full_name}</span>
+        <span className="mt-0.5 block truncate text-[11.5px] text-ink/45">{employee.designation || "—"}</span>
+      </span>
+      <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10.5px] font-semibold ${verified ? "bg-emerald-50 text-emerald-700" : "bg-ink/[0.05] text-ink/45"}`}>
         {verified ? "Verified" : "Unverified"}
       </span>
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink/25 shrink-0">
-        <path d="M9 18l6-6-6-6" />
-      </svg>
+      <ChevronRight className="w-4 h-4 shrink-0 text-ink/30" />
     </Link>
   );
 }
@@ -201,47 +210,18 @@ function AddEmployeeModal({ open, onClose, onCreated }) {
   }
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={(e) => e.target === e.currentTarget && onClose()}
-          className="fixed inset-0 z-50 bg-ink/50 backdrop-blur-sm flex items-end sm:items-center justify-center"
-        >
-          <motion.div
-            initial={{ y: 40, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 20, opacity: 0 }}
-            transition={{ duration: 0.3, ease: EASE }}
-            className="w-full sm:max-w-sm bg-sand rounded-t-3xl sm:rounded-3xl p-7"
-          >
-            <div className="w-10 h-1 rounded-full bg-ink/15 mx-auto -mt-3 mb-5 sm:hidden" />
-            <h3 className="font-display text-2xl text-ink mb-1.5">Add Team Member</h3>
-            <p className="text-sm text-ink/50 mb-6">They&apos;ll be auto-linked the first time they log in with this email.</p>
-            <form onSubmit={submit} className="space-y-4">
-              <Field label="Full Name *"><input className="field-input" value={form.full_name} onChange={(e) => set("full_name", e.target.value)} /></Field>
-              <Field label="Email"><input className="field-input" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} /></Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Mobile"><input className="field-input" value={form.mobile} onChange={(e) => set("mobile", e.target.value)} /></Field>
-                <Field label="Designation"><input className="field-input" value={form.designation} onChange={(e) => set("designation", e.target.value)} /></Field>
-              </div>
-              {err && <p className="text-sm text-red-600">{err}</p>}
-              <Button disabled={busy} type="submit" className="w-full">{busy ? "Adding…" : "Add Team Member"}</Button>
-            </form>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
-
-function Field({ label, children }) {
-  return (
-    <label className="block">
-      <span className="block text-[10px] font-semibold tracking-wide uppercase text-ink/40 mb-1.5">{label}</span>
-      {children}
-    </label>
+    <Sheet open={open} onClose={onClose}>
+      <SheetHeader title="Add Team Member" sub="They'll be auto-linked the first time they log in with this email." />
+      <form onSubmit={submit} className="space-y-4">
+        <Field label="Full Name *"><input className="field-input" value={form.full_name} onChange={(e) => set("full_name", e.target.value)} /></Field>
+        <Field label="Email"><input className="field-input" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} /></Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Mobile"><input className="field-input" value={form.mobile} onChange={(e) => set("mobile", e.target.value)} /></Field>
+          <Field label="Designation"><input className="field-input" value={form.designation} onChange={(e) => set("designation", e.target.value)} /></Field>
+        </div>
+        {err && <p className="text-sm text-red-600">{err}</p>}
+        <Button disabled={busy} type="submit" className="w-full">{busy ? "Adding…" : "Add Team Member"}</Button>
+      </form>
+    </Sheet>
   );
 }

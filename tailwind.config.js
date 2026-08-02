@@ -8,6 +8,7 @@ export default {
           DEFAULT: "#F7F0E4",
           deep: "#EFE4D2",
         },
+        surface: "#FEFCFA",
         stone: {
           50: "#FDF1F4",
           100: "#FAD9E1",
@@ -34,6 +35,10 @@ export default {
       },
       letterSpacing: {
         widest2: "0.22em",
+      },
+      boxShadow: {
+        soft: "0 1px 2px rgba(43,21,18,0.04), 0 8px 24px rgba(43,21,18,0.06)",
+        lift: "0 2px 4px rgba(43,21,18,0.05), 0 20px 40px rgba(196,56,104,0.10)",
       },
     },
   },
