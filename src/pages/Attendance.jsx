@@ -3,30 +3,34 @@ import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { todayStr, fmtTime, fmtHours, getLocation } from "../lib/attendance";
+import { Card, SectionTitle, Pill } from "../components/ui/primitives";
+import { Button } from "../components/ui/button";
 
 export default function Attendance() {
   const { isAdmin } = useAuth();
 
   return (
-    <div className="page">
-      <div className="page-eyebrow">PinkCity Properties</div>
-      <h1 className="page-title">Attendance</h1>
-      <p className="page-sub">Your check-in history{isAdmin ? ", office location, and today's team view." : "."}</p>
+    <div className="max-w-2xl mx-auto px-5 py-10">
+      <div className="text-xs font-medium tracking-widest2 uppercase text-stone-500 mb-3">PinkCity Properties</div>
+      <h1 className="font-display text-3xl text-ink mb-2">Attendance</h1>
+      <p className="text-ink/50 text-sm mb-8">Your check-in history{isAdmin ? ", office location, and today's team view." : "."}</p>
 
-      {isAdmin && <OfficeSetupPanel />}
-      {isAdmin && <TeamAttendanceToday />}
-      <MyAttendanceHistory />
+      <div className="space-y-4">
+        {isAdmin && <OfficeSetupPanel />}
+        {isAdmin && <TeamAttendanceToday />}
+        <MyAttendanceHistory />
+      </div>
     </div>
   );
 }
 
 function OfficeSetupPanel() {
   const showToast = useToast();
-  const [office, setOffice] = useState(undefined); // undefined = loading, null = not set
+  const [office, setOffice] = useState(undefined);
   const [radius, setRadius] = useState(200);
   const [manualLat, setManualLat] = useState("");
   const [manualLng, setManualLng] = useState("");
-  const [pending, setPending] = useState(null); // { latitude, longitude } | null
+  const [pending, setPending] = useState(null);
   const [capturing, setCapturing] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -83,9 +87,9 @@ function OfficeSetupPanel() {
   }
 
   return (
-    <div className="card">
-      <h2 className="section-title">Office Location</h2>
-      <p style={{ fontSize: 13, color: "var(--muted-foreground)", marginBottom: 14 }}>
+    <Card>
+      <SectionTitle>Office Location</SectionTitle>
+      <p className="text-sm text-ink/50 mb-4">
         {office === undefined
           ? "Loading…"
           : office
@@ -93,41 +97,33 @@ function OfficeSetupPanel() {
           : "No office location set yet — nobody can check in until this is configured."}
       </p>
 
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
-        <button className="btn btn-secondary" style={{ width: "auto" }} disabled={capturing} onClick={captureCurrent}>
-          {capturing ? "Getting location…" : "📍 Use My Current Location"}
-        </button>
-      </div>
-
-      <div className="field-grid-2">
-        <div className="field">
-          <label className="fl">Manual Latitude</label>
-          <input className="fi" type="number" step="any" value={manualLat} onChange={(e) => setManualLat(e.target.value)} />
-        </div>
-        <div className="field">
-          <label className="fl">Manual Longitude</label>
-          <input className="fi" type="number" step="any" value={manualLng} onChange={(e) => setManualLng(e.target.value)} />
-        </div>
-      </div>
-      <button className="btn btn-secondary" style={{ width: "auto", marginBottom: 14 }} onClick={useManual}>
-        Use These Coordinates
+      <button onClick={captureCurrent} disabled={capturing} className="text-xs font-medium text-ink/60 border border-ink/10 rounded-full px-4 py-2 mb-4">
+        {capturing ? "Getting location…" : "📍 Use My Current Location"}
       </button>
 
-      <div className="field" style={{ maxWidth: 200 }}>
-        <label className="fl">Allowed Radius (meters)</label>
-        <input className="fi" type="number" value={radius} onChange={(e) => setRadius(parseInt(e.target.value) || 200)} />
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div>
+          <span className="block text-[10px] font-semibold tracking-wide uppercase text-ink/40 mb-1.5">Manual Latitude</span>
+          <input className="field-input" type="number" step="any" value={manualLat} onChange={(e) => setManualLat(e.target.value)} />
+        </div>
+        <div>
+          <span className="block text-[10px] font-semibold tracking-wide uppercase text-ink/40 mb-1.5">Manual Longitude</span>
+          <input className="field-input" type="number" step="any" value={manualLng} onChange={(e) => setManualLng(e.target.value)} />
+        </div>
+      </div>
+      <button onClick={useManual} className="text-xs font-medium text-ink/60 border border-ink/10 rounded-full px-4 py-2 mb-4">Use These Coordinates</button>
+
+      <div className="max-w-[180px] mb-4">
+        <span className="block text-[10px] font-semibold tracking-wide uppercase text-ink/40 mb-1.5">Allowed Radius (meters)</span>
+        <input className="field-input" type="number" value={radius} onChange={(e) => setRadius(parseInt(e.target.value) || 200)} />
       </div>
 
       {pending && (
-        <p style={{ fontSize: 13, color: "var(--primary)", marginBottom: 12 }}>
-          📍 Using: {pending.latitude.toFixed(6)}, {pending.longitude.toFixed(6)} — click Save to confirm.
-        </p>
+        <p className="text-sm text-stone-600 mb-3">📍 Using: {pending.latitude.toFixed(6)}, {pending.longitude.toFixed(6)} — click Save to confirm.</p>
       )}
 
-      <button className="btn btn-primary" disabled={!pending || saving} onClick={save}>
-        {saving ? "Saving…" : "Save Office Location"}
-      </button>
-    </div>
+      <Button disabled={!pending || saving} onClick={save}>{saving ? "Saving…" : "Save Office Location"}</Button>
+    </Card>
   );
 }
 
@@ -143,29 +139,26 @@ function TeamAttendanceToday() {
   }, []);
 
   return (
-    <div className="card">
-      <h2 className="section-title">Today's Team Attendance {rows ? `(${rows.length} checked in)` : ""}</h2>
+    <Card>
+      <SectionTitle>Today&apos;s Team Attendance {rows ? `(${rows.length} checked in)` : ""}</SectionTitle>
       {rows === null ? (
-        <div className="center-loading"><div className="spinner" /></div>
+        <div className="flex justify-center py-8"><div className="w-5 h-5 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" /></div>
       ) : rows.length === 0 ? (
-        <div style={{ fontSize: 13, color: "var(--muted-foreground)" }}>Nobody has checked in yet today.</div>
+        <div className="text-sm text-ink/40">Nobody has checked in yet today.</div>
       ) : (
-        rows.map((a) => (
-          <div key={a.id} className="info-row" style={{ justifyContent: "space-between" }}>
-            <div>
-              <div className="info-row-value">{a.user_name || "—"}</div>
-              <div className="info-row-label">
-                In: {fmtTime(a.check_in_at)}
-                {a.check_out_at ? ` · Out: ${fmtTime(a.check_out_at)}` : " · Still in"}
+        <div className="space-y-3">
+          {rows.map((a) => (
+            <div key={a.id} className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium text-ink">{a.user_name || "—"}</div>
+                <div className="text-xs text-ink/45">In: {fmtTime(a.check_in_at)}{a.check_out_at ? ` · Out: ${fmtTime(a.check_out_at)}` : " · Still in"}</div>
               </div>
+              <Pill tone={a.check_out_at ? "neutral" : "green"}>{a.check_out_at ? fmtHours(a.check_in_at, a.check_out_at) : "● Present"}</Pill>
             </div>
-            <span className={"pill " + (a.check_out_at ? "pill-neutral" : "pill-green")}>
-              {a.check_out_at ? fmtHours(a.check_in_at, a.check_out_at) : "● Present"}
-            </span>
-          </div>
-        ))
+          ))}
+        </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -183,29 +176,28 @@ function MyAttendanceHistory() {
   }, [user.id]);
 
   return (
-    <div className="card">
-      <h2 className="section-title">My Attendance (last 14 days)</h2>
+    <Card>
+      <SectionTitle>My Attendance (last 14 days)</SectionTitle>
       {rows === null ? (
-        <div className="center-loading"><div className="spinner" /></div>
+        <div className="flex justify-center py-8"><div className="w-5 h-5 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" /></div>
       ) : rows.length === 0 ? (
-        <div style={{ fontSize: 13, color: "var(--muted-foreground)" }}>No attendance recorded yet.</div>
+        <div className="text-sm text-ink/40">No attendance recorded yet.</div>
       ) : (
-        rows.map((a) => {
-          const d = new Date(a.date + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
-          return (
-            <div key={a.id} className="info-row" style={{ justifyContent: "space-between" }}>
-              <div>
-                <div className="info-row-value">{d}</div>
-                <div className="info-row-label">
-                  In: {fmtTime(a.check_in_at)}
-                  {a.check_out_at ? ` · Out: ${fmtTime(a.check_out_at)}` : " · Not checked out"}
+        <div className="space-y-3">
+          {rows.map((a) => {
+            const d = new Date(a.date + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+            return (
+              <div key={a.id} className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-ink">{d}</div>
+                  <div className="text-xs text-ink/45">In: {fmtTime(a.check_in_at)}{a.check_out_at ? ` · Out: ${fmtTime(a.check_out_at)}` : " · Not checked out"}</div>
                 </div>
+                <Pill tone="stone">{fmtHours(a.check_in_at, a.check_out_at) || "—"}</Pill>
               </div>
-              <span className="pill pill-primary">{fmtHours(a.check_in_at, a.check_out_at) || "—"}</span>
-            </div>
-          );
-        })
+            );
+          })}
+        </div>
       )}
-    </div>
+    </Card>
   );
 }

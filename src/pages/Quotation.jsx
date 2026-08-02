@@ -3,6 +3,8 @@ import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { downloadQuotationPDF, formatINRQ } from "../lib/quotationPdf";
+import { Card, SectionTitle } from "../components/ui/primitives";
+import { Button } from "../components/ui/button";
 
 function computeQuotation(sizeStr, rateStr, corner, park) {
   const size = parseFloat(sizeStr) || 0;
@@ -116,116 +118,90 @@ export default function Quotation() {
   }
 
   return (
-    <div className="page">
-      <div className="page-eyebrow">PinkCity Properties</div>
-      <h1 className="page-title">Quotation Builder</h1>
-      <p className="page-sub">Build a plot quotation, download it as a branded PDF, or share it on WhatsApp.</p>
+    <div className="max-w-2xl mx-auto px-5 py-10">
+      <div className="text-xs font-medium tracking-widest2 uppercase text-stone-500 mb-3">PinkCity Properties</div>
+      <h1 className="font-display text-3xl text-ink mb-2">Quotation Builder</h1>
+      <p className="text-ink/50 text-sm mb-8">Build a plot quotation, download it as a branded PDF, or share it on WhatsApp.</p>
 
-      <div className="card">
-        <div className="field-grid-2">
-          <div className="field">
-            <label className="fl">Plot No. *</label>
-            <input className="fi" value={form.plotNo} onChange={(e) => set("plotNo", e.target.value)} />
+      <div className="space-y-4">
+        <Card>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <span className="block text-[10px] font-semibold tracking-wide uppercase text-ink/40 mb-1.5">Plot No. *</span>
+              <input className="field-input" value={form.plotNo} onChange={(e) => set("plotNo", e.target.value)} />
+            </div>
+            <div>
+              <span className="block text-[10px] font-semibold tracking-wide uppercase text-ink/40 mb-1.5">Client Name</span>
+              <input className="field-input" value={form.client} onChange={(e) => set("client", e.target.value)} />
+            </div>
           </div>
-          <div className="field">
-            <label className="fl">Client Name</label>
-            <input className="fi" value={form.client} onChange={(e) => set("client", e.target.value)} />
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <span className="block text-[10px] font-semibold tracking-wide uppercase text-ink/40 mb-1.5">Plot Size (Gaj) *</span>
+              <input className="field-input" type="number" value={form.size} onChange={(e) => set("size", e.target.value)} />
+            </div>
+            <div>
+              <span className="block text-[10px] font-semibold tracking-wide uppercase text-ink/40 mb-1.5">Rate (₹ / Gaj) *</span>
+              <input className="field-input" type="number" value={form.rate} onChange={(e) => set("rate", e.target.value)} />
+            </div>
           </div>
-        </div>
-        <div className="field-grid-2">
-          <div className="field">
-            <label className="fl">Plot Size (Gaj) *</label>
-            <input className="fi" type="number" value={form.size} onChange={(e) => set("size", e.target.value)} />
+          <div className="grid grid-cols-2 gap-3 mb-5">
+            <label className="flex items-center gap-2 text-sm text-ink/70"><input type="checkbox" checked={form.corner} onChange={(e) => set("corner", e.target.checked)} /> Corner Plot (+5%)</label>
+            <label className="flex items-center gap-2 text-sm text-ink/70"><input type="checkbox" checked={form.park} onChange={(e) => set("park", e.target.checked)} /> Park Facing (+5%)</label>
           </div>
-          <div className="field">
-            <label className="fl">Rate (₹ / Gaj) *</label>
-            <input className="fi" type="number" value={form.rate} onChange={(e) => set("rate", e.target.value)} />
+
+          <div className="h-px bg-ink/[0.06] mb-3" />
+          <div className="flex justify-between text-sm py-1"><span className="text-ink/50">Base Price</span><span className="text-ink">{formatINRQ(q.base)}</span></div>
+          <div className="flex justify-between text-sm py-1"><span className="text-ink/50">Corner Extra</span><span className="text-ink">{form.corner ? "+" + formatINRQ(q.cornerExtra) : "—"}</span></div>
+          <div className="flex justify-between text-sm py-1 mb-3"><span className="text-ink/50">Park Facing Extra</span><span className="text-ink">{form.park ? "+" + formatINRQ(q.parkExtra) : "—"}</span></div>
+
+          <div className="flex justify-between items-center bg-stone-50 rounded-2xl px-4 py-3.5 mb-4">
+            <span className="text-sm font-semibold text-ink">Total Quoted Price</span>
+            <span className="font-display text-2xl text-stone-600">{formatINRQ(q.total)}</span>
           </div>
-        </div>
-        <div className="field-grid-2" style={{ marginBottom: 16 }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5 }}>
-            <input type="checkbox" checked={form.corner} onChange={(e) => set("corner", e.target.checked)} /> Corner Plot (+5%)
-          </label>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5 }}>
-            <input type="checkbox" checked={form.park} onChange={(e) => set("park", e.target.checked)} /> Park Facing (+5%)
-          </label>
-        </div>
 
-        <div className="divider" />
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, padding: "4px 0" }}>
-          <span style={{ color: "var(--muted-foreground)" }}>Base Price</span>
-          <span>{formatINRQ(q.base)}</span>
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, padding: "4px 0" }}>
-          <span style={{ color: "var(--muted-foreground)" }}>Corner Extra</span>
-          <span>{form.corner ? "+" + formatINRQ(q.cornerExtra) : "—"}</span>
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, padding: "4px 0 14px" }}>
-          <span style={{ color: "var(--muted-foreground)" }}>Park Facing Extra</span>
-          <span>{form.park ? "+" + formatINRQ(q.parkExtra) : "—"}</span>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            background: "var(--primary-soft)",
-            borderRadius: 14,
-            padding: "14px 16px",
-            marginBottom: 16,
-          }}
-        >
-          <span style={{ fontWeight: 600, fontSize: 15 }}>Total Quoted Price</span>
-          <span style={{ fontSize: 22, fontFamily: "var(--font-display)", color: "var(--primary)" }}>{formatINRQ(q.total)}</span>
-        </div>
+          {err && <p className="text-sm text-red-600 mb-3">{err}</p>}
 
-        {err && <div className="form-err show" style={{ marginBottom: 12 }}>{err}</div>}
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={handleDownload} disabled={downloading} className="text-sm font-medium text-ink/70 border border-ink/10 rounded-full py-3 disabled:opacity-50">
+              {downloading ? "Generating…" : "📄 Download PDF"}
+            </button>
+            <Button onClick={handleSave} disabled={saving}>{saving ? "Saving…" : "Save Quotation"}</Button>
+          </div>
+        </Card>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <button className="btn btn-secondary" disabled={downloading} onClick={handleDownload}>
-            {downloading ? "Generating…" : "📄 Download PDF"}
-          </button>
-          <button className="btn btn-primary" disabled={saving} onClick={handleSave}>
-            {saving ? "Saving…" : "Save Quotation"}
-          </button>
-        </div>
-      </div>
-
-      <div className="card">
-        <h2 className="section-title">My Quotations</h2>
-        {history === null ? (
-          <div className="center-loading"><div className="spinner" /></div>
-        ) : history.length === 0 ? (
-          <div style={{ fontSize: 13, color: "var(--muted-foreground)" }}>No quotations yet — build your first one above.</div>
-        ) : (
-          history.map((item) => {
-            const d = new Date(item.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
-            const tags = [item.corner_plot ? "Corner" : null, item.park_facing ? "Park Facing" : null].filter(Boolean).join(" · ");
-            const waText = encodeURIComponent(
-              `Quotation — Plot ${item.plot_no}\nSize: ${item.plot_size_gaj} Gaj\nRate: ${formatINRQ(item.rate_per_gaj)}/Gaj\n${tags ? tags + "\n" : ""}Total: ${formatINRQ(item.total_price)}`
-            );
-            return (
-              <div key={item.id} className="info-row" style={{ justifyContent: "space-between" }}>
-                <div>
-                  <div className="info-row-value">
-                    Plot {item.plot_no}
-                    {item.client_name ? ` · ${item.client_name}` : ""}
+        <Card>
+          <SectionTitle>My Quotations</SectionTitle>
+          {history === null ? (
+            <div className="flex justify-center py-8"><div className="w-5 h-5 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" /></div>
+          ) : history.length === 0 ? (
+            <div className="text-sm text-ink/40">No quotations yet — build your first one above.</div>
+          ) : (
+            <div className="space-y-3">
+              {history.map((item) => {
+                const d = new Date(item.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+                const tags = [item.corner_plot ? "Corner" : null, item.park_facing ? "Park Facing" : null].filter(Boolean).join(" · ");
+                const waText = encodeURIComponent(
+                  `Quotation — Plot ${item.plot_no}\nSize: ${item.plot_size_gaj} Gaj\nRate: ${formatINRQ(item.rate_per_gaj)}/Gaj\n${tags ? tags + "\n" : ""}Total: ${formatINRQ(item.total_price)}`
+                );
+                return (
+                  <div key={item.id} className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-ink truncate">Plot {item.plot_no}{item.client_name ? ` · ${item.client_name}` : ""}</div>
+                      <div className="text-xs text-ink/45">{item.plot_size_gaj} Gaj × {formatINRQ(item.rate_per_gaj)}{tags ? ` · ${tags}` : ""} · {d}</div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-sm font-semibold text-stone-600">{formatINRQ(item.total_price)}</span>
+                      <button onClick={() => handleDownloadFromHistory(item)} className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center text-sm" title="Download PDF">📄</button>
+                      <a href={`https://wa.me/?text=${waText}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center text-sm" title="Share on WhatsApp">💬</a>
+                      <button onClick={() => handleDeleteHistory(item.id)} className="text-xs text-ink/40 px-1.5">✕</button>
+                    </div>
                   </div>
-                  <div className="info-row-label">
-                    {item.plot_size_gaj} Gaj × {formatINRQ(item.rate_per_gaj)}
-                    {tags ? ` · ${tags}` : ""} · {d}
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 14, color: "var(--primary)", fontWeight: 600 }}>{formatINRQ(item.total_price)}</span>
-                  <button className="lead-icon-btn" title="Download PDF" onClick={() => handleDownloadFromHistory(item)}>📄</button>
-                  <a className="lead-icon-btn" href={`https://wa.me/?text=${waText}`} target="_blank" rel="noreferrer" title="Share on WhatsApp">💬</a>
-                  <button className="btn btn-secondary" style={{ width: "auto", padding: "6px 10px", fontSize: 11 }} onClick={() => handleDeleteHistory(item.id)}>✕</button>
-                </div>
-              </div>
-            );
-          })
-        )}
+                );
+              })}
+            </div>
+          )}
+        </Card>
       </div>
     </div>
   );

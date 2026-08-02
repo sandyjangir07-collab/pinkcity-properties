@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { todayStr } from "../lib/attendance";
 import { waNumberFor } from "../lib/leadConstants";
-import { IconPlus } from "../components/ui/Icons";
+import { Button } from "../components/ui/button";
+import { Pill } from "../components/ui/primitives";
 import ScheduleVisitModal from "../components/leads/ScheduleVisitModal";
 
-const STATUS_CLASS = { done: "pill-green", cancelled: "pill-red", no_show: "pill-red" };
+const STATUS_TONE = { done: "green", cancelled: "red", no_show: "red" };
 const STATUS_LABEL = { done: "✓ Done", cancelled: "Cancelled", no_show: "No Show", scheduled: "Scheduled" };
+const EASE = [0.22, 1, 0.36, 1];
 
 export default function Schedule() {
   const { user, isAdmin } = useAuth();
@@ -50,44 +53,49 @@ export default function Schedule() {
   const rest = (visits || []).filter((v) => v.visit_date !== today);
 
   return (
-    <div className="page">
-      <div className="page-eyebrow">Site Visits</div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
-        <h1 className="page-title" style={{ margin: 0 }}>Visit Calendar</h1>
-        <div style={{ display: "flex", gap: 8 }}>
-          <select className="fsel" style={{ width: "auto", padding: "9px 14px", fontSize: 13 }} value={filter} onChange={(e) => setFilter(e.target.value)}>
+    <div className="max-w-3xl mx-auto px-5 py-10">
+      <div className="text-xs font-medium tracking-widest2 uppercase text-stone-500 mb-3">Site Visits</div>
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
+        <h1 className="font-display text-3xl text-ink">Visit Calendar</h1>
+        <div className="flex gap-2">
+          <select className="field-input w-auto" value={filter} onChange={(e) => setFilter(e.target.value)}>
             <option value="upcoming">Upcoming</option>
             <option value="all">All</option>
             <option value="done">Done</option>
             <option value="cancelled">Cancelled</option>
           </select>
-          <button className="btn btn-primary" style={{ width: "auto", display: "flex", alignItems: "center", gap: 6 }} onClick={() => setVisitTarget({ leadId: null, name: "", phone: "" })}>
-            <IconPlus size={14} stroke="white" /> Schedule Visit
-          </button>
+          <Button size="sm" onClick={() => setVisitTarget({ leadId: null, name: "", phone: "" })}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
+            Schedule Visit
+          </Button>
         </div>
       </div>
 
       {visits === null ? (
-        <div className="center-loading"><div className="spinner" /></div>
+        <div className="flex justify-center py-16"><div className="w-6 h-6 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" /></div>
       ) : (
         <>
           {todayVisits.length > 0 && (
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--primary)", marginBottom: 12 }}>
-                TODAY — {todayVisits.length} visit{todayVisits.length > 1 ? "s" : ""}
+            <div className="mb-6">
+              <div className="text-[11px] font-bold tracking-widest2 uppercase text-stone-500 mb-3">
+                Today — {todayVisits.length} visit{todayVisits.length > 1 ? "s" : ""}
               </div>
-              {todayVisits.map((v) => (
-                <SchedCard key={v.id} visit={v} isToday onDone={markDone} onCancel={cancel} />
-              ))}
+              <div className="space-y-2.5">
+                {todayVisits.map((v) => (
+                  <SchedCard key={v.id} visit={v} isToday onDone={markDone} onCancel={cancel} />
+                ))}
+              </div>
             </div>
           )}
 
           {rest.length === 0 && todayVisits.length === 0 ? (
-            <div className="card empty-state">
-              <div className="empty-title">No visits found</div>
+            <div className="bg-white rounded-3xl text-center py-16 text-ink/40">
+              <div className="font-display text-lg text-ink">No visits found</div>
             </div>
           ) : (
-            rest.map((v) => <SchedCard key={v.id} visit={v} onDone={markDone} onCancel={cancel} />)
+            <div className="space-y-2.5">
+              {rest.map((v) => <SchedCard key={v.id} visit={v} onDone={markDone} onCancel={cancel} />)}
+            </div>
           )}
         </>
       )}
@@ -104,47 +112,39 @@ function SchedCard({ visit: v, isToday, onDone, onCancel }) {
   const waNum = waNumberFor(v.client_phone);
 
   return (
-    <div className="card" style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 10, padding: 16 }}>
-      <div
-        style={{
-          textAlign: "center",
-          flexShrink: 0,
-          background: isToday ? "var(--primary)" : "var(--secondary)",
-          color: isToday ? "white" : "var(--foreground)",
-          borderRadius: 12,
-          padding: "8px 12px",
-          minWidth: 56,
-        }}
-      >
-        <div style={{ fontSize: 20, fontWeight: 700, lineHeight: 1 }}>{day}</div>
-        <div style={{ fontSize: 10, fontWeight: 600, marginTop: 2 }}>{mon}</div>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: EASE }}
+      className="bg-white rounded-3xl p-4 flex gap-3.5 items-center"
+    >
+      <div className={`text-center shrink-0 rounded-2xl px-3 py-2 min-w-[56px] ${isToday ? "bg-stone-600 text-sand" : "bg-stone-50 text-ink"}`}>
+        <div className="font-display text-xl leading-none">{day}</div>
+        <div className="text-[10px] font-semibold mt-1">{mon}</div>
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 600, fontSize: 14 }}>
-          {v.client_name}
-          {v.client_phone ? ` · ${v.client_phone}` : ""}
-        </div>
-        <div style={{ fontSize: 12.5, color: "var(--muted-foreground)", marginTop: 2 }}>{v.listing_title || "—"}</div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginTop: 6 }}>
-          <span className="pill pill-neutral">🕐 {v.visit_time}</span>
-          {v.status !== "scheduled" && <span className={"pill " + (STATUS_CLASS[v.status] || "pill-neutral")}>{STATUS_LABEL[v.status]}</span>}
-          {v.notes && <span style={{ fontSize: 12, color: "var(--muted-foreground)" }}>{v.notes}</span>}
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium text-ink">{v.client_name}{v.client_phone ? ` · ${v.client_phone}` : ""}</div>
+        <div className="text-xs text-ink/45 mt-0.5">{v.listing_title || "—"}</div>
+        <div className="flex gap-1.5 flex-wrap items-center mt-2">
+          <Pill>🕐 {v.visit_time}</Pill>
+          {v.status !== "scheduled" && <Pill tone={STATUS_TONE[v.status] || "neutral"}>{STATUS_LABEL[v.status]}</Pill>}
+          {v.notes && <span className="text-xs text-ink/40">{v.notes}</span>}
         </div>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0, alignItems: "flex-end" }}>
+      <div className="flex flex-col gap-1.5 items-end shrink-0">
         {v.client_phone && (
-          <div style={{ display: "flex", gap: 6 }}>
-            <a className="lead-icon-btn" href={`tel:${v.client_phone}`} title="Call">📞</a>
-            <a className="lead-icon-btn" href={`https://wa.me/${waNum}`} target="_blank" rel="noreferrer" title="WhatsApp">💬</a>
+          <div className="flex gap-1.5">
+            <a href={`tel:${v.client_phone}`} className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center text-sm" title="Call">📞</a>
+            <a href={`https://wa.me/${waNum}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center text-sm" title="WhatsApp">💬</a>
           </div>
         )}
         {v.status === "scheduled" && (
-          <div style={{ display: "flex", gap: 6 }}>
-            <button className="btn-approve" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => onDone(v.id)}>✓ Done</button>
-            <button className="btn-reject" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => onCancel(v.id)}>Cancel</button>
+          <div className="flex gap-1.5">
+            <button onClick={() => onDone(v.id)} className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1.5">✓ Done</button>
+            <button onClick={() => onCancel(v.id)} className="text-[11px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded-full px-2.5 py-1.5">Cancel</button>
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

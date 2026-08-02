@@ -4,8 +4,8 @@ import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
 import { compressImageFile, fileToUploadableBuffer } from "../../lib/utils";
 import { APPROVAL_TYPES, ROAD_WIDTHS, FACINGS, PLOT_SIZE_UNITS, COLONY_ROAD_WIDTHS, APPROACH_ROADS } from "../../lib/listingConstants";
-import { Modal, ModalHero } from "../ui/Modal";
-import { IconPlus } from "../ui/Icons";
+import { Sheet, SheetHeader, Field } from "../ui/Sheet";
+import { Button } from "../ui/button";
 
 const emptyForm = {
   title: "",
@@ -224,234 +224,164 @@ export default function ListingFormModal({ target, isAdmin, onClose, onSaved }) 
   }
 
   return (
-    <Modal open={!!target} onClose={onClose}>
-      <ModalHero title={isEdit ? "Edit & Verify" : "Add New Listing"} />
-      <div className="modal-body">
-        <form onSubmit={submit}>
-          <div className="field-grid-2">
-            <div className="field">
-              <label className="fl">Title *</label>
-              <input className="fi" placeholder="e.g. 200 sq yd Corner Plot" value={form.title} onChange={(e) => set("title", e.target.value)} />
-            </div>
-            <div className="field">
-              <label className="fl">Category *</label>
-              <select className="fsel" value={form.type} onChange={(e) => set("type", e.target.value)}>
-                <option value="colony">Colony</option>
-                <option value="plot">Plot</option>
-                <option value="apartment">Flat</option>
-                <option value="villa">Villa</option>
-              </select>
-            </div>
-          </div>
-          <div className="field-grid-2">
-            <div className="field">
-              <label className="fl">Area / Locality *</label>
-              <input className="fi" placeholder="e.g. Mansarovar, Jaipur" value={form.area} onChange={(e) => set("area", e.target.value)} />
-            </div>
-            <div className="field">
-              <label className="fl">Price *</label>
-              <input className="fi" placeholder="e.g. ₹68 Lakh" value={form.price} onChange={(e) => set("price", e.target.value)} />
-            </div>
-          </div>
-          <div className="field">
-            <label className="fl">Approval</label>
-            <select className="fsel" value={form.approval_type} onChange={(e) => set("approval_type", e.target.value)}>
-              <option value="">Select</option>
-              {APPROVAL_TYPES.map((a) => (<option key={a} value={a}>{a}</option>))}
+    <Sheet open={!!target} onClose={onClose} maxWidth="max-w-lg">
+      <SheetHeader title={isEdit ? "Edit & Verify" : "Add New Listing"} />
+      <form onSubmit={submit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Title *"><input className="field-input" placeholder="e.g. 200 sq yd Corner Plot" value={form.title} onChange={(e) => set("title", e.target.value)} /></Field>
+          <Field label="Category *">
+            <select className="field-input" value={form.type} onChange={(e) => set("type", e.target.value)}>
+              <option value="colony">Colony</option>
+              <option value="plot">Plot</option>
+              <option value="apartment">Flat</option>
+              <option value="villa">Villa</option>
             </select>
-          </div>
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Area / Locality *"><input className="field-input" placeholder="e.g. Mansarovar, Jaipur" value={form.area} onChange={(e) => set("area", e.target.value)} /></Field>
+          <Field label="Price *"><input className="field-input" placeholder="e.g. ₹68 Lakh" value={form.price} onChange={(e) => set("price", e.target.value)} /></Field>
+        </div>
+        <Field label="Approval">
+          <select className="field-input" value={form.approval_type} onChange={(e) => set("approval_type", e.target.value)}>
+            <option value="">Select</option>
+            {APPROVAL_TYPES.map((a) => (<option key={a} value={a}>{a}</option>))}
+          </select>
+        </Field>
 
-          <div className="field">
-            <label className="fl">Site Map (PDF)</label>
-            <input type="file" accept="application/pdf" style={{ display: "none" }} id="listing-map-pdf" onChange={(e) => setPendingMapPdf(e.target.files[0] || null)} />
-            {pendingMapPdf || savedMapPdfUrl ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--secondary)", borderRadius: 12, padding: "10px 14px", marginTop: 4 }}>
-                <span style={{ fontSize: 13, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {pendingMapPdf ? pendingMapPdf.name : "Site map on file"}
-                </span>
-                <button type="button" onClick={() => { setPendingMapPdf(null); setSavedMapPdfUrl(null); }} style={{ border: "none", background: "none", color: "var(--muted-foreground)", cursor: "pointer" }}>✕</button>
+        <Field label="Site Map (PDF)">
+          <input type="file" accept="application/pdf" className="hidden" id="listing-map-pdf" onChange={(e) => setPendingMapPdf(e.target.files[0] || null)} />
+          {pendingMapPdf || savedMapPdfUrl ? (
+            <div className="flex items-center gap-2.5 bg-stone-50/60 rounded-xl px-3.5 py-2.5">
+              <span className="flex-1 text-sm truncate">{pendingMapPdf ? pendingMapPdf.name : "Site map on file"}</span>
+              <button type="button" onClick={() => { setPendingMapPdf(null); setSavedMapPdfUrl(null); }} className="text-ink/40">✕</button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => document.getElementById("listing-map-pdf").click()} className="w-full text-sm font-medium text-ink/60 border border-dashed border-ink/15 rounded-xl py-2.5">
+              📄 Choose PDF…
+            </button>
+          )}
+        </Field>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Latitude"><input className="field-input" type="number" step="any" placeholder="e.g. 26.8112" value={form.lat} onChange={(e) => set("lat", e.target.value)} /></Field>
+          <Field label="Longitude"><input className="field-input" type="number" step="any" placeholder="e.g. 75.7832" value={form.lng} onChange={(e) => set("lng", e.target.value)} /></Field>
+        </div>
+        <Field label="Highlights"><input className="field-input" placeholder="e.g. Ring Road Nearby, 100 Ft Road, Gated Colony" value={form.highlights} onChange={(e) => set("highlights", e.target.value)} /></Field>
+        <Field label="Nearby Landmarks">
+          <input className="field-input" placeholder="e.g. Ring Road - 4 min, Airport - 25 min" value={form.landmarks} onChange={(e) => set("landmarks", e.target.value)} />
+          <p className="text-xs text-ink/40 mt-1.5">Format: Name - time or distance, separated by commas.</p>
+        </Field>
+
+        {!isColony && (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Plot Size">
+                <div className="flex gap-1.5">
+                  <input className="field-input" type="number" placeholder="e.g. 200" value={form.plot_size} onChange={(e) => set("plot_size", e.target.value)} />
+                  <select className="field-input w-24 shrink-0" value={form.plot_size_unit} onChange={(e) => set("plot_size_unit", e.target.value)}>
+                    {PLOT_SIZE_UNITS.map((u) => (<option key={u} value={u}>{u}</option>))}
+                  </select>
+                </div>
+              </Field>
+              <Field label="Plot Dimensions">
+                <div className="flex items-center gap-1.5">
+                  <input className="field-input" type="number" placeholder="Length" value={form.plot_length} onChange={(e) => set("plot_length", e.target.value)} />
+                  <span className="text-ink/40 font-semibold">×</span>
+                  <input className="field-input" type="number" placeholder="Width" value={form.plot_width} onChange={(e) => set("plot_width", e.target.value)} />
+                </div>
+              </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Road Width">
+                <select className="field-input" value={form.road_width} onChange={(e) => set("road_width", e.target.value)}>
+                  <option value="">Select</option>
+                  {ROAD_WIDTHS.map((r) => (<option key={r} value={r}>{r}</option>))}
+                </select>
+              </Field>
+              <Field label="Facing">
+                <select className="field-input" value={form.facing} onChange={(e) => set("facing", e.target.value)}>
+                  <option value="">Select</option>
+                  {FACINGS.map((f) => (<option key={f} value={f}>{f}</option>))}
+                </select>
+              </Field>
+            </div>
+            <Field label="Agreement Value"><input className="field-input" placeholder="e.g. ₹55 Lakh" value={form.agreement_value} onChange={(e) => set("agreement_value", e.target.value)} /></Field>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="flex items-center gap-2 text-sm text-ink/70"><input type="checkbox" checked={form.corner_plot} onChange={(e) => set("corner_plot", e.target.checked)} /> Corner Plot</label>
+              <label className="flex items-center gap-2 text-sm text-ink/70"><input type="checkbox" checked={form.park_facing} onChange={(e) => set("park_facing", e.target.checked)} /> Park Facing</label>
+            </div>
+          </>
+        )}
+
+        {isColony && (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="No. of Units"><input className="field-input" type="number" placeholder="e.g. 120" value={form.no_of_units} onChange={(e) => set("no_of_units", e.target.value)} /></Field>
+              <Field label="Total Project Area"><input className="field-input" placeholder="e.g. 25 Acres" value={form.total_project_area} onChange={(e) => set("total_project_area", e.target.value)} /></Field>
+            </div>
+            <Field label="Internal Roads (select all that apply)">
+              <div className="flex flex-wrap gap-2">
+                {COLONY_ROAD_WIDTHS.map((w) => (
+                  <label key={w} className={`text-xs font-medium px-3 py-1.5 rounded-full border cursor-pointer ${form.colony_road_type.includes(w) ? "bg-stone-600 text-sand border-stone-600" : "border-ink/10 text-ink/60"}`}>
+                    <input type="checkbox" className="hidden" checked={form.colony_road_type.includes(w)} onChange={() => toggleColonyRoad(w)} /> {w}
+                  </label>
+                ))}
               </div>
-            ) : (
-              <button type="button" className="btn btn-secondary" style={{ width: "100%", marginTop: 4 }} onClick={() => document.getElementById("listing-map-pdf").click()}>📄 Choose PDF…</button>
+            </Field>
+            <Field label="Approach Road">
+              <select className="field-input" value={form.approach_road} onChange={(e) => set("approach_road", e.target.value)}>
+                <option value="">Select</option>
+                {APPROACH_ROADS.map((r) => (<option key={r} value={r}>{r}</option>))}
+              </select>
+            </Field>
+            <Field label="Amenities"><input className="field-input" placeholder="e.g. Clubhouse, Park, 24x7 Security" value={form.amenities} onChange={(e) => set("amenities", e.target.value)} /></Field>
+            <Field label="Project Map (image URL)"><input className="field-input" placeholder="Paste a link to the layout/map image" value={form.project_map_url} onChange={(e) => set("project_map_url", e.target.value)} /></Field>
+          </>
+        )}
+
+        <label className="flex items-center gap-2 text-sm text-ink/70"><input type="checkbox" checked={form.rera_approved} onChange={(e) => set("rera_approved", e.target.checked)} /> RERA Approved</label>
+
+        <Field label="Description"><textarea className="field-input min-h-[80px]" placeholder="Key highlights — road access, floor, facing, landmarks…" value={form.desc} onChange={(e) => set("desc", e.target.value)} /></Field>
+
+        <Field label="Your Contact Number">
+          <input className="field-input" type="tel" placeholder="+91 98XXX XXXXX" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+          <p className="text-xs text-ink/40 mt-1.5">Visible to admin only — never shown on the website</p>
+        </Field>
+
+        <Field label="Property Photos (up to 8)">
+          <input type="file" accept="image/*" multiple className="hidden" id="listing-images" onChange={(e) => pickImages(e.target.files)} />
+          <div className="flex flex-wrap gap-2.5">
+            {savedUrls.map((url, i) => (
+              <ImgThumb key={"s" + i} src={url} onRemove={() => setSavedUrls((u) => u.filter((_, idx) => idx !== i))} />
+            ))}
+            {pendingFiles.map((file, i) => (
+              <ImgThumb key={"p" + i} src={URL.createObjectURL(file)} onRemove={() => setPendingFiles((f) => f.filter((_, idx) => idx !== i))} />
+            ))}
+            {savedUrls.length + pendingFiles.length < 8 && (
+              <div onClick={() => document.getElementById("listing-images").click()} className="w-[72px] h-[72px] rounded-xl border border-dashed border-ink/15 flex items-center justify-center cursor-pointer text-ink/35">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
+              </div>
             )}
           </div>
+        </Field>
 
-          <div className="field-grid-2">
-            <div className="field">
-              <label className="fl">Latitude</label>
-              <input className="fi" type="number" step="any" placeholder="e.g. 26.8112" value={form.lat} onChange={(e) => set("lat", e.target.value)} />
-            </div>
-            <div className="field">
-              <label className="fl">Longitude</label>
-              <input className="fi" type="number" step="any" placeholder="e.g. 75.7832" value={form.lng} onChange={(e) => set("lng", e.target.value)} />
-            </div>
-          </div>
-          <div className="field">
-            <label className="fl">Highlights</label>
-            <input className="fi" placeholder="e.g. Ring Road Nearby, 100 Ft Road, Gated Colony" value={form.highlights} onChange={(e) => set("highlights", e.target.value)} />
-          </div>
-          <div className="field">
-            <label className="fl">Nearby Landmarks</label>
-            <input className="fi" placeholder="e.g. Ring Road - 4 min, Airport - 25 min" value={form.landmarks} onChange={(e) => set("landmarks", e.target.value)} />
-            <p style={{ marginTop: 6, fontSize: 11.5, color: "var(--muted-foreground)" }}>Format: Name - time or distance, separated by commas.</p>
-          </div>
+        {isAdmin && (
+          <label className="flex items-center gap-2 text-sm text-ink/70"><input type="checkbox" checked={form.verified} onChange={(e) => set("verified", e.target.checked)} /> Mark as PinkCity Verified™</label>
+        )}
 
-          {!isColony && (
-            <>
-              <div className="field-grid-2">
-                <div className="field">
-                  <label className="fl">Plot Size</label>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <input className="fi" type="number" placeholder="e.g. 200" value={form.plot_size} onChange={(e) => set("plot_size", e.target.value)} />
-                    <select className="fsel" style={{ flex: "0 0 auto", width: "auto", minWidth: 96 }} value={form.plot_size_unit} onChange={(e) => set("plot_size_unit", e.target.value)}>
-                      {PLOT_SIZE_UNITS.map((u) => (<option key={u} value={u}>{u}</option>))}
-                    </select>
-                  </div>
-                </div>
-                <div className="field">
-                  <label className="fl">Plot Dimensions</label>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <input className="fi" type="number" placeholder="Length" value={form.plot_length} onChange={(e) => set("plot_length", e.target.value)} />
-                    <span style={{ color: "var(--muted-foreground)", fontWeight: 600 }}>×</span>
-                    <input className="fi" type="number" placeholder="Width" value={form.plot_width} onChange={(e) => set("plot_width", e.target.value)} />
-                    <span style={{ color: "var(--muted-foreground)", fontSize: 13 }}>Ft</span>
-                  </div>
-                </div>
-              </div>
-              <div className="field-grid-2">
-                <div className="field">
-                  <label className="fl">Road Width</label>
-                  <select className="fsel" value={form.road_width} onChange={(e) => set("road_width", e.target.value)}>
-                    <option value="">Select</option>
-                    {ROAD_WIDTHS.map((r) => (<option key={r} value={r}>{r}</option>))}
-                  </select>
-                </div>
-                <div className="field">
-                  <label className="fl">Facing</label>
-                  <select className="fsel" value={form.facing} onChange={(e) => set("facing", e.target.value)}>
-                    <option value="">Select</option>
-                    {FACINGS.map((f) => (<option key={f} value={f}>{f}</option>))}
-                  </select>
-                </div>
-              </div>
-              <div className="field">
-                <label className="fl">Agreement Value</label>
-                <input className="fi" placeholder="e.g. ₹55 Lakh" value={form.agreement_value} onChange={(e) => set("agreement_value", e.target.value)} />
-              </div>
-              <div className="field-grid-2">
-                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5 }}>
-                  <input type="checkbox" checked={form.corner_plot} onChange={(e) => set("corner_plot", e.target.checked)} /> Corner Plot
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5 }}>
-                  <input type="checkbox" checked={form.park_facing} onChange={(e) => set("park_facing", e.target.checked)} /> Park Facing
-                </label>
-              </div>
-            </>
-          )}
-
-          {isColony && (
-            <>
-              <div className="field-grid-2">
-                <div className="field">
-                  <label className="fl">No. of Units</label>
-                  <input className="fi" type="number" placeholder="e.g. 120" value={form.no_of_units} onChange={(e) => set("no_of_units", e.target.value)} />
-                </div>
-                <div className="field">
-                  <label className="fl">Total Project Area</label>
-                  <input className="fi" placeholder="e.g. 25 Acres" value={form.total_project_area} onChange={(e) => set("total_project_area", e.target.value)} />
-                </div>
-              </div>
-              <div className="field">
-                <label className="fl">Internal Roads (select all that apply)</label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {COLONY_ROAD_WIDTHS.map((w) => (
-                    <label key={w} className={"pill " + (form.colony_road_type.includes(w) ? "pill-primary" : "pill-neutral")} style={{ cursor: "pointer" }}>
-                      <input type="checkbox" style={{ display: "none" }} checked={form.colony_road_type.includes(w)} onChange={() => toggleColonyRoad(w)} /> {w}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="field">
-                <label className="fl">Approach Road</label>
-                <select className="fsel" value={form.approach_road} onChange={(e) => set("approach_road", e.target.value)}>
-                  <option value="">Select</option>
-                  {APPROACH_ROADS.map((r) => (<option key={r} value={r}>{r}</option>))}
-                </select>
-              </div>
-              <div className="field">
-                <label className="fl">Amenities</label>
-                <input className="fi" placeholder="e.g. Clubhouse, Park, 24x7 Security" value={form.amenities} onChange={(e) => set("amenities", e.target.value)} />
-              </div>
-              <div className="field">
-                <label className="fl">Project Map (image URL)</label>
-                <input className="fi" placeholder="Paste a link to the layout/map image" value={form.project_map_url} onChange={(e) => set("project_map_url", e.target.value)} />
-              </div>
-            </>
-          )}
-
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, margin: "6px 0 14px" }}>
-            <input type="checkbox" checked={form.rera_approved} onChange={(e) => set("rera_approved", e.target.checked)} /> RERA Approved
-          </label>
-
-          <div className="field">
-            <label className="fl">Description</label>
-            <textarea className="fi" rows={3} placeholder="Key highlights — road access, floor, facing, landmarks…" value={form.desc} onChange={(e) => set("desc", e.target.value)} />
-          </div>
-
-          <div className="field">
-            <label className="fl">Your Contact Number</label>
-            <input className="fi" type="tel" placeholder="+91 98XXX XXXXX" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
-            <p style={{ marginTop: 6, fontSize: 11.5, color: "var(--muted-foreground)" }}>Visible to admin only — never shown on the website</p>
-          </div>
-
-          <div className="field">
-            <label className="fl">Property Photos (up to 8)</label>
-            <input type="file" accept="image/*" multiple style={{ display: "none" }} id="listing-images" onChange={(e) => pickImages(e.target.files)} />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-              {savedUrls.map((url, i) => (
-                <ImgThumb key={"s" + i} src={url} onRemove={() => setSavedUrls((u) => u.filter((_, idx) => idx !== i))} />
-              ))}
-              {pendingFiles.map((file, i) => (
-                <ImgThumb key={"p" + i} src={URL.createObjectURL(file)} onRemove={() => setPendingFiles((f) => f.filter((_, idx) => idx !== i))} />
-              ))}
-              {savedUrls.length + pendingFiles.length < 8 && (
-                <div
-                  onClick={() => document.getElementById("listing-images").click()}
-                  style={{ width: 72, height: 72, borderRadius: 12, border: "1.5px dashed var(--border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--muted-foreground)" }}
-                >
-                  <IconPlus size={18} />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {isAdmin && (
-            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, margin: "14px 0" }}>
-              <input type="checkbox" checked={form.verified} onChange={(e) => set("verified", e.target.checked)} /> Mark as PinkCity Verified™
-            </label>
-          )}
-
-          {err && <div className="form-err show" style={{ margin: "10px 0" }}>{err}</div>}
-          <button className="btn btn-primary" disabled={busy} type="submit" style={{ marginTop: 10 }}>
-            {busy ? "Saving…" : isEdit ? "Save changes" : "Submit for approval"}
-          </button>
-        </form>
-      </div>
-    </Modal>
+        {err && <p className="text-sm text-red-600">{err}</p>}
+        <Button disabled={busy} type="submit" className="w-full">{busy ? "Saving…" : isEdit ? "Save changes" : "Submit for approval"}</Button>
+      </form>
+    </Sheet>
   );
 }
 
 function ImgThumb({ src, onRemove }) {
   return (
-    <div style={{ position: "relative", width: 72, height: 72, borderRadius: 12, overflow: "hidden" }}>
-      <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-      <button
-        type="button"
-        onClick={onRemove}
-        style={{ position: "absolute", top: 2, right: 2, width: 20, height: 20, borderRadius: "50%", background: "rgba(0,0,0,0.6)", color: "white", border: "none", cursor: "pointer", fontSize: 12, lineHeight: 1 }}
-      >
-        ×
-      </button>
+    <div className="relative w-[72px] h-[72px] rounded-xl overflow-hidden">
+      <img src={src} alt="" className="w-full h-full object-cover" />
+      <button type="button" onClick={onRemove} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white text-xs leading-none">×</button>
     </div>
   );
 }

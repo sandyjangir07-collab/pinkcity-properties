@@ -4,13 +4,13 @@ import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { compressImageFile, fileToUploadableBuffer, formatDateTime, formatINR } from "../lib/utils";
 import { PROPERTY_IMAGES_BUCKET } from "../lib/constants";
-import { IconGallery, IconCamera, IconUser, IconUsers, IconTicket } from "../components/ui/Icons";
-import { Modal, ModalHero } from "../components/ui/Modal";
+import { Sheet, SheetHeader, Field } from "../components/ui/Sheet";
+import { Button } from "../components/ui/button";
 
 const STATUS_STYLE = {
-  available: { bg: "var(--status-available-bg)", border: "var(--status-available-border)", text: "var(--status-available-text)" },
-  token: { bg: "var(--status-token-bg)", border: "var(--status-token-border)", text: "var(--status-token-text)" },
-  sold: { bg: "var(--status-sold-bg)", border: "var(--status-sold-border)", text: "var(--status-sold-text)" },
+  available: "bg-emerald-50 border-emerald-200 text-emerald-700",
+  token: "bg-amber-50 border-amber-200 text-amber-700",
+  sold: "bg-red-50 border-red-200 text-red-700",
 };
 const STATUS_LABEL = { available: "Available", token: "Token Received", sold: "Sold" };
 
@@ -20,8 +20,8 @@ export default function Plots() {
   const [listings, setListings] = useState(null);
   const [selectedListingId, setSelectedListingId] = useState(null);
   const [units, setUnits] = useState([]);
-  const [submitTarget, setSubmitTarget] = useState(null); // { unitId, unitNumber }
-  const [reviewTarget, setReviewTarget] = useState(null); // unit id
+  const [submitTarget, setSubmitTarget] = useState(null);
+  const [reviewTarget, setReviewTarget] = useState(null);
 
   useEffect(() => {
     sb.from("colony_units")
@@ -50,80 +50,62 @@ export default function Plots() {
 
   if (listings === null) {
     return (
-      <div className="page">
-        <div className="center-loading">
-          <div className="spinner" />
-        </div>
+      <div className="max-w-3xl mx-auto px-5 py-20 flex justify-center">
+        <div className="w-6 h-6 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="page">
-      <div className="page-eyebrow">PinkCity Properties</div>
-      <h1 className="page-title">Plots &amp; Tokens</h1>
-      <p className="page-sub">
-        {isAdmin
-          ? "Tap a green plot to submit a token, or a yellow plot to review one."
-          : "Tap a green plot to submit a token for it."}
+    <div className="max-w-3xl mx-auto px-5 py-10">
+      <div className="text-xs font-medium tracking-widest2 uppercase text-stone-500 mb-3">PinkCity Properties</div>
+      <h1 className="font-display text-3xl text-ink mb-2">Plots &amp; Tokens</h1>
+      <p className="text-ink/50 text-sm mb-8">
+        {isAdmin ? "Tap a green plot to submit a token, or a yellow plot to review one." : "Tap a green plot to submit a token for it."}
       </p>
 
       {listings.length === 0 ? (
-        <div className="card empty-state">
-          <div className="empty-title">No plotted listings yet</div>
-          <p>Colony-style listings with individual plots will show up here.</p>
+        <div className="bg-white rounded-3xl text-center py-16 text-ink/40">
+          <div className="font-display text-lg text-ink mb-1">No plotted listings yet</div>
+          <p className="text-sm">Colony-style listings with individual plots will show up here.</p>
         </div>
       ) : (
         <>
-          <div className="field" style={{ maxWidth: 360 }}>
-            <label className="fl">Project</label>
-            <select className="fsel" value={selectedListingId || ""} onChange={(e) => setSelectedListingId(e.target.value)}>
+          <div className="max-w-xs mb-5">
+            <span className="block text-[10px] font-semibold tracking-wide uppercase text-ink/40 mb-1.5">Project</span>
+            <select className="field-input" value={selectedListingId || ""} onChange={(e) => setSelectedListingId(e.target.value)}>
               {listings.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.title} {l.area ? `— ${l.area}` : ""}
-                </option>
+                <option key={l.id} value={l.id}>{l.title} {l.area ? `— ${l.area}` : ""}</option>
               ))}
             </select>
           </div>
 
-          <div className="card">
-            <div className="plot-grid">
+          <div className="bg-white rounded-3xl p-5">
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2.5">
               {units.map((u) => {
-                const style = STATUS_STYLE[u.status] || { bg: "var(--secondary)", border: "var(--border)", text: "var(--foreground)" };
                 const tappable = (u.status === "available") || (isAdmin && u.status === "token");
                 return (
                   <div
                     key={u.id}
-                    className={"plot-box" + (tappable ? " tappable" : "")}
-                    style={{ border: `1px solid ${style.border}`, background: style.bg }}
-                    title={STATUS_LABEL[u.status] || u.status}
                     onClick={() => {
                       if (!tappable) return;
                       if (u.status === "available") setSubmitTarget({ unitId: u.id, unitNumber: u.unit_number });
                       else setReviewTarget(u.id);
                     }}
+                    title={STATUS_LABEL[u.status] || u.status}
+                    className={`rounded-xl border p-2.5 text-center ${STATUS_STYLE[u.status] || "bg-stone-50 border-ink/10 text-ink"} ${tappable ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
                   >
-                    <div className="plot-box-num" style={{ color: style.text }}>
-                      {u.unit_number || "—"}
-                    </div>
-                    {u.unit_size && (
-                      <div className="plot-box-size" style={{ color: style.text }}>
-                        {u.unit_size}
-                      </div>
-                    )}
-                    {tappable && (
-                      <div className="plot-box-tap" style={{ color: style.text }}>
-                        {u.status === "available" ? "Tap to submit" : "Tap to review"}
-                      </div>
-                    )}
+                    <div className="text-xs font-bold">{u.unit_number || "—"}</div>
+                    {u.unit_size && <div className="text-[10px] opacity-75 mt-0.5">{u.unit_size}</div>}
+                    {tappable && <div className="text-[9px] font-semibold mt-1 opacity-80">{u.status === "available" ? "Tap to submit" : "Tap to review"}</div>}
                   </div>
                 );
               })}
             </div>
             {units.length === 0 && (
-              <div className="empty-state">
-                <div className="empty-title">No plots yet</div>
-                <p>This project has no individual plots configured.</p>
+              <div className="text-center py-16 text-ink/40">
+                <div className="font-display text-lg text-ink mb-1">No plots yet</div>
+                <p className="text-sm">This project has no individual plots configured.</p>
               </div>
             )}
           </div>
@@ -217,109 +199,64 @@ function SubmitTokenModal({ target, onClose, profile, onSubmitted }) {
   }
 
   return (
-    <Modal open={!!target} onClose={onClose}>
-      <div className="modal-hero">
-        <div
-          style={{
-            width: 80,
-            height: 80,
-            margin: "0 auto",
-            borderRadius: 26,
-            background: "var(--primary)",
-            boxShadow: "0 10px 24px -8px rgba(157,29,76,0.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <img src="/logo-mark.png" alt="" width={48} height={48} style={{ objectFit: "contain" }} onError={(e) => (e.currentTarget.style.display = "none")} />
+    <Sheet open={!!target} onClose={onClose} maxWidth="max-w-md">
+      <div className="text-center mb-5">
+        <div className="w-20 h-20 mx-auto rounded-[26px] bg-stone-600 shadow-[0_10px_24px_-8px_rgba(196,56,104,0.45)] flex items-center justify-center">
+          <img src="/logo.png" alt="" width={44} height={44} className="object-contain" onError={(e) => (e.currentTarget.style.display = "none")} />
         </div>
-        <div style={{ marginTop: 14, fontSize: 11, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in oklab, var(--primary) 80%, transparent)" }}>
-          PinkCity Properties
-        </div>
-        <div className="modal-title" style={{ marginTop: 6 }}>Token Submission</div>
-        <div className="modal-sub">Share the Client &amp; Associate Name and Payment Proof</div>
+        <div className="mt-3.5 text-[11px] font-semibold tracking-widest2 uppercase text-stone-500">PinkCity Properties</div>
+        <div className="font-display text-2xl text-ink mt-1.5">Token Submission</div>
+        <div className="text-sm text-ink/50 mt-1">Share the Client &amp; Associate Name and Payment Proof</div>
       </div>
-      <div style={{ padding: "18px 22px 0" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1px solid rgba(74,222,128,0.25)", background: "rgba(74,222,128,0.12)", borderRadius: 999, padding: "10px 16px" }}>
-          <span style={{ fontSize: 12, fontWeight: 500, color: "#166534" }}>Encrypted &amp; Verified by PinkCity</span>
-        </div>
+
+      <div className="flex items-center justify-center gap-2 border border-emerald-200 bg-emerald-50 rounded-full py-2.5 px-4 mb-5">
+        <span className="text-xs font-medium text-emerald-800">Encrypted &amp; Verified by PinkCity</span>
       </div>
-      <div className="modal-divider" />
-      <div className="modal-body">
-        <div className="field">
-          <label className="fl" style={{ display: "flex", alignItems: "center", gap: 7, textTransform: "none", fontSize: 13, fontWeight: 600, color: "var(--foreground)" }}>
-            <IconUser size={15} stroke="var(--primary)" /> Client Name
-          </label>
-          <input className="fi" placeholder="e.g. Rohit Agarwal" value={clientName} onChange={(e) => setClientName(e.target.value)} />
-        </div>
-        <div className="field">
-          <label className="fl" style={{ display: "flex", alignItems: "center", gap: 7, textTransform: "none", fontSize: 13, fontWeight: 600, color: "var(--foreground)" }}>
-            <IconUsers size={15} stroke="var(--primary)" /> Associate Name
-          </label>
-          <input className="fi" placeholder="e.g. Meenal Sharma" value={associateName} onChange={(e) => setAssociateName(e.target.value)} />
-          <p style={{ marginTop: 6, fontSize: 11.5, color: "var(--muted-foreground)" }}>PinkCity associate handling this deal</p>
-        </div>
-        <div className="field">
-          <label className="fl" style={{ display: "flex", alignItems: "center", gap: 7, textTransform: "none", fontSize: 13, fontWeight: 600, color: "var(--foreground)" }}>
-            Payment Screenshot
-          </label>
-          <input
-            id="plot-photo-input"
-            type="file"
-            accept="image/*"
-            style={{ display: "none" }}
-            onChange={(e) => pickPhoto(e.target.files[0])}
-          />
-          <input
-            id="plot-photo-camera-input"
-            type="file"
-            accept="image/*"
-            capture="environment"
-            style={{ display: "none" }}
-            onChange={(e) => pickPhoto(e.target.files[0])}
-          />
-          <div className="photo-drop" onClick={() => document.getElementById("plot-photo-input").click()}>
+
+      <div className="space-y-4">
+        <Field label={<span className="normal-case text-sm font-semibold text-ink flex items-center gap-1.5">👤 Client Name</span>}>
+          <input className="field-input" placeholder="e.g. Rohit Agarwal" value={clientName} onChange={(e) => setClientName(e.target.value)} />
+        </Field>
+        <Field label={<span className="normal-case text-sm font-semibold text-ink flex items-center gap-1.5">👥 Associate Name</span>}>
+          <input className="field-input" placeholder="e.g. Meenal Sharma" value={associateName} onChange={(e) => setAssociateName(e.target.value)} />
+          <p className="text-xs text-ink/40 mt-1.5">PinkCity associate handling this deal</p>
+        </Field>
+        <Field label="Payment Screenshot">
+          <input id="plot-photo-input" type="file" accept="image/*" className="hidden" onChange={(e) => pickPhoto(e.target.files[0])} />
+          <input id="plot-photo-camera-input" type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => pickPhoto(e.target.files[0])} />
+          <div onClick={() => document.getElementById("plot-photo-input").click()} className="relative rounded-2xl border border-dashed border-stone-300 bg-stone-50/60 overflow-hidden flex flex-col items-center justify-center gap-1.5 py-8 cursor-pointer">
             {photoPreview ? (
-              <img src={photoPreview} alt="" />
+              <img src={photoPreview} alt="" className="absolute inset-0 w-full h-full object-cover" />
             ) : (
               <>
-                <span className="photo-drop-icon">
-                  <IconGallery size={20} stroke="var(--primary)" />
+                <span className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C43868" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21,15 16,10 5,21" /></svg>
                 </span>
-                <span style={{ fontSize: 14, fontWeight: 600 }}>Add a photo</span>
-                <span style={{ fontSize: 12, color: "var(--muted-foreground)" }}>Upload from gallery</span>
+                <span className="text-sm font-semibold text-ink">Add a photo</span>
+                <span className="text-xs text-ink/40">Upload from gallery</span>
               </>
             )}
           </div>
-          <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <button type="button" className="btn btn-secondary" style={{ fontSize: 13 }} onClick={() => document.getElementById("plot-photo-input").click()}>
-              <IconGallery size={15} stroke="var(--primary)" /> Gallery
-            </button>
-            <button type="button" className="btn btn-secondary" style={{ fontSize: 13 }} onClick={() => document.getElementById("plot-photo-camera-input").click()}>
-              <IconCamera size={15} stroke="var(--primary)" /> Camera
-            </button>
+          <div className="grid grid-cols-2 gap-2.5 mt-2.5">
+            <button type="button" onClick={() => document.getElementById("plot-photo-input").click()} className="text-sm font-medium text-ink/70 border border-ink/10 rounded-full py-2.5">🖼️ Gallery</button>
+            <button type="button" onClick={() => document.getElementById("plot-photo-camera-input").click()} className="text-sm font-medium text-ink/70 border border-ink/10 rounded-full py-2.5">📷 Camera</button>
           </div>
-          <p style={{ marginTop: 8, fontSize: 11.5, color: "var(--muted-foreground)" }}>JPG or PNG, clearly showing UTR / transaction ID</p>
-        </div>
-        {err && <div className="form-err show">{err}</div>}
+          <p className="text-xs text-ink/40 mt-2">JPG or PNG, clearly showing UTR / transaction ID</p>
+        </Field>
+        {err && <p className="text-sm text-red-600">{err}</p>}
       </div>
-      <p style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, margin: "16px 22px 0", fontSize: 11, color: "var(--muted-foreground)" }}>
-        Details are shared only with PinkCity's verification desk
-      </p>
-      <div style={{ padding: "20px 22px 4px" }}>
-        <button className="btn btn-primary" disabled={!ready || busy} onClick={submit}>
-          {busy ? "Submitting…" : "Submit Token"}
-        </button>
-      </div>
-    </Modal>
+
+      <p className="text-center text-xs text-ink/35 mt-4">Details are shared only with PinkCity&apos;s verification desk</p>
+
+      <Button disabled={!ready || busy} onClick={submit} className="w-full mt-4">{busy ? "Submitting…" : "Submit Token"}</Button>
+    </Sheet>
   );
 }
 
 export function ReviewTokenModal({ unitId, onClose, profile, onDecided }) {
   const [submission, setSubmission] = useState(null);
   const [employees, setEmployees] = useState([]);
-  const [mode, setMode] = useState(null); // "approve" | "reject" | null
+  const [mode, setMode] = useState(null);
   const [saleAmount, setSaleAmount] = useState("");
   const [associateId, setAssociateId] = useState("");
   const [rejectReason, setRejectReason] = useState("");
@@ -383,86 +320,61 @@ export function ReviewTokenModal({ unitId, onClose, profile, onDecided }) {
   }
 
   return (
-    <Modal open={!!unitId} onClose={onClose}>
-      <ModalHero icon={<IconTicket size={22} stroke="var(--primary)" />} title="Review Token" sub="Check the photo and buyer details, then approve or reject." />
-      <div className="modal-divider" />
-      <div className="modal-body">
-        {!submission ? (
-          <div className="empty-state">
-            <p>That submission is no longer pending.</p>
+    <Sheet open={!!unitId} onClose={onClose} maxWidth="max-w-md">
+      <SheetHeader title="Review Token" sub="Check the photo and buyer details, then approve or reject." />
+      {!submission ? (
+        <div className="text-center py-8 text-ink/40">
+          <p>That submission is no longer pending.</p>
+        </div>
+      ) : (
+        <>
+          <img
+            src={submission.photo_url}
+            alt=""
+            onClick={() => window.open(submission.photo_url, "_blank")}
+            className="w-full rounded-2xl max-h-80 object-cover cursor-zoom-in"
+          />
+          <div className="flex flex-col gap-1.5 text-sm mt-3.5">
+            <div><strong>Client:</strong> {submission.buyer_name || "—"}{submission.buyer_phone ? ` · ${submission.buyer_phone}` : ""}</div>
+            {submission.associate_name && <div><strong>Associate:</strong> {submission.associate_name}</div>}
+            {submission.token_amount && <div><strong>Token amount:</strong> {formatINR(submission.token_amount)}</div>}
+            <div><strong>Submitted by:</strong> {submission.submitted_by_name || "—"} · {formatDateTime(submission.submitted_at)}</div>
+            {submission.notes && <div><strong>Notes:</strong> {submission.notes}</div>}
           </div>
-        ) : (
-          <>
-            <img
-              src={submission.photo_url}
-              alt=""
-              style={{ width: "100%", borderRadius: 14, maxHeight: 320, objectFit: "cover", cursor: "zoom-in" }}
-              onClick={() => window.open(submission.photo_url, "_blank")}
-            />
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 14, marginTop: 14 }}>
-              <div>
-                <strong>Client:</strong> {submission.buyer_name || "—"}
-                {submission.buyer_phone ? ` · ${submission.buyer_phone}` : ""}
-              </div>
-              {submission.associate_name && (
-                <div>
-                  <strong>Associate:</strong> {submission.associate_name}
-                </div>
-              )}
-              {submission.token_amount && (
-                <div>
-                  <strong>Token amount:</strong> {formatINR(submission.token_amount)}
-                </div>
-              )}
-              <div>
-                <strong>Submitted by:</strong> {submission.submitted_by_name || "—"} · {formatDateTime(submission.submitted_at)}
-              </div>
-              {submission.notes && (
-                <div>
-                  <strong>Notes:</strong> {submission.notes}
-                </div>
-              )}
-            </div>
 
-            {err && <div className="form-err show" style={{ marginTop: 10 }}>{err}</div>}
+          {err && <p className="text-sm text-red-600 mt-2.5">{err}</p>}
 
-            {mode === "approve" && (
-              <div style={{ marginTop: 14 }}>
-                <label className="fl">Sale Amount (₹) *</label>
-                <input className="fi" type="number" placeholder="e.g. 4500000" value={saleAmount} onChange={(e) => setSaleAmount(e.target.value)} />
-                <label className="fl" style={{ marginTop: 12 }}>Associate credited for this deal</label>
-                <select className="fsel" value={associateId} onChange={(e) => setAssociateId(e.target.value)}>
+          {mode === "approve" && (
+            <div className="mt-3.5 space-y-3">
+              <Field label="Sale Amount (₹) *"><input className="field-input" type="number" placeholder="e.g. 4500000" value={saleAmount} onChange={(e) => setSaleAmount(e.target.value)} /></Field>
+              <Field label="Associate credited for this deal">
+                <select className="field-input" value={associateId} onChange={(e) => setAssociateId(e.target.value)}>
                   <option value="">— None —</option>
-                  {employees.map((e) => (
-                    <option key={e.id} value={e.id}>{e.full_name}</option>
-                  ))}
+                  {employees.map((e) => (<option key={e.id} value={e.id}>{e.full_name}</option>))}
                 </select>
-                <button className="btn-approve" style={{ width: "100%", marginTop: 10 }} disabled={busy} onClick={() => decide(true)}>
-                  Confirm Approve
-                </button>
-              </div>
-            )}
-            {mode === "reject" && (
-              <div style={{ marginTop: 14 }}>
-                <label className="fl">Reason for rejection</label>
-                <textarea className="fi" style={{ minHeight: 72 }} placeholder="Let the team member know why" value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
-                <button className="btn-reject" style={{ width: "100%", marginTop: 10 }} disabled={busy} onClick={() => decide(false)}>
-                  Confirm Reject
-                </button>
-              </div>
-            )}
-            {!mode && (
-              <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-                <button className="btn-approve" onClick={() => setMode("approve")}>✓ Approve</button>
-                <button className="btn-reject" onClick={() => setMode("reject")}>✕ Reject</button>
-              </div>
-            )}
-            <button className="btn btn-secondary" style={{ width: "100%", marginTop: 14 }} onClick={onClose}>
-              Close
-            </button>
-          </>
-        )}
-      </div>
-    </Modal>
+              </Field>
+              <button disabled={busy} onClick={() => decide(true)} className="w-full text-sm font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full py-3 disabled:opacity-50">
+                Confirm Approve
+              </button>
+            </div>
+          )}
+          {mode === "reject" && (
+            <div className="mt-3.5 space-y-3">
+              <Field label="Reason for rejection"><textarea className="field-input min-h-[72px]" placeholder="Let the team member know why" value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} /></Field>
+              <button disabled={busy} onClick={() => decide(false)} className="w-full text-sm font-semibold text-red-600 bg-red-50 border border-red-200 rounded-full py-3 disabled:opacity-50">
+                Confirm Reject
+              </button>
+            </div>
+          )}
+          {!mode && (
+            <div className="flex gap-2.5 mt-3.5">
+              <button onClick={() => setMode("approve")} className="flex-1 text-sm font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full py-3">✓ Approve</button>
+              <button onClick={() => setMode("reject")} className="flex-1 text-sm font-semibold text-red-600 bg-red-50 border border-red-200 rounded-full py-3">✕ Reject</button>
+            </div>
+          )}
+          <button onClick={onClose} className="w-full text-sm font-medium text-ink/60 border border-ink/10 rounded-full py-3 mt-3.5">Close</button>
+        </>
+      )}
+    </Sheet>
   );
 }

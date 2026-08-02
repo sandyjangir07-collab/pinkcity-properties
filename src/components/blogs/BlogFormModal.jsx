@@ -3,7 +3,7 @@ import { sb } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
 import { CATEGORIES } from "../../lib/blogConstants";
-import { Modal, ModalHero } from "../ui/Modal";
+import { Sheet, SheetHeader, Field } from "../ui/Sheet";
 
 const emptyForm = {
   title: "",
@@ -159,103 +159,69 @@ export default function BlogFormModal({ target, onClose, onSaved }) {
   }
 
   return (
-    <Modal open={!!target} onClose={onClose}>
-      <ModalHero title={isEdit ? "Edit Post" : "New Blog Post"} />
-      <div className="modal-body">
-        <div className="field">
-          <label className="fl">Title *</label>
-          <input className="fi" value={form.title} onChange={(e) => handleTitleChange(e.target.value)} />
-        </div>
-        <div className="field">
-          <label className="fl">Slug *</label>
-          <input className="fi" value={form.slug} onChange={(e) => set("slug", e.target.value)} />
-        </div>
-        <div className="field-grid-2">
-          <div className="field">
-            <label className="fl">Category</label>
-            <select className="fsel" value={form.category} onChange={(e) => set("category", e.target.value)}>
+    <Sheet open={!!target} onClose={onClose} maxWidth="max-w-lg">
+      <SheetHeader title={isEdit ? "Edit Post" : "New Blog Post"} />
+      <div className="space-y-4">
+        <Field label="Title *"><input className="field-input" value={form.title} onChange={(e) => handleTitleChange(e.target.value)} /></Field>
+        <Field label="Slug *"><input className="field-input" value={form.slug} onChange={(e) => set("slug", e.target.value)} /></Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Category">
+            <select className="field-input" value={form.category} onChange={(e) => set("category", e.target.value)}>
               {CATEGORIES.map((c) => (<option key={c} value={c}>{c}</option>))}
             </select>
-          </div>
-          <div className="field">
-            <label className="fl">Read Time (mins)</label>
-            <input className="fi" type="number" value={form.readTime} onChange={(e) => set("readTime", e.target.value)} />
-          </div>
+          </Field>
+          <Field label="Read Time (mins)"><input className="field-input" type="number" value={form.readTime} onChange={(e) => set("readTime", e.target.value)} /></Field>
         </div>
-        <div className="field">
-          <label className="fl">Excerpt</label>
-          <textarea className="fi" rows={2} value={form.excerpt} onChange={(e) => set("excerpt", e.target.value)} />
-        </div>
+        <Field label="Excerpt"><textarea className="field-input min-h-[60px]" value={form.excerpt} onChange={(e) => set("excerpt", e.target.value)} /></Field>
 
-        <div className="field">
-          <label className="fl">Content *</label>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+        <Field label="Content *">
+          <div className="flex gap-1.5 flex-wrap mb-2">
             {[
               ["h2", "H2"], ["h3", "H3"], ["b", "B"], ["i", "I"], ["ul", "List"],
               ["link", "Link"], ["quote", "Quote"], ["img", "Image"], ["p", "¶"],
             ].map(([tag, label]) => (
-              <button key={tag} type="button" className="btn btn-secondary" style={{ width: "auto", padding: "5px 10px", fontSize: 11.5 }} onClick={() => insertFormat(tag)}>
+              <button key={tag} type="button" onClick={() => insertFormat(tag)} className="text-xs font-medium text-ink/60 border border-ink/10 rounded-lg px-2.5 py-1">
                 {label}
               </button>
             ))}
           </div>
           <textarea
             ref={contentRef}
-            className="fi"
-            rows={10}
-            style={{ fontFamily: "monospace", fontSize: 13 }}
+            className="field-input min-h-[220px] font-mono text-xs"
             value={form.content}
             onChange={(e) => set("content", e.target.value)}
             placeholder="Write in HTML — use the buttons above to insert tags around your selection."
           />
-        </div>
+        </Field>
 
-        <div className="divider" />
-        <div className="hierarchy-group-label" style={{ margin: "0 0 8px" }}>SEO</div>
-        <div className="field">
-          <label className="fl">SEO Title</label>
-          <input className="fi" value={form.seoTitle} onChange={(e) => set("seoTitle", e.target.value)} />
+        <div className="h-px bg-ink/[0.06]" />
+        <div className="text-[10px] font-semibold tracking-wide uppercase text-ink/35">SEO</div>
+        <Field label="SEO Title"><input className="field-input" value={form.seoTitle} onChange={(e) => set("seoTitle", e.target.value)} /></Field>
+        <Field label="SEO Description"><textarea className="field-input min-h-[60px]" value={form.seoDesc} onChange={(e) => set("seoDesc", e.target.value)} /></Field>
+        <Field label="Tags (comma-separated)"><input className="field-input" value={form.tags} onChange={(e) => set("tags", e.target.value)} /></Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Author"><input className="field-input" value={form.author} onChange={(e) => set("author", e.target.value)} /></Field>
+          <Field label="Cover Image URL"><input className="field-input" value={form.cover} onChange={(e) => set("cover", e.target.value)} /></Field>
         </div>
-        <div className="field">
-          <label className="fl">SEO Description</label>
-          <textarea className="fi" rows={2} value={form.seoDesc} onChange={(e) => set("seoDesc", e.target.value)} />
-        </div>
-        <div className="field">
-          <label className="fl">Tags (comma-separated)</label>
-          <input className="fi" value={form.tags} onChange={(e) => set("tags", e.target.value)} />
-        </div>
-        <div className="field-grid-2">
-          <div className="field">
-            <label className="fl">Author</label>
-            <input className="fi" value={form.author} onChange={(e) => set("author", e.target.value)} />
-          </div>
-          <div className="field">
-            <label className="fl">Cover Image URL</label>
-            <input className="fi" value={form.cover} onChange={(e) => set("cover", e.target.value)} />
-          </div>
-        </div>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, margin: "6px 0 14px" }}>
-          <input type="checkbox" checked={form.featured} onChange={(e) => set("featured", e.target.checked)} /> ⭐ Featured
-        </label>
+        <label className="flex items-center gap-2 text-sm text-ink/70"><input type="checkbox" checked={form.featured} onChange={(e) => set("featured", e.target.checked)} /> ⭐ Featured</label>
 
-        <div className="field">
-          <label className="fl">Status</label>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button type="button" className={"status-pill" + (status === "draft" ? " active" : "")} onClick={() => setStatus("draft")}>Draft</button>
-            <button type="button" className={"status-pill" + (status === "published" ? " active" : "")} onClick={() => setStatus("published")}>Published</button>
+        <Field label="Status">
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setStatus("draft")} className={`text-xs font-medium px-3 py-1.5 rounded-full border ${status === "draft" ? "bg-stone-600 text-sand border-stone-600" : "border-ink/10 text-ink/60"}`}>Draft</button>
+            <button type="button" onClick={() => setStatus("published")} className={`text-xs font-medium px-3 py-1.5 rounded-full border ${status === "published" ? "bg-stone-600 text-sand border-stone-600" : "border-ink/10 text-ink/60"}`}>Published</button>
           </div>
-        </div>
+        </Field>
 
-        {err && <div className="form-err show" style={{ margin: "10px 0" }}>{err}</div>}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
-          <button className="btn btn-secondary" disabled={busy} onClick={() => submit(false)}>
+        {err && <p className="text-sm text-red-600">{err}</p>}
+        <div className="grid grid-cols-2 gap-3">
+          <button disabled={busy} onClick={() => submit(false)} className="text-sm font-medium text-ink/70 border border-ink/10 rounded-full py-3 disabled:opacity-50">
             {busy ? "Saving…" : "Save Draft"}
           </button>
-          <button className="btn btn-primary" disabled={busy} onClick={() => submit(true)}>
+          <button disabled={busy} onClick={() => submit(true)} className="text-sm font-medium text-sand bg-stone-600 rounded-full py-3 disabled:opacity-50">
             {busy ? "Saving…" : "Publish"}
           </button>
         </div>
       </div>
-    </Modal>
+    </Sheet>
   );
 }

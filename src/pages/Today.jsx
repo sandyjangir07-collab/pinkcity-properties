@@ -4,6 +4,8 @@ import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { STATUS_LABELS, waNumberFor, timeAgo } from "../lib/leadConstants";
 import { todayStr, fmtTime, fmtHours, getLocation } from "../lib/attendance";
+import { Card, SectionTitle, Pill } from "../components/ui/primitives";
+import { Button } from "../components/ui/button";
 import LeadFormModal from "../components/leads/LeadFormModal";
 import LeadDetailModal from "../components/leads/LeadDetailModal";
 import ScheduleVisitModal from "../components/leads/ScheduleVisitModal";
@@ -18,7 +20,7 @@ export default function Today() {
   const [visits, setVisits] = useState([]);
   const [tokens, setTokens] = useState([]);
   const [listingTitles, setListingTitles] = useState({});
-  const [attendance, setAttendance] = useState(undefined); // undefined = loading
+  const [attendance, setAttendance] = useState(undefined);
   const [attendanceBusy, setAttendanceBusy] = useState(false);
 
   const [formTarget, setFormTarget] = useState(null);
@@ -130,70 +132,74 @@ export default function Today() {
   const attendanceDone = !!(attendance && attendance.check_out_at);
 
   return (
-    <div className="page">
-      <div className="page-eyebrow">PinkCity Properties</div>
-      <h1 className="page-title">Today</h1>
-      <p className="page-sub">Your follow-ups, visits, and attendance for {new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.</p>
+    <div className="max-w-2xl mx-auto px-5 py-10">
+      <div className="text-xs font-medium tracking-widest2 uppercase text-stone-500 mb-3">PinkCity Properties</div>
+      <h1 className="font-display text-3xl text-ink mb-2">Today</h1>
+      <p className="text-ink/50 text-sm mb-8">
+        Your follow-ups, visits, and attendance for {new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.
+      </p>
 
-      <div className="card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <div className="section-title" style={{ margin: 0, fontSize: 16 }}>Attendance</div>
-          <div style={{ fontSize: 13, color: "var(--muted-foreground)", marginTop: 4 }}>{attendanceStatus}</div>
-        </div>
-        <button className="btn btn-primary" style={{ width: "auto" }} disabled={attendanceBusy || attendanceDone || attendance === undefined} onClick={handleAttendanceAction}>
-          {attendanceBusy ? "Getting location…" : attendanceBtnLabel}
-        </button>
-      </div>
+      <div className="space-y-4">
+        <Card className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <div className="font-display text-base text-ink">Attendance</div>
+            <div className="text-sm text-ink/50 mt-1">{attendanceStatus}</div>
+          </div>
+          <Button size="sm" disabled={attendanceBusy || attendanceDone || attendance === undefined} onClick={handleAttendanceAction}>
+            {attendanceBusy ? "Getting location…" : attendanceBtnLabel}
+          </Button>
+        </Card>
 
-      {isAdmin && (
-        <div className="card">
-          <h2 className="section-title">Pending Token Reviews</h2>
-          {tokens.length === 0 ? (
-            <div style={{ fontSize: 13, color: "var(--muted-foreground)" }}>No token submissions waiting on you.</div>
+        {isAdmin && (
+          <Card>
+            <SectionTitle>Pending Token Reviews</SectionTitle>
+            {tokens.length === 0 ? (
+              <div className="text-sm text-ink/40">No token submissions waiting on you.</div>
+            ) : (
+              <div className="space-y-2">
+                {tokens.map((t) => {
+                  const unitLabel = t.colony_units?.unit_number ? `Plot ${t.colony_units.unit_number}` : "Plot";
+                  const listingTitle = listingTitles[t.listing_id] || "";
+                  return (
+                    <div key={t.id} onClick={() => setReviewUnitId(t.unit_id)} className="bg-stone-50/60 rounded-2xl p-3.5 flex gap-3 cursor-pointer">
+                      <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-sm shrink-0">🔑</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-ink">{unitLabel}{listingTitle ? ` · ${listingTitle}` : ""}</div>
+                        <div className="text-xs text-ink/45">{t.buyer_name || "—"}{t.associate_name ? ` · ${t.associate_name}` : ""}</div>
+                        <div className="text-[11px] text-ink/35 mt-1">Submitted {timeAgo(t.submitted_at)}</div>
+                      </div>
+                      <Pill tone="stone">🔍 Review</Pill>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+        )}
+
+        <Card>
+          <SectionTitle>Follow-ups Due</SectionTitle>
+          {followups === null ? (
+            <div className="flex justify-center py-8"><div className="w-5 h-5 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" /></div>
+          ) : followups.length === 0 ? (
+            <div className="text-sm text-ink/40">Nothing due today. You&apos;re all caught up.</div>
           ) : (
-            tokens.map((t) => {
-              const unitLabel = t.colony_units?.unit_number ? `Plot ${t.colony_units.unit_number}` : "Plot";
-              const listingTitle = listingTitles[t.listing_id] || "";
-              return (
-                <div key={t.id} className="lead-card" onClick={() => setReviewUnitId(t.unit_id)}>
-                  <div className="lead-av">🔑</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="lead-name">
-                      {unitLabel}
-                      {listingTitle ? ` · ${listingTitle}` : ""}
-                    </div>
-                    <div className="lead-meta">
-                      {t.buyer_name || "—"}
-                      {t.associate_name ? ` · ${t.associate_name}` : ""}
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--muted-foreground)", marginTop: 5 }}>Submitted {timeAgo(t.submitted_at)}</div>
-                  </div>
-                  <span className="pill pill-primary">🔍 Review</span>
-                </div>
-              );
-            })
+            <div className="space-y-2">
+              {followups.map((l) => <FollowupCard key={l.id} lead={l} onOpen={() => setDetailLeadId(l.id)} />)}
+            </div>
           )}
-        </div>
-      )}
+        </Card>
 
-      <div className="card">
-        <h2 className="section-title">Follow-ups Due</h2>
-        {followups === null ? (
-          <div className="center-loading"><div className="spinner" /></div>
-        ) : followups.length === 0 ? (
-          <div style={{ fontSize: 13, color: "var(--muted-foreground)" }}>Nothing due today. You're all caught up.</div>
-        ) : (
-          followups.map((l) => <FollowupCard key={l.id} lead={l} onOpen={() => setDetailLeadId(l.id)} />)
-        )}
-      </div>
-
-      <div className="card">
-        <h2 className="section-title">Visits Today</h2>
-        {visits.length === 0 ? (
-          <div style={{ fontSize: 13, color: "var(--muted-foreground)" }}>No visits scheduled for today.</div>
-        ) : (
-          visits.map((v) => <VisitCard key={v.id} visit={v} />)
-        )}
+        <Card>
+          <SectionTitle>Visits Today</SectionTitle>
+          {visits.length === 0 ? (
+            <div className="text-sm text-ink/40">No visits scheduled for today.</div>
+          ) : (
+            <div className="space-y-2">
+              {visits.map((v) => <VisitCard key={v.id} visit={v} />)}
+            </div>
+          )}
+        </Card>
       </div>
 
       <LeadFormModal target={formTarget} onClose={() => setFormTarget(null)} onSaved={() => { setFormTarget(null); refreshAll(); }} />
@@ -225,29 +231,22 @@ function FollowupCard({ lead: l, onOpen }) {
   const isOverdue = l.follow_up_date < todayStr();
 
   return (
-    <div className="lead-card" onClick={onOpen}>
-      <div className="lead-av">{initials}</div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div className="lead-name">
-          {l.name} <span style={{ fontSize: 11, fontWeight: 500, color: "var(--muted-foreground)" }}>PC{l.lead_number}</span>
-        </div>
-        <div className="lead-meta">
-          {l.phone}
-          {l.preferred_location ? ` · ${l.preferred_location}` : ""}
-        </div>
-        <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap", alignItems: "center" }}>
-          <span className="badge">{STATUS_LABELS[l.status] || l.status}</span>
+    <div onClick={onOpen} className="bg-stone-50/60 rounded-2xl p-3.5 flex gap-3 cursor-pointer">
+      <div className="w-9 h-9 rounded-full bg-white text-stone-600 flex items-center justify-center text-xs font-medium shrink-0">{initials}</div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium text-ink">{l.name} <span className="text-xs font-medium text-ink/35">PC{l.lead_number}</span></div>
+        <div className="text-xs text-ink/45">{l.phone}{l.preferred_location ? ` · ${l.preferred_location}` : ""}</div>
+        <div className="flex flex-wrap gap-1.5 mt-1.5">
+          <Pill tone="stone">{STATUS_LABELS[l.status] || l.status}</Pill>
           {isOverdue && (
-            <span className="badge badge-duplicate">
-              ⏰ Overdue since {new Date(l.follow_up_date + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-            </span>
+            <Pill tone="red">⏰ Overdue since {new Date(l.follow_up_date + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</Pill>
           )}
         </div>
-        <div style={{ fontSize: 11, color: "var(--muted-foreground)", marginTop: 5 }}>Last contacted: {timeAgo(l.updated_at || l.created_at)}</div>
+        <div className="text-[11px] text-ink/35 mt-1.5">Last contacted: {timeAgo(l.updated_at || l.created_at)}</div>
       </div>
-      <div className="lead-actions" onClick={(e) => e.stopPropagation()}>
-        <a className="lead-icon-btn" href={`tel:${l.phone}`} data-lead-id={l.id} data-lead-name={l.name || ""} title="Call">📞</a>
-        <a className="lead-icon-btn" href={`https://wa.me/${waNum}`} target="_blank" rel="noreferrer" title="WhatsApp">💬</a>
+      <div className="flex gap-1.5 items-start" onClick={(e) => e.stopPropagation()}>
+        <a href={`tel:${l.phone}`} data-lead-id={l.id} data-lead-name={l.name || ""} className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-sm" title="Call">📞</a>
+        <a href={`https://wa.me/${waNum}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-sm" title="WhatsApp">💬</a>
       </div>
     </div>
   );
@@ -257,18 +256,15 @@ function VisitCard({ visit: v }) {
   const initials = (v.client_name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   const waNum = waNumberFor(v.client_phone);
   return (
-    <div className="lead-card">
-      <div className="lead-av">{initials}</div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div className="lead-name">{v.client_name}</div>
-        <div className="lead-meta">
-          {v.listing_title || ""}
-          {v.visit_time ? ` · ${v.visit_time}` : ""}
-        </div>
+    <div className="bg-stone-50/60 rounded-2xl p-3.5 flex gap-3">
+      <div className="w-9 h-9 rounded-full bg-white text-stone-600 flex items-center justify-center text-xs font-medium shrink-0">{initials}</div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium text-ink">{v.client_name}</div>
+        <div className="text-xs text-ink/45">{v.listing_title || ""}{v.visit_time ? ` · ${v.visit_time}` : ""}</div>
       </div>
-      <div className="lead-actions">
-        <a className="lead-icon-btn" href={`tel:${v.client_phone}`} title="Call">📞</a>
-        <a className="lead-icon-btn" href={`https://wa.me/${waNum}`} target="_blank" rel="noreferrer" title="WhatsApp">💬</a>
+      <div className="flex gap-1.5 items-start">
+        <a href={`tel:${v.client_phone}`} className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-sm" title="Call">📞</a>
+        <a href={`https://wa.me/${waNum}`} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-sm" title="WhatsApp">💬</a>
       </div>
     </div>
   );

@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { sb } from "../lib/supabase";
 import { STATUS_LABELS } from "../lib/leadConstants";
-import { Modal, ModalHero } from "../components/ui/Modal";
+import { Sheet, SheetHeader } from "../components/ui/Sheet";
+import { Pill } from "../components/ui/primitives";
+import { initials } from "../lib/utils";
 import LeadDetailModal from "../components/leads/LeadDetailModal";
 import ScheduleVisitModal from "../components/leads/ScheduleVisitModal";
 import ScheduleCallModal from "../components/leads/ScheduleCallModal";
+
+const EASE = [0.22, 1, 0.36, 1];
 
 export default function Performance() {
   const [members, setMembers] = useState(null);
@@ -70,107 +75,107 @@ export default function Performance() {
   const detail = detailId && members ? members.find(([id]) => id === detailId) : null;
 
   return (
-    <div className="page">
-      <div className="page-eyebrow">Admin</div>
-      <h1 className="page-title">Performance</h1>
-      <p className="page-sub">Team activity across listings, leads, and site visits.</p>
+    <div className="max-w-4xl mx-auto px-5 py-10">
+      <div className="text-xs font-medium tracking-widest2 uppercase text-stone-500 mb-3">Admin</div>
+      <h1 className="font-display text-3xl text-ink mb-2">Performance</h1>
+      <p className="text-ink/50 text-sm mb-8">Team activity across listings, leads, and site visits.</p>
 
       {totals && (
-        <div className="stat-grid">
-          <div className="stat-card"><div className="stat-label">Listings</div><div className="stat-value">{totals.listings}</div></div>
-          <div className="stat-card"><div className="stat-label">Site Visits</div><div className="stat-value">{totals.visits}</div></div>
-          <div className="stat-card"><div className="stat-label">Leads</div><div className="stat-value">{totals.leads}</div></div>
-          <div className="stat-card"><div className="stat-label">Closed</div><div className="stat-value">{totals.closed}</div></div>
+        <div className="grid grid-cols-4 gap-3 mb-6">
+          <MiniStatBig label="Listings" value={totals.listings} />
+          <MiniStatBig label="Site Visits" value={totals.visits} />
+          <MiniStatBig label="Leads" value={totals.leads} />
+          <MiniStatBig label="Closed" value={totals.closed} />
         </div>
       )}
 
       {members === null ? (
-        <div className="center-loading"><div className="spinner" /></div>
+        <div className="flex justify-center py-16"><div className="w-6 h-6 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" /></div>
       ) : members.length === 0 ? (
-        <div className="card empty-state">
-          <div className="empty-title">No team members yet</div>
+        <div className="bg-white rounded-3xl text-center py-16 text-ink/40">
+          <div className="font-display text-lg text-ink">No team members yet</div>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 14 }}>
-          {members.map(([id, m]) => {
-            const initials = (m.name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-            return (
-              <div key={id} className="card" style={{ cursor: "pointer" }} onClick={() => setDetailId(id)}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                  <div className="avatar">{initials}</div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>{m.name}</div>
-                    <div style={{ fontSize: 11.5, color: "var(--muted-foreground)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.email}</div>
-                  </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {members.map(([id, m], i) => (
+            <motion.div
+              key={id}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: (i % 9) * 0.04, ease: EASE }}
+              onClick={() => setDetailId(id)}
+              className="bg-white rounded-3xl p-5 cursor-pointer hover:shadow-[0_16px_36px_-20px_rgba(43,21,18,0.2)] transition-shadow"
+            >
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-10 h-10 rounded-full bg-stone-50 text-stone-600 flex items-center justify-center text-sm font-medium shrink-0">{initials(m.name)}</div>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-ink truncate">{m.name}</div>
+                  <div className="text-xs text-ink/40 truncate">{m.email}</div>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  <MiniStat n={m.listings} label="Listings" />
-                  <MiniStat n={m.leads} label="Leads" />
-                  <MiniStat n={m.visits} label="Site Visits" />
-                  <MiniStat n={m.closed} label="Closed" color="#22c55e" />
-                </div>
-                <div style={{ textAlign: "center", fontSize: 11, color: "var(--primary)", fontWeight: 600, marginTop: 10 }}>View leads &amp; visits →</div>
               </div>
-            );
-          })}
+              <div className="grid grid-cols-2 gap-2.5">
+                <MiniStat n={m.listings} label="Listings" />
+                <MiniStat n={m.leads} label="Leads" />
+                <MiniStat n={m.visits} label="Site Visits" />
+                <MiniStat n={m.closed} label="Closed" tone="green" />
+              </div>
+              <div className="text-center text-xs font-semibold text-stone-600 mt-3">View leads &amp; visits →</div>
+            </motion.div>
+          ))}
         </div>
       )}
 
-      <Modal open={!!detail} onClose={() => setDetailId(null)}>
+      <Sheet open={!!detail} onClose={() => setDetailId(null)} maxWidth="max-w-md">
         {detail && (
           <>
-            <ModalHero title={detail[1].name} sub={detail[1].email} />
-            <div className="modal-body">
-              <div className="hierarchy-group-label" style={{ margin: "0 0 8px" }}>Leads</div>
-              {detail[1].leadList.length === 0 ? (
-                <div style={{ fontSize: 13, color: "var(--muted-foreground)", padding: "8px 0" }}>No leads yet.</div>
-              ) : (
-                detail[1].leadList.map((l) => (
+            <SheetHeader title={detail[1].name} sub={detail[1].email} />
+            <div className="text-[10px] font-semibold tracking-wide uppercase text-ink/35 mb-2">Leads</div>
+            {detail[1].leadList.length === 0 ? (
+              <div className="text-sm text-ink/40 py-2">No leads yet.</div>
+            ) : (
+              <div className="space-y-2 mb-4">
+                {detail[1].leadList.map((l) => (
                   <div
                     key={l.id}
-                    className="info-row"
-                    style={{ justifyContent: "space-between", cursor: "pointer" }}
-                    onClick={() => {
-                      setDetailId(null);
-                      setDetailLeadId(l.id);
-                    }}
+                    onClick={() => { setDetailId(null); setDetailLeadId(l.id); }}
+                    className="flex items-center justify-between cursor-pointer"
                   >
                     <div>
-                      <div className="info-row-value">
-                        {l.name || "—"} <span style={{ fontWeight: 500, color: "var(--muted-foreground)" }}>PC{l.lead_number}</span>
-                      </div>
-                      <div className="info-row-label">{[l.phone, l.preferred_location].filter(Boolean).join(" · ")}</div>
+                      <div className="text-sm font-medium text-ink">{l.name || "—"} <span className="text-xs font-medium text-ink/35">PC{l.lead_number}</span></div>
+                      <div className="text-xs text-ink/40">{[l.phone, l.preferred_location].filter(Boolean).join(" · ")}</div>
                     </div>
-                    <span className="badge">{STATUS_LABELS[l.status] || l.status}</span>
+                    <Pill tone="stone">{STATUS_LABELS[l.status] || l.status}</Pill>
                   </div>
-                ))
-              )}
+                ))}
+              </div>
+            )}
 
-              <div className="divider" />
-              <div className="hierarchy-group-label" style={{ margin: "0 0 8px" }}>Site Visits</div>
-              {detail[1].visitList.length === 0 ? (
-                <div style={{ fontSize: 13, color: "var(--muted-foreground)", padding: "8px 0" }}>No visits logged yet.</div>
-              ) : (
-                detail[1].visitList.map((v, i) => {
+            <div className="h-px bg-ink/[0.06] my-4" />
+            <div className="text-[10px] font-semibold tracking-wide uppercase text-ink/35 mb-2">Site Visits</div>
+            {detail[1].visitList.length === 0 ? (
+              <div className="text-sm text-ink/40 py-2">No visits logged yet.</div>
+            ) : (
+              <div className="space-y-2">
+                {detail[1].visitList.map((v, i) => {
                   const d = v.visit_date ? new Date(v.visit_date + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "—";
                   return (
-                    <div key={i} className="info-row" style={{ justifyContent: "space-between" }}>
+                    <div key={i} className="flex items-center justify-between">
                       <div>
-                        <div className="info-row-value">{v.visitor_name || "—"}</div>
-                        <div className="info-row-label">{[v.listing_title, v.visitor_phone].filter(Boolean).join(" · ")}</div>
+                        <div className="text-sm font-medium text-ink">{v.visitor_name || "—"}</div>
+                        <div className="text-xs text-ink/40">{[v.listing_title, v.visitor_phone].filter(Boolean).join(" · ")}</div>
                       </div>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--muted-foreground)", textAlign: "right" }}>
+                      <div className="text-xs font-semibold text-ink/45 text-right">
                         {d}
                         {v.visit_time && <div>{v.visit_time}</div>}
                       </div>
                     </div>
                   );
-                })
-              )}
-            </div>
+                })}
+              </div>
+            )}
           </>
         )}
-      </Modal>
+      </Sheet>
 
       <LeadDetailModal
         leadId={detailLeadId}
@@ -190,11 +195,20 @@ export default function Performance() {
   );
 }
 
-function MiniStat({ n, label, color }) {
+function MiniStatBig({ label, value }) {
   return (
-    <div style={{ textAlign: "center", background: "var(--secondary)", borderRadius: 12, padding: "8px 4px" }}>
-      <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: color || "var(--foreground)" }}>{n}</div>
-      <div style={{ fontSize: 10, color: "var(--muted-foreground)" }}>{label}</div>
+    <div className="bg-white rounded-2xl p-4">
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-ink/35 mb-1">{label}</div>
+      <div className="font-display text-2xl text-ink">{value}</div>
+    </div>
+  );
+}
+
+function MiniStat({ n, label, tone }) {
+  return (
+    <div className="text-center bg-stone-50/60 rounded-xl py-2">
+      <div className={`font-display text-lg ${tone === "green" ? "text-emerald-600" : "text-ink"}`}>{n}</div>
+      <div className="text-[10px] text-ink/40">{label}</div>
     </div>
   );
 }

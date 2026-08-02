@@ -1,14 +1,18 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { sb } from "../lib/supabase";
 import { useToast } from "../hooks/useToast";
 import { CAT_EMOJI } from "../lib/blogConstants";
-import { IconPlus } from "../components/ui/Icons";
+import { Button } from "../components/ui/button";
+import { Pill } from "../components/ui/primitives";
 import BlogFormModal from "../components/blogs/BlogFormModal";
+
+const EASE = [0.22, 1, 0.36, 1];
 
 export default function Blogs() {
   const showToast = useToast();
   const [posts, setPosts] = useState(null);
-  const [formTarget, setFormTarget] = useState(null); // "new" | postId | null
+  const [formTarget, setFormTarget] = useState(null);
 
   async function load() {
     const { data } = await sb
@@ -34,55 +38,59 @@ export default function Blogs() {
   }
 
   return (
-    <div className="page">
-      <div className="page-eyebrow">Admin</div>
-      <h1 className="page-title">Blog Posts</h1>
-      <p className="page-sub">Write, publish, and manage articles for the public site.</p>
+    <div className="max-w-5xl mx-auto px-5 py-10">
+      <div className="text-xs font-medium tracking-widest2 uppercase text-stone-500 mb-3">Admin</div>
+      <h1 className="font-display text-3xl text-ink mb-2">Blog Posts</h1>
+      <p className="text-ink/50 text-sm mb-8">Write, publish, and manage articles for the public site.</p>
 
-      <button className="btn btn-primary" style={{ width: "auto", display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }} onClick={() => setFormTarget("new")}>
-        <IconPlus size={15} stroke="white" /> New Post
-      </button>
+      <Button onClick={() => setFormTarget("new")} className="mb-6">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
+        New Post
+      </Button>
 
       {posts === null ? (
-        <div className="center-loading"><div className="spinner" /></div>
+        <div className="flex justify-center py-16"><div className="w-6 h-6 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" /></div>
       ) : posts.length === 0 ? (
-        <div className="card empty-state">
-          <div className="empty-title">No blog posts yet</div>
-          <p>Click New Post to write your first article.</p>
+        <div className="bg-white rounded-3xl text-center py-16 text-ink/40">
+          <div className="font-display text-lg text-ink mb-1">No blog posts yet</div>
+          <p className="text-sm">Click New Post to write your first article.</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
-          {posts.map((p) => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {posts.map((p, i) => {
             const em = CAT_EMOJI[p.category] || "📝";
             const dateStr = p.published_at ? new Date(p.published_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Draft";
             return (
-              <div key={p.id} className="card" style={{ padding: 0, overflow: "hidden" }}>
-                <div style={{ height: 110, background: p.cover_image ? `url(${p.cover_image}) center/cover` : "var(--secondary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30 }}>
+              <motion.div
+                key={p.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: (i % 9) * 0.04, ease: EASE }}
+                className="bg-white rounded-3xl overflow-hidden"
+              >
+                <div
+                  className="h-28 flex items-center justify-center text-3xl bg-stone-50"
+                  style={p.cover_image ? { backgroundImage: `url(${p.cover_image})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
+                >
                   {!p.cover_image && em}
                 </div>
-                <div style={{ padding: 14 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>{p.title}</div>
-                  <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 3 }}>
+                <div className="p-4">
+                  <div className="text-sm font-medium text-ink">{p.title}</div>
+                  <div className="text-xs text-ink/45 mt-1">
                     {p.category} · {dateStr} · {p.read_time_mins || 3} min{p.featured ? " · ⭐ Featured" : ""}
                   </div>
-                  <div style={{ margin: "8px 0 10px" }}>
-                    <span className={"pill " + (p.status === "published" ? "pill-green" : "pill-yellow")}>
-                      {p.status === "published" ? "● Published" : "◐ Draft"}
-                    </span>
+                  <div className="my-2.5">
+                    <Pill tone={p.status === "published" ? "green" : "yellow"}>{p.status === "published" ? "● Published" : "◐ Draft"}</Pill>
                   </div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <a href={`/blog-post.html?slug=${p.slug}`} target="_blank" rel="noreferrer" className="btn btn-secondary" style={{ width: "auto", padding: "7px 12px", fontSize: 12, textDecoration: "none" }}>
+                  <div className="flex gap-1.5 flex-wrap">
+                    <a href={`/blog-post.html?slug=${p.slug}`} target="_blank" rel="noreferrer" className="text-xs font-medium text-ink/60 border border-ink/10 rounded-full px-3 py-1.5 no-underline">
                       Preview
                     </a>
-                    <button className="btn btn-secondary" style={{ width: "auto", padding: "7px 12px", fontSize: 12 }} onClick={() => setFormTarget(p.id)}>
-                      Edit
-                    </button>
-                    <button className="btn-reject" style={{ padding: "7px 12px", fontSize: 12 }} onClick={() => handleDelete(p.id)}>
-                      Delete
-                    </button>
+                    <button onClick={() => setFormTarget(p.id)} className="text-xs font-medium text-ink/60 border border-ink/10 rounded-full px-3 py-1.5">Edit</button>
+                    <button onClick={() => handleDelete(p.id)} className="text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded-full px-3 py-1.5">Delete</button>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </div>

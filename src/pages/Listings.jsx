@@ -1,17 +1,21 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { TYPE_LABEL, EMOJI } from "../lib/listingConstants";
-import { IconPlus } from "../components/ui/Icons";
+import { Button } from "../components/ui/button";
+import { Pill } from "../components/ui/primitives";
 import ListingFormModal from "../components/listings/ListingFormModal";
+
+const EASE = [0.22, 1, 0.36, 1];
 
 export default function Listings() {
   const { isAdmin } = useAuth();
   const showToast = useToast();
   const [listings, setListings] = useState(null);
-  const [formTarget, setFormTarget] = useState(null); // "new" | listingId | null
+  const [formTarget, setFormTarget] = useState(null);
 
   async function load() {
     let q = sb.from("listings").select("*").order("created_at", { ascending: false });
@@ -56,35 +60,36 @@ export default function Listings() {
   }
 
   return (
-    <div className="page">
-      <div className="page-eyebrow">PinkCity Properties</div>
-      <h1 className="page-title">Listings</h1>
-      <p className="page-sub">{isAdmin ? "Review submissions and manage everything that's live." : "Your submitted properties."}</p>
+    <div className="max-w-5xl mx-auto px-5 py-10">
+      <div className="text-xs font-medium tracking-widest2 uppercase text-stone-500 mb-3">PinkCity Properties</div>
+      <h1 className="font-display text-3xl text-ink mb-2">Listings</h1>
+      <p className="text-ink/50 text-sm mb-8">{isAdmin ? "Review submissions and manage everything that's live." : "Your submitted properties."}</p>
 
       {stats && (
-        <div className="stat-grid">
-          <div className="stat-card"><div className="stat-label">Pending</div><div className="stat-value">{stats.pending}</div></div>
-          <div className="stat-card"><div className="stat-label">Live</div><div className="stat-value">{stats.active}</div></div>
-          <div className="stat-card"><div className="stat-label">Total</div><div className="stat-value">{stats.total}</div></div>
-          <div className="stat-card"><div className="stat-label">Rejected</div><div className="stat-value">{stats.rejected}</div></div>
+        <div className="grid grid-cols-4 gap-3 mb-6">
+          <MiniStat label="Pending" value={stats.pending} />
+          <MiniStat label="Live" value={stats.active} />
+          <MiniStat label="Total" value={stats.total} />
+          <MiniStat label="Rejected" value={stats.rejected} />
         </div>
       )}
 
-      <button className="btn btn-primary" style={{ width: "auto", display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }} onClick={() => setFormTarget("new")}>
-        <IconPlus size={15} stroke="white" /> Add Listing
-      </button>
+      <Button onClick={() => setFormTarget("new")} className="mb-6">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
+        Add Listing
+      </Button>
 
       {listings === null ? (
-        <div className="center-loading"><div className="spinner" /></div>
+        <div className="flex justify-center py-16"><div className="w-6 h-6 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" /></div>
       ) : listings.length === 0 ? (
-        <div className="card empty-state">
-          <div className="empty-title">{isAdmin ? "No submissions yet" : "No listings yet"}</div>
-          <p>Click Add Listing to submit your first property.</p>
+        <div className="bg-white rounded-3xl text-center py-16 text-ink/40">
+          <div className="font-display text-lg text-ink mb-1">{isAdmin ? "No submissions yet" : "No listings yet"}</div>
+          <p className="text-sm">Click Add Listing to submit your first property.</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
-          {listings.map((l) => (
-            <ListingCard key={l.id} listing={l} isAdmin={isAdmin} onEdit={() => setFormTarget(l.id)} onApprove={approve} onReject={reject} onDelete={del} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {listings.map((l, i) => (
+            <ListingCard key={l.id} listing={l} index={i} isAdmin={isAdmin} onEdit={() => setFormTarget(l.id)} onApprove={approve} onReject={reject} onDelete={del} />
           ))}
         </div>
       )}
@@ -102,74 +107,72 @@ export default function Listings() {
   );
 }
 
-function ListingCard({ listing: l, isAdmin, onEdit, onApprove, onReject, onDelete }) {
+function MiniStat({ label, value }) {
+  return (
+    <div className="bg-white rounded-2xl p-4">
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-ink/35 mb-1">{label}</div>
+      <div className="font-display text-2xl text-ink">{value}</div>
+    </div>
+  );
+}
+
+function ListingCard({ listing: l, index, isAdmin, onEdit, onApprove, onReject, onDelete }) {
   const imgs = l.images && l.images.length ? l.images : l.image_url ? [l.image_url] : [];
-  const badge =
-    l.status === "pending" ? { cls: "pill-yellow", text: "◐ Pending" }
-    : l.status === "active" ? { cls: "pill-green", text: "● Live" }
-    : { cls: "pill-red", text: "✕ Rejected" };
+  const tone = l.status === "pending" ? "yellow" : l.status === "active" ? "green" : "red";
+  const badgeText = l.status === "pending" ? "◐ Pending" : l.status === "active" ? "● Live" : "✕ Rejected";
   const date = l.created_at ? new Date(l.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "";
 
   return (
-    <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, delay: (index % 9) * 0.04, ease: EASE }}
+      className="bg-white rounded-3xl overflow-hidden"
+    >
       <div
-        style={{
-          height: 140,
-          background: imgs.length ? `url(${imgs[0]}) center/cover` : "var(--secondary)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 34,
-        }}
+        className="h-36 flex items-center justify-center text-4xl bg-stone-50"
+        style={imgs.length ? { backgroundImage: `url(${imgs[0]})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
       >
         {!imgs.length && (EMOJI[l.type] || "🏠")}
       </div>
-      <div style={{ padding: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-          <div style={{ fontWeight: 600, fontSize: 14.5 }}>{l.title}</div>
-          <div style={{ color: "var(--primary)", fontSize: 14, flexShrink: 0 }}>{l.price}</div>
+      <div className="p-4">
+        <div className="flex justify-between gap-2">
+          <div className="font-medium text-sm text-ink">{l.title}</div>
+          <div className="text-stone-600 text-sm shrink-0">{l.price}</div>
         </div>
-        <div style={{ fontSize: 12.5, color: "var(--muted-foreground)", marginTop: 2 }}>
+        <div className="text-xs text-ink/45 mt-1">
           {[TYPE_LABEL[l.type], l.size, l.area].filter(Boolean).join(" · ")}
           {l.verified ? " · ✓ Verified" : ""}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "8px 0" }}>
-          <span className={"pill " + badge.cls}>{badge.text}</span>
-          <span style={{ fontSize: 11.5, color: "var(--muted-foreground)" }}>
-            {isAdmin ? `by ${l.submitter_name || "Team"} · ${date}` : date}
-          </span>
+        <div className="flex items-center gap-2 flex-wrap my-2.5">
+          <Pill tone={tone}>{badgeText}</Pill>
+          <span className="text-[11px] text-ink/35">{isAdmin ? `by ${l.submitter_name || "Team"} · ${date}` : date}</span>
         </div>
-        {isAdmin && l.submitter_phone && (
-          <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 6 }}>📞 {l.submitter_phone}</div>
-        )}
-        {imgs.length > 1 && <div style={{ fontSize: 11, color: "var(--muted-foreground)", marginBottom: 8 }}>📷 {imgs.length} photos</div>}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {isAdmin && l.submitter_phone && <div className="text-xs text-ink/45 mb-1.5">📞 {l.submitter_phone}</div>}
+        {imgs.length > 1 && <div className="text-[11px] text-ink/35 mb-2">📷 {imgs.length} photos</div>}
+        <div className="flex flex-wrap gap-1.5 mt-2">
           {l.type === "colony" && (
-            <Link to="/plots" className="btn btn-secondary" style={{ width: "auto", fontSize: 12, padding: "8px 12px", textDecoration: "none" }}>
-              🏘️ Manage Availability
-            </Link>
+            <Link to="/plots" className="text-xs font-medium text-stone-600 border border-stone-200 rounded-full px-3 py-1.5 no-underline">🏘️ Manage Availability</Link>
           )}
           {isAdmin && l.status === "pending" && (
             <>
-              <button className="btn btn-secondary" style={{ width: "auto", fontSize: 12, padding: "8px 12px" }} onClick={onEdit}>✎ Edit &amp; Verify</button>
-              <button className="btn-approve" style={{ padding: "8px 12px", fontSize: 12 }} onClick={() => onApprove(l.id)}>✓ Approve</button>
-              <button className="btn-reject" style={{ padding: "8px 12px", fontSize: 12 }} onClick={() => onReject(l.id)}>✕ Reject</button>
+              <button onClick={onEdit} className="text-xs font-medium text-ink/60 border border-ink/10 rounded-full px-3 py-1.5">✎ Edit &amp; Verify</button>
+              <button onClick={() => onApprove(l.id)} className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1.5">✓ Approve</button>
+              <button onClick={() => onReject(l.id)} className="text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded-full px-3 py-1.5">✕ Reject</button>
             </>
           )}
           {isAdmin && l.status === "active" && (
             <>
-              <button className="btn btn-secondary" style={{ width: "auto", fontSize: 12, padding: "8px 12px" }} onClick={onEdit}>✎ Edit</button>
-              <button className="btn-reject" style={{ padding: "8px 12px", fontSize: 12 }} onClick={() => onReject(l.id)}>Take offline</button>
+              <button onClick={onEdit} className="text-xs font-medium text-ink/60 border border-ink/10 rounded-full px-3 py-1.5">✎ Edit</button>
+              <button onClick={() => onReject(l.id)} className="text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded-full px-3 py-1.5">Take offline</button>
             </>
           )}
           {!isAdmin && l.status !== "active" && (
-            <button className="btn btn-secondary" style={{ width: "auto", fontSize: 12, padding: "8px 12px" }} onClick={onEdit}>Edit</button>
+            <button onClick={onEdit} className="text-xs font-medium text-ink/60 border border-ink/10 rounded-full px-3 py-1.5">Edit</button>
           )}
-          {isAdmin && (
-            <button className="btn-reject" style={{ padding: "8px 12px", fontSize: 12 }} onClick={() => onDelete(l.id)}>Delete</button>
-          )}
+          {isAdmin && <button onClick={() => onDelete(l.id)} className="text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded-full px-3 py-1.5">Delete</button>}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
