@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { sb } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
-import { Modal, ModalHero } from "../ui/Modal";
+import { Sheet, SheetHeader, Field } from "../ui/Sheet";
+import { Button } from "../ui/button";
 
 const PRESETS = [
   { label: "🟢 Interested", value: "Interested — following up" },
@@ -70,22 +71,19 @@ export default function CallOutcomeWatcher({ onLogged }) {
   }
 
   return (
-    <Modal open={!!prompt} onClose={() => setPrompt(null)}>
-      <ModalHero title="How did the call go?" sub={prompt ? `With ${prompt.name}` : ""} />
-      <div className="modal-body">
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
-          {PRESETS.map((p) => (
-            <button key={p.value} className="btn btn-secondary" style={{ fontSize: 13 }} onClick={() => save(p.value)}>
-              {p.label}
-            </button>
-          ))}
-        </div>
-        <div className="field">
-          <label className="fl">Or add a note</label>
-          <input className="fi" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional details…" />
-        </div>
-        <button className="btn btn-primary" onClick={() => save(null)}>Save note</button>
+    <Sheet open={!!prompt} onClose={() => setPrompt(null)} maxWidth="max-w-sm">
+      <SheetHeader title="How did the call go?" sub={prompt ? `With ${prompt.name}` : ""} />
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        {PRESETS.map((p) => (
+          <button key={p.value} onClick={() => save(p.value)} className="text-xs font-medium text-ink/70 border border-ink/10 rounded-xl py-2.5">
+            {p.label}
+          </button>
+        ))}
       </div>
-    </Modal>
+      <Field label="Or add a note">
+        <input className="field-input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional details…" />
+      </Field>
+      <Button onClick={() => save(null)} className="w-full mt-4">Save note</Button>
+    </Sheet>
   );
 }

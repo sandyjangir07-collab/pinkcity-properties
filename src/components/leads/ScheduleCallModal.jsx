@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { sb } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
-import { Modal, ModalHero } from "../ui/Modal";
+import { Sheet, SheetHeader, Field } from "../ui/Sheet";
+import { Button } from "../ui/button";
 
 function toLocalInputValue(date) {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -77,32 +78,16 @@ export default function ScheduleCallModal({ target, onClose, onSaved }) {
   }
 
   return (
-    <Modal open={!!target} onClose={onClose}>
-      <ModalHero title={target?.editId ? "Reschedule Call" : "Schedule Call"} />
-      <div className="modal-body">
-        <form onSubmit={submit}>
-          <div className="field">
-            <label className="fl">Client Name *</label>
-            <input className="fi" value={form.client} onChange={(e) => set("client", e.target.value)} />
-          </div>
-          <div className="field">
-            <label className="fl">Phone</label>
-            <input className="fi" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
-          </div>
-          <div className="field">
-            <label className="fl">Date &amp; Time *</label>
-            <input className="fi" type="datetime-local" value={form.datetime} onChange={(e) => set("datetime", e.target.value)} />
-          </div>
-          <div className="field">
-            <label className="fl">Notes</label>
-            <textarea className="fi" rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
-          </div>
-          {err && <div className="form-err show" style={{ marginBottom: 10 }}>{err}</div>}
-          <button className="btn btn-primary" disabled={busy} type="submit">
-            {busy ? "Saving…" : target?.editId ? "Save New Date & Time" : "Schedule Call"}
-          </button>
-        </form>
-      </div>
-    </Modal>
+    <Sheet open={!!target} onClose={onClose} maxWidth="max-w-md">
+      <SheetHeader title={target?.editId ? "Reschedule Call" : "Schedule Call"} />
+      <form onSubmit={submit} className="space-y-4">
+        <Field label="Client Name *"><input className="field-input" value={form.client} onChange={(e) => set("client", e.target.value)} /></Field>
+        <Field label="Phone"><input className="field-input" value={form.phone} onChange={(e) => set("phone", e.target.value)} /></Field>
+        <Field label="Date & Time *"><input className="field-input" type="datetime-local" value={form.datetime} onChange={(e) => set("datetime", e.target.value)} /></Field>
+        <Field label="Notes"><textarea className="field-input min-h-[60px]" value={form.notes} onChange={(e) => set("notes", e.target.value)} /></Field>
+        {err && <p className="text-sm text-red-600">{err}</p>}
+        <Button disabled={busy} type="submit" className="w-full">{busy ? "Saving…" : target?.editId ? "Save New Date & Time" : "Schedule Call"}</Button>
+      </form>
+    </Sheet>
   );
 }

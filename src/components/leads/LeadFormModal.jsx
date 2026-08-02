@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { sb } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
-import { STATUS_TEXT, STATUS_DOT, SOURCE_LABELS } from "../../lib/leadConstants";
-import { Modal, ModalHero } from "../ui/Modal";
+import { STATUS_TEXT, SOURCE_LABELS } from "../../lib/leadConstants";
+import { Sheet, SheetHeader, Field } from "../ui/Sheet";
+import { Button } from "../ui/button";
 
 const PROPERTY_TYPES = ["Plot", "House", "Apartment", "Commercial", "Farmhouse"];
 
@@ -103,85 +104,52 @@ export default function LeadFormModal({ target, onClose, onSaved }) {
   }
 
   return (
-    <Modal open={!!target} onClose={onClose}>
-      <ModalHero title={isEdit ? "Edit Lead" : "Add Lead"} />
-      <div className="modal-body">
-        <form onSubmit={submit}>
-          <div className="field-grid-2">
-            <div className="field">
-              <label className="fl">Name *</label>
-              <input className="fi" value={form.name} onChange={(e) => set("name", e.target.value)} />
-            </div>
-            <div className="field">
-              <label className="fl">Phone *</label>
-              <input className="fi" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
-            </div>
+    <Sheet open={!!target} onClose={onClose} maxWidth="max-w-md">
+      <SheetHeader title={isEdit ? "Edit Lead" : "Add Lead"} />
+      <form onSubmit={submit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Name *"><input className="field-input" value={form.name} onChange={(e) => set("name", e.target.value)} /></Field>
+          <Field label="Phone *"><input className="field-input" value={form.phone} onChange={(e) => set("phone", e.target.value)} /></Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Email"><input className="field-input" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} /></Field>
+          <Field label="Budget"><input className="field-input" value={form.budget} onChange={(e) => set("budget", e.target.value)} /></Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Preferred Location"><input className="field-input" value={form.preferred_location} onChange={(e) => set("preferred_location", e.target.value)} /></Field>
+          <Field label="Follow-up Date"><input className="field-input" type="date" value={form.follow_up_date} onChange={(e) => set("follow_up_date", e.target.value)} /></Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Source">
+            <select className="field-input" value={form.source} onChange={(e) => set("source", e.target.value)}>
+              {Object.keys(SOURCE_LABELS).map((s) => (<option key={s} value={s}>{SOURCE_LABELS[s]}</option>))}
+            </select>
+          </Field>
+          <Field label="Property Type">
+            <select className="field-input" value={form.property_type} onChange={(e) => set("property_type", e.target.value)}>
+              <option value="">Select…</option>
+              {PROPERTY_TYPES.map((t) => (<option key={t} value={t}>{t}</option>))}
+            </select>
+          </Field>
+        </div>
+        <Field label="Notes"><textarea className="field-input min-h-[80px]" value={form.notes} onChange={(e) => set("notes", e.target.value)} /></Field>
+        <Field label="Status">
+          <div className="flex flex-wrap gap-2">
+            {Object.keys(STATUS_TEXT).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setStatus(s)}
+                className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${status === s ? "bg-stone-600 text-sand border-stone-600" : "border-ink/10 text-ink/60"}`}
+              >
+                {STATUS_TEXT[s]}
+              </button>
+            ))}
           </div>
-          <div className="field-grid-2">
-            <div className="field">
-              <label className="fl">Email</label>
-              <input className="fi" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
-            </div>
-            <div className="field">
-              <label className="fl">Budget</label>
-              <input className="fi" value={form.budget} onChange={(e) => set("budget", e.target.value)} />
-            </div>
-          </div>
-          <div className="field-grid-2">
-            <div className="field">
-              <label className="fl">Preferred Location</label>
-              <input className="fi" value={form.preferred_location} onChange={(e) => set("preferred_location", e.target.value)} />
-            </div>
-            <div className="field" style={{ minWidth: 0 }}>
-              <label className="fl">Follow-up Date</label>
-              <input className="fi" type="date" style={{ minWidth: 0 }} value={form.follow_up_date} onChange={(e) => set("follow_up_date", e.target.value)} />
-            </div>
-          </div>
-          <div className="field-grid-2">
-            <div className="field">
-              <label className="fl">Source</label>
-              <select className="fsel" value={form.source} onChange={(e) => set("source", e.target.value)}>
-                {Object.keys(SOURCE_LABELS).map((s) => (
-                  <option key={s} value={s}>{SOURCE_LABELS[s]}</option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
-              <label className="fl">Property Type</label>
-              <select className="fsel" value={form.property_type} onChange={(e) => set("property_type", e.target.value)}>
-                <option value="">Select…</option>
-                {PROPERTY_TYPES.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="field">
-            <label className="fl">Notes</label>
-            <textarea className="fi" rows={3} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
-          </div>
-          <div className="field">
-            <label className="fl">Status</label>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {Object.keys(STATUS_TEXT).map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  className={"status-pill" + (status === s ? " active" : "")}
-                  onClick={() => setStatus(s)}
-                >
-                  <span className="status-dot" style={{ background: status === s ? "white" : STATUS_DOT[s] }} />
-                  {STATUS_TEXT[s]}
-                </button>
-              ))}
-            </div>
-          </div>
-          {err && <div className="form-err show" style={{ margin: "10px 0" }}>{err}</div>}
-          <button className="btn btn-primary" disabled={busy} type="submit" style={{ marginTop: 10 }}>
-            {busy ? "Saving…" : "Save Lead"}
-          </button>
-        </form>
-      </div>
-    </Modal>
+        </Field>
+        {err && <p className="text-sm text-red-600">{err}</p>}
+        <Button disabled={busy} type="submit" className="w-full">{busy ? "Saving…" : "Save Lead"}</Button>
+      </form>
+    </Sheet>
   );
 }
