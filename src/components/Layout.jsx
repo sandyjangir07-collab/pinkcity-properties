@@ -1,69 +1,67 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { cn } from "../lib/utils";
+
+const LINKS = [
+  { to: "/", end: true, label: "Team" },
+  { to: "/today", label: "Today" },
+  { to: "/leads", label: "Leads" },
+  { to: "/listings", label: "Listings" },
+  { to: "/plots", label: "Plots & Tokens" },
+  { to: "/schedule", label: "Schedule" },
+  { to: "/attendance", label: "Attendance" },
+  { to: "/quotation", label: "Quotation" },
+  { to: "/performance", label: "Performance", adminOnly: true },
+  { to: "/blogs", label: "Blogs", adminOnly: true },
+  { to: "/approvals", label: "Approvals", adminOnly: true },
+  { to: "/commission-slabs", label: "Commission Slabs", adminOnly: true },
+];
 
 export default function Layout() {
   const { isAdmin, signOut, profile } = useAuth();
 
   return (
-    <div className="app-shell">
-      <div className="topbar">
-        <div className="topbar-brand">
-          <img src="/logo.png" alt="" onError={(e) => (e.currentTarget.style.display = "none")} />
-          PinkCity CRM
+    <div className="min-h-screen bg-sand text-ink font-sans">
+      <header className="sticky top-0 z-40 bg-sand/90 backdrop-blur-md border-b border-ink/[0.06]">
+        <div className="flex items-center gap-4 px-5 h-16">
+          <div className="flex items-center gap-2.5 shrink-0">
+            <span className="w-8 h-8 rounded-full bg-stone-600 flex items-center justify-center p-1 shrink-0">
+              <img src="/logo.png" alt="" className="w-full h-full object-contain" onError={(e) => (e.currentTarget.style.display = "none")} />
+            </span>
+            <span className="font-display text-lg hidden sm:block">
+              PinkCity<span className="text-stone-500">.</span>
+            </span>
+          </div>
+
+          <nav className="flex items-center gap-1 overflow-x-auto no-scrollbar flex-1">
+            {LINKS.filter((l) => !l.adminOnly || isAdmin).map((l) => (
+              <NavLink
+                key={l.to}
+                to={l.to}
+                end={l.end}
+                className={({ isActive }) =>
+                  cn(
+                    "shrink-0 text-sm px-3.5 py-2 rounded-full transition-colors whitespace-nowrap",
+                    isActive ? "bg-stone-600 text-sand" : "text-ink/60 hover:text-ink hover:bg-ink/[0.04]"
+                  )
+                }
+              >
+                {l.label}
+              </NavLink>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <span className="text-sm text-ink/50 hidden md:block max-w-[160px] truncate">{profile?.full_name || profile?.email}</span>
+            <button
+              onClick={signOut}
+              className="text-xs font-medium border border-ink/10 rounded-full px-3.5 py-2 text-ink/70 hover:border-ink/25 transition-colors"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
-        <div className="topbar-nav">
-          <NavLink to="/" end className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
-            Team
-          </NavLink>
-          <NavLink to="/today" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
-            Today
-          </NavLink>
-          <NavLink to="/attendance" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
-            Attendance
-          </NavLink>
-          <NavLink to="/schedule" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
-            Schedule
-          </NavLink>
-          <NavLink to="/quotation" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
-            Quotation
-          </NavLink>
-          {isAdmin && (
-            <NavLink to="/performance" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
-              Performance
-            </NavLink>
-          )}
-          {isAdmin && (
-            <NavLink to="/blogs" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
-              Blogs
-            </NavLink>
-          )}
-          <NavLink to="/leads" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
-            Leads
-          </NavLink>
-          <NavLink to="/listings" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
-            Listings
-          </NavLink>
-          <NavLink to="/plots" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
-            Plots &amp; Tokens
-          </NavLink>
-          {isAdmin && (
-            <NavLink to="/approvals" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
-              Approvals
-            </NavLink>
-          )}
-          {isAdmin && (
-            <NavLink to="/commission-slabs" className={({ isActive }) => "topbar-link" + (isActive ? " active" : "")}>
-              Commission Slabs
-            </NavLink>
-          )}
-        </div>
-        <div className="topbar-user">
-          <span>{profile?.full_name || profile?.email}</span>
-          <button className="topbar-signout" onClick={signOut}>
-            Sign out
-          </button>
-        </div>
-      </div>
+      </header>
       <Outlet />
     </div>
   );

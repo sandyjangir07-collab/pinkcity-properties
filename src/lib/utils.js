@@ -85,3 +85,11 @@ export function initials(name) {
     .map((p) => p[0]?.toUpperCase())
     .join("");
 }
+
+// Tailwind class-merge helper (shadcn convention) — for the components being
+// migrated to the new design system.
+import { clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+export function cn(...inputs) {
+  return twMerge(clsx(inputs));
+}

@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { sb } from "../lib/supabase";
 import { DOCUMENT_TYPES } from "../lib/constants";
 import { initials } from "../lib/utils";
-import { IconChevronRight, IconPlus } from "../components/ui/Icons";
-import { Modal, ModalHero } from "../components/ui/Modal";
+import { Button } from "../components/ui/button";
 import { useToast } from "../hooks/useToast";
+
+const EASE = [0.22, 1, 0.36, 1];
 
 export default function Directory() {
   const [employees, setEmployees] = useState(null);
@@ -13,9 +15,8 @@ export default function Directory() {
   const [docStatusByEmployee, setDocStatusByEmployee] = useState({});
   const [totalSales, setTotalSales] = useState(0);
   const [addOpen, setAddOpen] = useState(false);
-  const showToast = useToast();
-
   const [errorMsg, setErrorMsg] = useState(null);
+  const showToast = useToast();
 
   async function load() {
     setErrorMsg(null);
@@ -67,58 +68,58 @@ export default function Directory() {
 
   if (employees === null) {
     return (
-      <div className="page">
-        <div className="center-loading">
-          <div className="spinner" />
-        </div>
+      <div className="max-w-3xl mx-auto px-5 py-20 flex justify-center">
+        <div className="w-6 h-6 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="page">
-      <div className="page-eyebrow">PinkCity Properties</div>
-      <h1 className="page-title">Team Directory</h1>
-      <p className="page-sub">Employees, hierarchy, documents and commission — all in one place.</p>
+    <div className="max-w-3xl mx-auto px-5 py-10">
+      <div className="text-xs font-medium tracking-widest2 uppercase text-stone-500 mb-3">PinkCity Properties</div>
+      <h1 className="font-display text-3xl text-ink mb-2">Team Directory</h1>
+      <p className="text-ink/50 text-sm mb-8">Employees, hierarchy, documents and commission — all in one place.</p>
 
-      <div className="stat-grid">
-        <div className="stat-card">
-          <div className="stat-label">Members</div>
-          <div className="stat-value">{employees.length}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Fully Verified</div>
-          <div className="stat-value">{fullyVerifiedCount}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Total Sales</div>
-          <div className="stat-value">₹{totalSales.toLocaleString("en-IN")}</div>
-        </div>
+      {errorMsg && <div className="mb-6 rounded-2xl bg-red-50 text-red-600 text-sm px-5 py-4">{errorMsg}</div>}
+
+      <div className="grid grid-cols-3 gap-3 mb-8">
+        <Stat label="Members" value={employees.length} />
+        <Stat label="Fully Verified" value={fullyVerifiedCount} />
+        <Stat label="Total Sales" value={`₹${totalSales.toLocaleString("en-IN")}`} />
       </div>
 
-      <div className="card">
+      <div className="bg-white rounded-3xl p-3">
         {tree.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-title">No team members yet</div>
-            <p>Add your first team member to get started.</p>
+          <div className="text-center py-16 text-ink/40">
+            <div className="font-display text-lg text-ink mb-1">No team members yet</div>
+            <p className="text-sm">Add your first team member to get started.</p>
           </div>
         )}
-        {tree.map(({ employee, children }) => (
-          <div key={employee.id}>
+        {tree.map(({ employee, children }, i) => (
+          <motion.div
+            key={employee.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: i * 0.04, ease: EASE }}
+          >
             <PersonRow employee={employee} verified={isFullyVerified(employee.id)} />
-            {children.length > 0 && <div className="hierarchy-group-label">Reports to {employee.full_name}</div>}
+            {children.length > 0 && (
+              <div className="text-[10px] font-semibold tracking-wide uppercase text-ink/35 px-4 pt-3 pb-1">
+                Reports to {employee.full_name}
+              </div>
+            )}
             {children.map((c) => (
               <PersonRow key={c.id} employee={c} verified={isFullyVerified(c.id)} indent />
             ))}
-          </div>
+          </motion.div>
         ))}
 
         <button
-          className="btn btn-secondary"
-          style={{ width: "100%", marginTop: 18, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
           onClick={() => setAddOpen(true)}
+          className="w-full mt-2 flex items-center justify-center gap-2 rounded-2xl border border-dashed border-ink/15 text-ink/50 hover:text-stone-600 hover:border-stone-300 py-3.5 text-sm font-medium transition-colors"
         >
-          <IconPlus size={15} /> Add team member
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
+          Add team member
         </button>
       </div>
 
@@ -135,24 +136,34 @@ export default function Directory() {
   );
 }
 
+function Stat({ label, value }) {
+  return (
+    <div className="bg-white rounded-2xl p-4">
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-ink/35 mb-1">{label}</div>
+      <div className="font-display text-2xl text-ink">{value}</div>
+    </div>
+  );
+}
+
 function PersonRow({ employee, verified, indent }) {
   return (
-    <Link to={`/employees/${employee.id}`} className="person-row" style={indent ? { paddingLeft: 24 } : undefined}>
-      <div className="avatar">
-        {employee.photo_url ? <img src={employee.photo_url} alt="" /> : initials(employee.full_name)}
+    <Link
+      to={`/employees/${employee.id}`}
+      className={`flex items-center gap-3 rounded-2xl px-4 py-3 hover:bg-ink/[0.03] transition-colors ${indent ? "ml-6" : ""}`}
+    >
+      <div className="w-10 h-10 rounded-full bg-stone-50 text-stone-600 flex items-center justify-center font-medium text-sm overflow-hidden shrink-0">
+        {employee.photo_url ? <img src={employee.photo_url} alt="" className="w-full h-full object-cover" /> : initials(employee.full_name)}
       </div>
-      <div>
-        <div className="person-row-name">{employee.full_name}</div>
-        <div className="person-row-meta">{employee.designation || "—"}</div>
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-medium text-ink truncate">{employee.full_name}</div>
+        <div className="text-xs text-ink/45 truncate">{employee.designation || "—"}</div>
       </div>
-      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
-        <span className={"pill " + (verified ? "pill-green" : "pill-neutral")}>
-          {verified ? "Verified" : "Unverified"}
-        </span>
-        <span className="person-row-chevron">
-          <IconChevronRight size={16} />
-        </span>
-      </div>
+      <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full shrink-0 ${verified ? "bg-emerald-50 text-emerald-700" : "bg-ink/[0.05] text-ink/45"}`}>
+        {verified ? "Verified" : "Unverified"}
+      </span>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink/25 shrink-0">
+        <path d="M9 18l6-6-6-6" />
+      </svg>
     </Link>
   );
 }
@@ -190,34 +201,47 @@ function AddEmployeeModal({ open, onClose, onCreated }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <ModalHero title="Add Team Member" sub="They'll be auto-linked the first time they log in with this email." />
-      <div className="modal-body">
-        <form onSubmit={submit}>
-          <div className="field">
-            <label className="fl">Full Name *</label>
-            <input className="fi" value={form.full_name} onChange={(e) => set("full_name", e.target.value)} />
-          </div>
-          <div className="field">
-            <label className="fl">Email</label>
-            <input className="fi" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
-          </div>
-          <div className="field-grid-2">
-            <div className="field">
-              <label className="fl">Mobile</label>
-              <input className="fi" value={form.mobile} onChange={(e) => set("mobile", e.target.value)} />
-            </div>
-            <div className="field">
-              <label className="fl">Designation</label>
-              <input className="fi" value={form.designation} onChange={(e) => set("designation", e.target.value)} />
-            </div>
-          </div>
-          {err && <div className="form-err show" style={{ marginBottom: 10 }}>{err}</div>}
-          <button className="btn btn-primary" disabled={busy} type="submit">
-            {busy ? "Adding…" : "Add Team Member"}
-          </button>
-        </form>
-      </div>
-    </Modal>
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={(e) => e.target === e.currentTarget && onClose()}
+          className="fixed inset-0 z-50 bg-ink/50 backdrop-blur-sm flex items-end sm:items-center justify-center"
+        >
+          <motion.div
+            initial={{ y: 40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 20, opacity: 0 }}
+            transition={{ duration: 0.3, ease: EASE }}
+            className="w-full sm:max-w-sm bg-sand rounded-t-3xl sm:rounded-3xl p-7"
+          >
+            <div className="w-10 h-1 rounded-full bg-ink/15 mx-auto -mt-3 mb-5 sm:hidden" />
+            <h3 className="font-display text-2xl text-ink mb-1.5">Add Team Member</h3>
+            <p className="text-sm text-ink/50 mb-6">They&apos;ll be auto-linked the first time they log in with this email.</p>
+            <form onSubmit={submit} className="space-y-4">
+              <Field label="Full Name *"><input className="field-input" value={form.full_name} onChange={(e) => set("full_name", e.target.value)} /></Field>
+              <Field label="Email"><input className="field-input" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} /></Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Mobile"><input className="field-input" value={form.mobile} onChange={(e) => set("mobile", e.target.value)} /></Field>
+                <Field label="Designation"><input className="field-input" value={form.designation} onChange={(e) => set("designation", e.target.value)} /></Field>
+              </div>
+              {err && <p className="text-sm text-red-600">{err}</p>}
+              <Button disabled={busy} type="submit" className="w-full">{busy ? "Adding…" : "Add Team Member"}</Button>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <label className="block">
+      <span className="block text-[10px] font-semibold tracking-wide uppercase text-ink/40 mb-1.5">{label}</span>
+      {children}
+    </label>
   );
 }
