@@ -132,7 +132,7 @@ function ListingCard({ listing: l, index, isAdmin, onEdit, onApprove, onReject, 
       <div className="p-4">
         <div className="flex justify-between gap-2">
           <div className="font-medium text-sm text-ink">{l.title}</div>
-          <div className="text-stone-600 text-sm shrink-0">{l.price}</div>
+          <div className="font-display text-lg text-ink shrink-0">{l.price}</div>
         </div>
         <div className="text-xs text-ink/45 mt-1">
           {[TYPE_LABEL[l.type], l.size, l.area].filter(Boolean).join(" · ")}
