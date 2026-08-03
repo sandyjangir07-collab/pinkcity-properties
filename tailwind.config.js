@@ -30,7 +30,7 @@ export default {
         },
       },
       fontFamily: {
-        display: ["Playfair Display", "ui-serif", "Georgia", "serif"],
+        display: ["Fraunces", "ui-serif", "Georgia", "serif"],
         sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       letterSpacing: {
