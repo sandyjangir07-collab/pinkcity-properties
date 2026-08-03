@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { sb } from "../../lib/supabase";
 import { computeCommission } from "../../lib/commission";
 import { formatDate } from "../../lib/utils";
+import { BadgeIndianRupee } from "lucide-react";
 import { Card, SectionTitle, StatCard } from "../ui/primitives";
 import { Sheet, SheetHeader, Field } from "../ui/Sheet";
 import { Button } from "../ui/button";
@@ -50,6 +51,14 @@ export default function CommissionSection({ employee, isAdmin, refreshKey }) {
       >
         Commission
       </SectionTitle>
+      {stats.assignments.length > 0 && (
+        <div className="flex items-center gap-2 mb-3.5 -mt-1">
+          <BadgeIndianRupee className="w-4 h-4 text-stone-600" />
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-600">
+            {stats.slabs.find((s) => s.id === [...stats.assignments].sort((a, b) => new Date(b.effective_date) - new Date(a.effective_date))[0]?.commission_slab_id)?.name || "No"} slab
+          </span>
+        </div>
+      )}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard label="Rate / Gaj" value={stats.currentRate != null ? `₹${stats.currentRate.toLocaleString("en-IN")}` : "—"} tone="brass" />
         <StatCard label="Total Deals" value={stats.totalDeals} tone="stone" />

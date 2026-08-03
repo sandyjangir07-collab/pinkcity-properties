@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Users, Calendar, Phone, Home as HomeIcon, Ticket, CalendarClock, Clock,
   FileText, TrendingUp, Newspaper, CheckCircle, BadgeIndianRupee,
-  Menu, X, ExternalLink,
+  Menu, X, ExternalLink, Zap,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import JaliPattern from "./JaliPattern";
@@ -54,8 +54,8 @@ export default function Layout() {
       <div className="fixed -top-32 -right-32 w-[380px] h-[380px] rounded-full bg-gradient-to-br from-stone-400/[0.10] to-transparent blur-3xl pointer-events-none -z-10" />
       <div className="fixed bottom-0 -left-24 w-[340px] h-[340px] rounded-full bg-gradient-to-tr from-jali/[0.08] to-transparent blur-3xl pointer-events-none -z-10" />
 
-      <header className="sticky top-0 z-40 bg-sand/90 backdrop-blur-md border-b border-ink/[0.06]">
-        <div className="flex items-center gap-3 px-5 h-16">
+      <header className="sticky top-0 z-40 bg-sand/80 backdrop-blur-md px-4 pt-4 pb-2">
+        <div className="flex items-center gap-3 rounded-full border border-ink/[0.08] bg-surface px-3 py-2.5 shadow-soft">
           <Magnetic strength={0.5}>
             <button
               onClick={() => setMenuOpen(true)}
@@ -66,8 +66,17 @@ export default function Layout() {
             </button>
           </Magnetic>
 
-          <span className="w-8 h-8 rounded-full bg-stone-600 flex items-center justify-center p-1 shrink-0 shadow-[0_3px_10px_-3px_rgba(196,56,104,0.5)]">
+          <span className="w-11 h-11 rounded-full bg-stone-600 flex items-center justify-center p-1.5 shrink-0 shadow-[0_3px_10px_-3px_rgba(196,56,104,0.5)]">
             <img src="/logo.png" alt="" className="w-full h-full object-contain" onError={(e) => (e.currentTarget.style.display = "none")} />
+          </span>
+
+          <span className="font-display text-[19px] font-semibold tracking-tight text-ink hidden sm:inline">
+            PinkCity<span className="text-stone-600">.</span>
+          </span>
+
+          <span className="ml-1 inline-flex items-center gap-1.5 rounded-full bg-stone-50 px-3 py-1.5 text-[12px] font-semibold text-stone-600 shrink-0">
+            <Zap className="w-3.5 h-3.5" />
+            {isAdmin ? "Admin" : "Team"}
           </span>
 
           <div className="min-w-0 flex-1">
@@ -78,24 +87,24 @@ export default function Layout() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.2 }}
-                className="text-[15px] font-semibold text-ink truncate"
+                className="text-[13px] font-medium text-ink/50 truncate text-right pr-1 hidden md:block"
               >
-                {current?.label || "PinkCity"}
+                {current?.label}
               </motion.div>
             </AnimatePresence>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <a
               href={PUBLIC_SITE_URL}
               target="_blank"
               rel="noreferrer"
-              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-ink/60 hover:text-stone-600 transition-colors"
+              className="hidden lg:inline-flex items-center gap-1.5 text-xs font-medium text-ink/60 hover:text-stone-600 transition-colors mr-1"
             >
               View Website
               <ExternalLink className="w-3 h-3" />
             </a>
-            <span className="text-sm text-ink/50 hidden md:block max-w-[160px] truncate">{profile?.full_name || profile?.email}</span>
+            <span className="text-sm text-ink/50 hidden xl:block max-w-[140px] truncate">{profile?.full_name || profile?.email}</span>
             <button
               onClick={signOut}
               className="text-xs font-medium border border-ink/10 rounded-full px-3.5 py-2 text-ink/70 hover:border-ink/25 hover:text-ink transition-colors"

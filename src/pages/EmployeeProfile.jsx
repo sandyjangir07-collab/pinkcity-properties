@@ -81,7 +81,7 @@ export default function EmployeeProfile() {
     <div className="max-w-2xl mx-auto px-5 pt-10 pb-16">
       <div className="text-center mb-6">
         <div className="relative w-24 h-24 mx-auto mb-4">
-          <div className="w-24 h-24 rounded-[32px] bg-stone-50 text-stone-600 flex items-center justify-center text-2xl font-medium overflow-hidden">
+          <div className="w-24 h-24 rounded-[32px] bg-stone-50 text-stone-600 flex items-center justify-center text-2xl font-medium overflow-hidden shadow-lift">
             {employee.photo_url ? <img src={employee.photo_url} alt="" className="w-full h-full object-cover" /> : initials(employee.full_name)}
           </div>
           {canEdit && (
@@ -100,8 +100,8 @@ export default function EmployeeProfile() {
             </>
           )}
         </div>
-        <div className="font-display text-2xl text-ink">{employee.full_name}</div>
-        <div className="text-sm text-ink/45 mt-1">
+        <div className="font-display text-[28px] font-medium leading-tight text-ink">{employee.full_name}</div>
+        <div className="text-[13px] text-ink/45 mt-1">
           {employee.designation || "—"}
           {employee.employee_code ? ` · ${employee.employee_code}` : ""}
         </div>

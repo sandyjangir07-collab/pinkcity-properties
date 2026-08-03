@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Cake, Droplet, Phone, Mail, LifeBuoy, MapPin } from "lucide-react";
 import { sb } from "../../lib/supabase";
 import { formatDate } from "../../lib/utils";
 import { Card, SectionTitle } from "../ui/primitives";
@@ -36,14 +37,14 @@ export default function PersonalSection({ employee, canEdit, onUpdated }) {
         Personal Information
       </SectionTitle>
       <div className="space-y-4">
-        <Row label="Date of Birth" value={employee.dob ? formatDate(employee.dob) : "—"} />
-        <Row label="Blood Group" value={employee.blood_group || "—"} />
-        <Row label="Mobile" value={employee.mobile || "—"} />
-        {employee.alternate_mobile && <Row label="Alternate Mobile" value={employee.alternate_mobile} />}
-        <Row label="Email" value={employee.email || "—"} />
-        <Row label="Emergency Contact" value={employee.emergency_contact_name ? `${employee.emergency_contact_name} · ${employee.emergency_contact_number}` : "—"} />
-        <Row label="Current Address" value={formatAddress(current)} />
-        <Row label="Permanent Address" value={formatAddress(permanent)} />
+        <Row icon={Cake} label="Date of Birth" value={employee.dob ? formatDate(employee.dob) : "—"} />
+        <Row icon={Droplet} label="Blood Group" value={employee.blood_group || "—"} />
+        <Row icon={Phone} label="Mobile" value={employee.mobile || "—"} />
+        {employee.alternate_mobile && <Row icon={Phone} label="Alternate Mobile" value={employee.alternate_mobile} />}
+        <Row icon={Mail} label="Email" value={employee.email || "—"} />
+        <Row icon={LifeBuoy} label="Emergency Contact" value={employee.emergency_contact_name ? `${employee.emergency_contact_name} · ${employee.emergency_contact_number}` : "—"} />
+        <Row icon={MapPin} label="Current Address" value={formatAddress(current)} />
+        <Row icon={MapPin} label="Permanent Address" value={formatAddress(permanent)} />
       </div>
 
       <EditPersonalModal
@@ -62,11 +63,18 @@ export default function PersonalSection({ employee, canEdit, onUpdated }) {
   );
 }
 
-function Row({ label, value }) {
+function Row({ icon: Icon, label, value }) {
   return (
-    <div>
-      <div className="text-xs text-ink/40 mb-0.5">{label}</div>
-      <div className="text-sm font-medium text-ink">{value}</div>
+    <div className="flex items-center gap-3 py-3">
+      {Icon && (
+        <span className="inline-flex w-9 h-9 shrink-0 items-center justify-center rounded-xl bg-stone-50">
+          <Icon className="w-4 h-4 text-stone-600" />
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="text-xs text-ink/40 mb-0.5">{label}</div>
+        <div className="text-sm font-medium text-ink truncate">{value}</div>
+      </div>
     </div>
   );
 }

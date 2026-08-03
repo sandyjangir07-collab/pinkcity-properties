@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BriefcaseBusiness, TrendingUp, Users } from "lucide-react";
 import { sb } from "../../lib/supabase";
 import { formatDate } from "../../lib/utils";
 import { Card, SectionTitle, Pill } from "../ui/primitives";
@@ -38,8 +39,9 @@ export default function EmploymentSection({ employee, isAdmin, onUpdated }) {
         Employment
       </SectionTitle>
       <div className="space-y-4">
-        <Row label="Designation & Department" value={`${employee.designation || "—"}${employee.department ? ` · ${employee.department}` : ""}`} />
+        <Row icon={BriefcaseBusiness} label="Designation & Department" value={`${employee.designation || "—"}${employee.department ? ` · ${employee.department}` : ""}`} />
         <Row
+          icon={TrendingUp}
           label="Type & Status"
           value={
             <span className="flex items-center gap-2">
@@ -48,7 +50,7 @@ export default function EmploymentSection({ employee, isAdmin, onUpdated }) {
             </span>
           }
         />
-        <Row label="Joined & Experience" value={`${formatDate(employee.joining_date)}${exp ? ` · ${exp}` : ""}`} />
+        <Row icon={Users} label="Joined & Experience" value={`${formatDate(employee.joining_date)}${exp ? ` · ${exp}` : ""}`} />
       </div>
 
       <EditEmploymentModal
@@ -65,11 +67,18 @@ export default function EmploymentSection({ employee, isAdmin, onUpdated }) {
   );
 }
 
-function Row({ label, value }) {
+function Row({ icon: Icon, label, value }) {
   return (
-    <div>
-      <div className="text-xs text-ink/40 mb-0.5">{label}</div>
-      <div className="text-sm font-medium text-ink">{value}</div>
+    <div className="flex items-center gap-3 py-3">
+      {Icon && (
+        <span className="inline-flex w-9 h-9 shrink-0 items-center justify-center rounded-xl bg-stone-50">
+          <Icon className="w-4 h-4 text-stone-600" />
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="text-xs text-ink/40 mb-0.5">{label}</div>
+        <div className="text-sm font-medium text-ink">{value}</div>
+      </div>
     </div>
   );
 }

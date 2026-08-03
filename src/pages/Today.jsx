@@ -4,7 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { STATUS_LABELS, waNumberFor, timeAgo } from "../lib/leadConstants";
 import { todayStr, fmtTime, fmtHours, getLocation } from "../lib/attendance";
-import { Phone, MessageCircle, Key, Search, MapPin } from "lucide-react";
+import { Phone, MessageCircle, Key, Search, MapPin, Clock3 } from "lucide-react";
 import { Card, SectionTitle, Pill } from "../components/ui/primitives";
 import { Button } from "../components/ui/button";
 import LeadFormModal from "../components/leads/LeadFormModal";
@@ -138,19 +138,29 @@ export default function Today() {
   );
   const attendanceDone = !!(attendance && attendance.check_out_at);
 
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const firstName = (profile?.full_name || "").split(" ")[0] || "there";
+  const busyToday = followups && followups.length === 0 && visits.length === 0;
+
   return (
     <div className="max-w-2xl mx-auto px-5 py-10">
-      <div className="text-xs font-medium tracking-widest2 uppercase text-stone-500 mb-3">PinkCity Properties</div>
-      <h1 className="font-display text-3xl text-ink mb-2">Today</h1>
-      <p className="text-ink/50 text-sm mb-8">
-        Your follow-ups, visits, and attendance for {new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.
+      <div className="text-[11px] font-semibold uppercase tracking-widest2 text-stone-500 mb-3">
+        {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
+      </div>
+      <h1 className="font-display text-[28px] font-medium leading-tight text-ink mb-2">{greeting}, {firstName}.</h1>
+      <p className="text-ink/50 text-[13.5px] mb-8">
+        {busyToday ? "You're all caught up — nothing due today." : "Here's what needs your attention today."}
       </p>
 
       <div className="space-y-4">
         <Card className="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <div className="font-display text-base text-ink">Attendance</div>
-            <div className="text-sm text-ink/50 mt-1">{attendanceStatus}</div>
+            <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-ink/40">Attendance</div>
+            <div className="flex items-center gap-1.5 text-[15px] font-semibold text-ink mt-1">
+              <Clock3 className="w-4 h-4 text-stone-600" />
+              {attendanceStatus}
+            </div>
           </div>
           <Button size="sm" disabled={attendanceBusy || attendanceDone || attendance === undefined} onClick={handleAttendanceAction}>
             {attendanceBusy ? "Getting location…" : attendanceBtnLabel}
