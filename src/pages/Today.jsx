@@ -4,7 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { STATUS_LABELS, waNumberFor, timeAgo } from "../lib/leadConstants";
 import { todayStr, fmtTime, fmtHours, getLocation } from "../lib/attendance";
-import { Phone, MessageCircle, Key, Search } from "lucide-react";
+import { Phone, MessageCircle, Key, Search, MapPin } from "lucide-react";
 import { Card, SectionTitle, Pill } from "../components/ui/primitives";
 import { Button } from "../components/ui/button";
 import LeadFormModal from "../components/leads/LeadFormModal";
@@ -129,7 +129,13 @@ export default function Today() {
       : !attendance.check_out_at
       ? `Checked in at ${fmtTime(attendance.check_in_at)}`
       : `✓ ${fmtTime(attendance.check_in_at)} – ${fmtTime(attendance.check_out_at)} · ${fmtHours(attendance.check_in_at, attendance.check_out_at)}`;
-  const attendanceBtnLabel = !attendance ? "📍 Check In" : !attendance.check_out_at ? "📍 Check Out" : "Done for today";
+  const attendanceBtnLabel = !attendance ? (
+    <span className="inline-flex items-center gap-1.5"><MapPin className="w-4 h-4" /> Check In</span>
+  ) : !attendance.check_out_at ? (
+    <span className="inline-flex items-center gap-1.5"><MapPin className="w-4 h-4" /> Check Out</span>
+  ) : (
+    "Done for today"
+  );
   const attendanceDone = !!(attendance && attendance.check_out_at);
 
   return (

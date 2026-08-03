@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { sb } from "../../lib/supabase";
 import { computeCommission } from "../../lib/commission";
 import { formatDate } from "../../lib/utils";
-import { Card, SectionTitle } from "../ui/primitives";
+import { Card, SectionTitle, StatCard } from "../ui/primitives";
 import { Sheet, SheetHeader, Field } from "../ui/Sheet";
 import { Button } from "../ui/button";
 import { useToast } from "../../hooks/useToast";
@@ -51,10 +51,10 @@ export default function CommissionSection({ employee, isAdmin, refreshKey }) {
         Commission
       </SectionTitle>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <MiniStat label="Rate / Gaj" value={stats.currentRate != null ? `₹${stats.currentRate.toLocaleString("en-IN")}` : "—"} />
-        <MiniStat label="Total Deals" value={stats.totalDeals} />
-        <MiniStat label="Total Sales" value={`₹${stats.totalSales.toLocaleString("en-IN")}`} />
-        <MiniStat label="This Month" value={`₹${stats.thisMonthCommission.toLocaleString("en-IN")}`} />
+        <StatCard label="Rate / Gaj" value={stats.currentRate != null ? `₹${stats.currentRate.toLocaleString("en-IN")}` : "—"} tone="brass" />
+        <StatCard label="Total Deals" value={stats.totalDeals} tone="stone" />
+        <StatCard label="Total Sales" value={`₹${stats.totalSales.toLocaleString("en-IN")}`} tone="jali" />
+        <StatCard label="This Month" value={`₹${stats.thisMonthCommission.toLocaleString("en-IN")}`} tone="emerald" />
       </div>
       {stats.assignments.length > 0 && (
         <>
@@ -93,14 +93,6 @@ export default function CommissionSection({ employee, isAdmin, refreshKey }) {
   );
 }
 
-function MiniStat({ label, value }) {
-  return (
-    <div className="bg-stone-50/60 rounded-2xl p-3.5">
-      <div className="text-[10px] font-semibold uppercase tracking-wide text-ink/35 mb-1">{label}</div>
-      <div className="font-display text-lg text-ink">{value}</div>
-    </div>
-  );
-}
 
 function AssignSlabModal({ open, onClose, slabs, employeeId, onAssigned }) {
   const [slabId, setSlabId] = useState("");

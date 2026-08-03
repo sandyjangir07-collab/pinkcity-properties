@@ -3,6 +3,7 @@ import { sb } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
 import { STATUS_LABELS, STATUS_TEXT } from "../../lib/leadConstants";
+import { Phone, MapPin } from "lucide-react";
 import { Sheet } from "../ui/Sheet";
 import { Pill } from "../ui/primitives";
 
@@ -108,9 +109,9 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
         <Pill tone="stone">{STATUS_LABELS[lead.status] || lead.status}</Pill>
       </div>
       <div className="flex gap-3 flex-wrap text-sm text-ink/50 mb-4">
-        {lead.phone && <a href={`tel:${lead.phone}`} className="text-inherit no-underline">📞 {lead.phone}</a>}
+        {lead.phone && <a href={`tel:${lead.phone}`} className="text-inherit no-underline inline-flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" /> {lead.phone}</a>}
         {lead.budget && <span>₹ {lead.budget}</span>}
-        {lead.preferred_location && <span>📍 {lead.preferred_location}</span>}
+        {lead.preferred_location && <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {lead.preferred_location}</span>}
       </div>
 
       {hasLoanInfo && (
@@ -157,7 +158,7 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
           onClick={() => onScheduleCall({ leadId, name: lead.name, phone: lead.phone, editId: call?.status === "scheduled" ? call.id : null, existing: call?.status === "scheduled" ? call : null })}
           className="text-xs font-medium text-stone-600 border border-stone-200 rounded-full px-3 py-1.5 mt-2.5"
         >
-          📞 {call && call.status === "scheduled" ? "Reschedule" : "Schedule Call"}
+          <Phone className="w-3.5 h-3.5 inline mr-1" /> {call && call.status === "scheduled" ? "Reschedule" : "Schedule Call"}
         </button>
       </div>
 

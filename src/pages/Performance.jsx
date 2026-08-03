@@ -114,9 +114,9 @@ export default function Performance() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2.5">
-                <MiniStat n={m.listings} label="Listings" />
-                <MiniStat n={m.leads} label="Leads" />
-                <MiniStat n={m.visits} label="Site Visits" />
+                <MiniStat n={m.listings} label="Listings" tone="stone" />
+                <MiniStat n={m.leads} label="Leads" tone="jali" />
+                <MiniStat n={m.visits} label="Site Visits" tone="brass" />
                 <MiniStat n={m.closed} label="Closed" tone="green" />
               </div>
               <div className="text-center text-xs font-semibold text-stone-600 mt-3">View leads &amp; visits →</div>
@@ -197,9 +197,11 @@ export default function Performance() {
 
 
 function MiniStat({ n, label, tone }) {
+  const bg = tone === "green" ? "bg-emerald-50" : tone === "jali" ? "bg-jali-50" : tone === "brass" ? "bg-brass/10" : "bg-stone-50";
+  const text = tone === "green" ? "text-emerald-600" : tone === "jali" ? "text-jali" : tone === "brass" ? "text-brass" : "text-ink";
   return (
-    <div className="text-center bg-stone-50/60 rounded-xl py-2">
-      <div className={`font-display text-lg ${tone === "green" ? "text-emerald-600" : "text-ink"}`}>{n}</div>
+    <div className={`text-center ${bg} rounded-xl py-2`}>
+      <div className={`font-display text-lg ${text}`}>{n}</div>
       <div className="text-[10px] text-ink/40">{label}</div>
     </div>
   );

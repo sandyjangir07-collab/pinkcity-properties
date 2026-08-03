@@ -4,6 +4,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
 import { compressImageFile, fileToUploadableBuffer } from "../../lib/utils";
 import { APPROVAL_TYPES, ROAD_WIDTHS, FACINGS, PLOT_SIZE_UNITS, COLONY_ROAD_WIDTHS, APPROACH_ROADS } from "../../lib/listingConstants";
+import { FileText } from "lucide-react";
 import { Sheet, SheetHeader, Field } from "../ui/Sheet";
 import { Button } from "../ui/button";
 
@@ -258,7 +259,7 @@ export default function ListingFormModal({ target, isAdmin, onClose, onSaved }) 
             </div>
           ) : (
             <button type="button" onClick={() => document.getElementById("listing-map-pdf").click()} className="w-full text-sm font-medium text-ink/60 border border-dashed border-ink/15 rounded-xl py-2.5">
-              📄 Choose PDF…
+              <FileText className="w-3.5 h-3.5 inline mr-1.5" />Choose PDF…
             </button>
           )}
         </Field>

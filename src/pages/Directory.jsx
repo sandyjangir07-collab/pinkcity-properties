@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Users, ShieldCheck, TrendingUp, ChevronRight, UserPlus } from "lucide-react";
+import { Users, ShieldCheck, TrendingUp, ChevronRight, UserPlus, Search, X } from "lucide-react";
 import { sb } from "../lib/supabase";
 import { DOCUMENT_TYPES } from "../lib/constants";
 import { initials } from "../lib/utils";
@@ -18,6 +18,7 @@ export default function Directory() {
   const [docStatusByEmployee, setDocStatusByEmployee] = useState({});
   const [totalSales, setTotalSales] = useState(0);
   const [addOpen, setAddOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const [errorMsg, setErrorMsg] = useState(null);
   const showToast = useToast();
 
@@ -62,6 +63,16 @@ export default function Directory() {
     return roots.map((r) => ({ employee: r, children: childrenOf(r.id) }));
   }, [employees, hierarchy]);
 
+  const searchTerm = search.trim().toLowerCase();
+  const searchResults = useMemo(() => {
+    if (!employees || !searchTerm) return null;
+    return employees.filter(
+      (e) =>
+        (e.full_name || "").toLowerCase().includes(searchTerm) ||
+        (e.employee_code || "").toLowerCase().includes(searchTerm)
+    );
+  }, [employees, searchTerm]);
+
   function isFullyVerified(empId) {
     const statuses = docStatusByEmployee[empId] || {};
     return DOCUMENT_TYPES.every((d) => statuses[d.type] === "approved");
@@ -91,36 +102,68 @@ export default function Directory() {
         <StatCard value={`₹${totalSales.toLocaleString("en-IN")}`} label="Total Sales" Icon={TrendingUp} tone="brass" />
       </div>
 
-      <div className="space-y-2.5">
-        {tree.length === 0 && (
-          <div className="bg-surface border border-ink/[0.06] shadow-soft rounded-3xl text-center py-16 text-ink/40">
-            <div className="font-display text-lg text-ink mb-1">No team members yet</div>
-            <p className="text-sm">Add your first team member to get started.</p>
-          </div>
+      <div className="relative mb-6">
+        <Search className="w-4 h-4 text-ink/35 absolute left-4 top-1/2 -translate-y-1/2" />
+        <input
+          className="field-input pl-11 pr-10"
+          placeholder="Search by name or employee ID…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        {search && (
+          <button onClick={() => setSearch("")} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/35 hover:text-ink/60">
+            <X className="w-4 h-4" />
+          </button>
         )}
-        {tree.map(({ employee, children }, i) => (
-          <motion.div
-            key={employee.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: i * 0.04, ease: EASE }}
-            className="space-y-2.5"
-          >
-            <PersonRow employee={employee} verified={isFullyVerified(employee.id)} />
-            {children.length > 0 && (
-              <div className="text-[10.5px] font-semibold tracking-[0.14em] uppercase text-ink/35 pl-4 pt-1">
-                Reports to {employee.full_name}
+      </div>
+
+      <div className="space-y-2.5">
+        {searchResults !== null ? (
+          searchResults.length === 0 ? (
+            <div className="bg-surface border border-ink/[0.06] shadow-soft rounded-3xl text-center py-16 text-ink/40">
+              <div className="font-display text-lg text-ink mb-1">No employees found</div>
+              <p className="text-sm">Try a different name or employee ID.</p>
+            </div>
+          ) : (
+            searchResults.map((e, i) => (
+              <motion.div key={e.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.03, ease: EASE }}>
+                <PersonRow employee={e} verified={isFullyVerified(e.id)} />
+              </motion.div>
+            ))
+          )
+        ) : (
+          <>
+            {tree.length === 0 && (
+              <div className="bg-surface border border-ink/[0.06] shadow-soft rounded-3xl text-center py-16 text-ink/40">
+                <div className="font-display text-lg text-ink mb-1">No team members yet</div>
+                <p className="text-sm">Add your first team member to get started.</p>
               </div>
             )}
-            {children.length > 0 && (
-              <div className="ml-4 space-y-2 border-l border-ink/[0.08] pl-3.5">
-                {children.map((c) => (
-                  <PersonRow key={c.id} employee={c} verified={isFullyVerified(c.id)} junior />
-                ))}
-              </div>
-            )}
-          </motion.div>
-        ))}
+            {tree.map(({ employee, children }, i) => (
+              <motion.div
+                key={employee.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: i * 0.04, ease: EASE }}
+                className="space-y-2.5"
+              >
+                <PersonRow employee={employee} verified={isFullyVerified(employee.id)} />
+                {children.length > 0 && (
+                  <div className="text-[10.5px] font-semibold tracking-[0.14em] uppercase text-ink/35 pl-4 pt-1">
+                    Reports to {employee.full_name}
+                  </div>
+                )}
+                {children.length > 0 && (
+                  <div className="ml-4 space-y-2 border-l border-ink/[0.08] pl-3.5">
+                    {children.map((c) => (
+                      <PersonRow key={c.id} employee={c} verified={isFullyVerified(c.id)} junior />
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </>
+        )}
 
         <button
           onClick={() => setAddOpen(true)}

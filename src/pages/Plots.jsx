@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { compressImageFile, fileToUploadableBuffer, formatDateTime, formatINR } from "../lib/utils";
 import { PROPERTY_IMAGES_BUCKET } from "../lib/constants";
+import { User, Users, Image, Camera } from "lucide-react";
 import { Sheet, SheetHeader, Field } from "../components/ui/Sheet";
 import { Button } from "../components/ui/button";
 
@@ -214,10 +215,10 @@ function SubmitTokenModal({ target, onClose, profile, onSubmitted }) {
       </div>
 
       <div className="space-y-4">
-        <Field label={<span className="normal-case text-sm font-semibold text-ink flex items-center gap-1.5">👤 Client Name</span>}>
+        <Field label={<span className="normal-case text-sm font-semibold text-ink flex items-center gap-1.5"><User className="w-4 h-4" /> Client Name</span>}>
           <input className="field-input" placeholder="e.g. Rohit Agarwal" value={clientName} onChange={(e) => setClientName(e.target.value)} />
         </Field>
-        <Field label={<span className="normal-case text-sm font-semibold text-ink flex items-center gap-1.5">👥 Associate Name</span>}>
+        <Field label={<span className="normal-case text-sm font-semibold text-ink flex items-center gap-1.5"><Users className="w-4 h-4" /> Associate Name</span>}>
           <input className="field-input" placeholder="e.g. Meenal Sharma" value={associateName} onChange={(e) => setAssociateName(e.target.value)} />
           <p className="text-xs text-ink/40 mt-1.5">PinkCity associate handling this deal</p>
         </Field>
@@ -238,8 +239,8 @@ function SubmitTokenModal({ target, onClose, profile, onSubmitted }) {
             )}
           </div>
           <div className="grid grid-cols-2 gap-2.5 mt-2.5">
-            <button type="button" onClick={() => document.getElementById("plot-photo-input").click()} className="text-sm font-medium text-ink/70 border border-ink/10 rounded-full py-2.5">🖼️ Gallery</button>
-            <button type="button" onClick={() => document.getElementById("plot-photo-camera-input").click()} className="text-sm font-medium text-ink/70 border border-ink/10 rounded-full py-2.5">📷 Camera</button>
+            <button type="button" onClick={() => document.getElementById("plot-photo-input").click()} className="text-sm font-medium text-ink/70 border border-ink/10 rounded-full py-2.5 inline-flex items-center justify-center gap-1.5"><Image className="w-4 h-4" /> Gallery</button>
+            <button type="button" onClick={() => document.getElementById("plot-photo-camera-input").click()} className="text-sm font-medium text-ink/70 border border-ink/10 rounded-full py-2.5 inline-flex items-center justify-center gap-1.5"><Camera className="w-4 h-4" /> Camera</button>
           </div>
           <p className="text-xs text-ink/40 mt-2">JPG or PNG, clearly showing UTR / transaction ID</p>
         </Field>

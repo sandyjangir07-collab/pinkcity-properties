@@ -3,6 +3,7 @@ import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { todayStr, fmtTime, fmtHours, getLocation } from "../lib/attendance";
+import { MapPin } from "lucide-react";
 import { Card, SectionTitle, Pill } from "../components/ui/primitives";
 import { Button } from "../components/ui/button";
 
@@ -98,7 +99,7 @@ function OfficeSetupPanel() {
       </p>
 
       <button onClick={captureCurrent} disabled={capturing} className="text-xs font-medium text-ink/60 border border-ink/10 rounded-full px-4 py-2 mb-4">
-        {capturing ? "Getting location…" : "📍 Use My Current Location"}
+        {capturing ? "Getting location…" : (<span className="inline-flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> Use My Current Location</span>)}
       </button>
 
       <div className="grid grid-cols-2 gap-3 mb-3">
@@ -119,7 +120,7 @@ function OfficeSetupPanel() {
       </div>
 
       {pending && (
-        <p className="text-sm text-stone-600 mb-3">📍 Using: {pending.latitude.toFixed(6)}, {pending.longitude.toFixed(6)} — click Save to confirm.</p>
+        <p className="text-sm text-stone-600 mb-3 flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 shrink-0" /> Using: {pending.latitude.toFixed(6)}, {pending.longitude.toFixed(6)} — click Save to confirm.</p>
       )}
 
       <Button disabled={!pending || saving} onClick={save}>{saving ? "Saving…" : "Save Office Location"}</Button>
