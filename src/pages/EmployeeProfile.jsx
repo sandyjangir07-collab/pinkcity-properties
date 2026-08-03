@@ -5,7 +5,6 @@ import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { compressImageFile, fileToUploadableBuffer, initials } from "../lib/utils";
 import { PROPERTY_IMAGES_BUCKET } from "../lib/constants";
-import { Button } from "../components/ui/button";
 import CommissionSection from "../components/profile/CommissionSection";
 import ComplianceSection from "../components/profile/ComplianceSection";
 import PersonalSection from "../components/profile/PersonalSection";
@@ -79,7 +78,7 @@ export default function EmployeeProfile() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-5 pt-10 pb-32">
+    <div className="max-w-2xl mx-auto px-5 pt-10 pb-16">
       <div className="text-center mb-6">
         <div className="relative w-24 h-24 mx-auto mb-4">
           <div className="w-24 h-24 rounded-[32px] bg-stone-50 text-stone-600 flex items-center justify-center text-2xl font-medium overflow-hidden">
@@ -116,25 +115,6 @@ export default function EmployeeProfile() {
         <HierarchySection employee={employee} isAdmin={isAdmin} canEdit={canEdit} refreshKey={refreshKey} />
         <ActivitySection employee={employee} refreshKey={refreshKey} />
       </div>
-
-      {employee.mobile && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-md bg-white rounded-3xl shadow-[0_20px_50px_-24px_rgba(43,21,18,0.25)] p-2.5 flex gap-2">
-          <Button as="a" href={`tel:${employee.mobile}`} className="flex-1 no-underline">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
-            </svg>
-            Call
-          </Button>
-          <a
-            href={`https://wa.me/91${employee.mobile.replace(/\D/g, "").slice(-10)}`}
-            target="_blank"
-            rel="noreferrer"
-            className="flex-1 flex items-center justify-center rounded-full border border-ink/10 text-ink text-sm font-medium"
-          >
-            WhatsApp
-          </a>
-        </div>
-      )}
     </div>
   );
 }
