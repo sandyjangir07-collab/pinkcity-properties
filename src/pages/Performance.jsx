@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { sb } from "../lib/supabase";
 import { STATUS_LABELS } from "../lib/leadConstants";
 import { Sheet, SheetHeader } from "../components/ui/Sheet";
-import { Pill } from "../components/ui/primitives";
+import { Pill, StatCard } from "../components/ui/primitives";
 import { initials } from "../lib/utils";
 import LeadDetailModal from "../components/leads/LeadDetailModal";
 import ScheduleVisitModal from "../components/leads/ScheduleVisitModal";
@@ -82,10 +82,10 @@ export default function Performance() {
 
       {totals && (
         <div className="grid grid-cols-4 gap-3 mb-6">
-          <MiniStatBig label="Listings" value={totals.listings} />
-          <MiniStatBig label="Site Visits" value={totals.visits} />
-          <MiniStatBig label="Leads" value={totals.leads} />
-          <MiniStatBig label="Closed" value={totals.closed} />
+          <StatCard label="Listings" value={totals.listings} tone="stone" />
+          <StatCard label="Site Visits" value={totals.visits} tone="jali" />
+          <StatCard label="Leads" value={totals.leads} tone="brass" />
+          <StatCard label="Closed" value={totals.closed} tone="emerald" />
         </div>
       )}
 
@@ -195,14 +195,6 @@ export default function Performance() {
   );
 }
 
-function MiniStatBig({ label, value }) {
-  return (
-    <div className="bg-white rounded-2xl p-4">
-      <div className="text-[10px] font-semibold uppercase tracking-wide text-ink/35 mb-1">{label}</div>
-      <div className="font-display text-2xl text-ink">{value}</div>
-    </div>
-  );
-}
 
 function MiniStat({ n, label, tone }) {
   return (

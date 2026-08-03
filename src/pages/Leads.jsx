@@ -5,7 +5,7 @@ import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { STATUS_LABELS, SOURCE_LABELS, STATUS_TEXT, isStaleLead, timeAgo, waNumberFor } from "../lib/leadConstants";
 import { Button } from "../components/ui/button";
-import { Pill } from "../components/ui/primitives";
+import { Pill, StatCard } from "../components/ui/primitives";
 import LeadFormModal from "../components/leads/LeadFormModal";
 import LeadDetailModal from "../components/leads/LeadDetailModal";
 import ScheduleVisitModal from "../components/leads/ScheduleVisitModal";
@@ -70,10 +70,10 @@ export default function Leads() {
       <p className="text-ink/50 text-sm mb-8">Track every enquiry from first contact to close.</p>
 
       <div className="grid grid-cols-4 gap-3 mb-6">
-        <MiniStat label="New" value={stats.new} />
-        <MiniStat label="Active" value={stats.active} />
-        <MiniStat label="Closed" value={stats.closed} />
-        <MiniStat label="Total" value={stats.total} />
+        <StatCard label="New" value={stats.new} tone="jali" />
+        <StatCard label="Active" value={stats.active} tone="brass" />
+        <StatCard label="Closed" value={stats.closed} tone="emerald" />
+        <StatCard label="Total" value={stats.total} tone="stone" />
       </div>
 
       <div className="flex flex-wrap gap-2 mb-6">
@@ -134,14 +134,6 @@ export default function Leads() {
   );
 }
 
-function MiniStat({ label, value }) {
-  return (
-    <div className="bg-white rounded-2xl p-4">
-      <div className="text-[10px] font-semibold uppercase tracking-wide text-ink/35 mb-1">{label}</div>
-      <div className="font-display text-2xl text-ink">{value}</div>
-    </div>
-  );
-}
 
 function LeadCard({ lead: l, index, onOpen }) {
   const initials = (l.name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();

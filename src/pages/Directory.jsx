@@ -6,6 +6,7 @@ import { sb } from "../lib/supabase";
 import { DOCUMENT_TYPES } from "../lib/constants";
 import { initials } from "../lib/utils";
 import { Button } from "../components/ui/button";
+import { StatCard } from "../components/ui/primitives";
 import { Sheet, SheetHeader, Field } from "../components/ui/Sheet";
 import { useToast } from "../hooks/useToast";
 
@@ -85,9 +86,9 @@ export default function Directory() {
       {errorMsg && <div className="mb-6 rounded-2xl bg-red-50 text-red-600 text-sm px-5 py-4">{errorMsg}</div>}
 
       <div className="grid grid-cols-3 gap-2.5 mb-8">
-        <Stat n={String(employees.length)} label="Members" Icon={Users} />
-        <Stat n={`${fullyVerifiedCount}/${employees.length}`} label="Fully verified" Icon={ShieldCheck} />
-        <Stat n={`₹${totalSales.toLocaleString("en-IN")}`} label="Total Sales" Icon={TrendingUp} />
+        <StatCard value={String(employees.length)} label="Members" Icon={Users} tone="stone" />
+        <StatCard value={`${fullyVerifiedCount}/${employees.length}`} label="Fully verified" Icon={ShieldCheck} tone="emerald" />
+        <StatCard value={`₹${totalSales.toLocaleString("en-IN")}`} label="Total Sales" Icon={TrendingUp} tone="brass" />
       </div>
 
       <div className="space-y-2.5">
@@ -139,16 +140,6 @@ export default function Directory() {
           load();
         }}
       />
-    </div>
-  );
-}
-
-function Stat({ n, label, Icon }) {
-  return (
-    <div className="rounded-[22px] border border-ink/[0.06] bg-surface p-3.5 shadow-soft">
-      <Icon className="w-4 h-4 text-stone-600" />
-      <div className="mt-2 font-display text-[20px] leading-none text-ink">{n}</div>
-      <div className="mt-1.5 text-[10.5px] leading-tight text-ink/45">{label}</div>
     </div>
   );
 }

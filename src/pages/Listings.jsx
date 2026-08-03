@@ -7,7 +7,7 @@ import { useToast } from "../hooks/useToast";
 import { TYPE_LABEL, EMOJI } from "../lib/listingConstants";
 import { Phone, Building2 } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { Pill } from "../components/ui/primitives";
+import { Pill, StatCard } from "../components/ui/primitives";
 import ListingFormModal from "../components/listings/ListingFormModal";
 
 const EASE = [0.22, 1, 0.36, 1];
@@ -68,10 +68,10 @@ export default function Listings() {
 
       {stats && (
         <div className="grid grid-cols-4 gap-3 mb-6">
-          <MiniStat label="Pending" value={stats.pending} />
-          <MiniStat label="Live" value={stats.active} />
-          <MiniStat label="Total" value={stats.total} />
-          <MiniStat label="Rejected" value={stats.rejected} />
+          <StatCard label="Pending" value={stats.pending} tone="brass" />
+          <StatCard label="Live" value={stats.active} tone="emerald" />
+          <StatCard label="Total" value={stats.total} tone="stone" />
+          <StatCard label="Rejected" value={stats.rejected} tone="jali" />
         </div>
       )}
 
@@ -108,14 +108,6 @@ export default function Listings() {
   );
 }
 
-function MiniStat({ label, value }) {
-  return (
-    <div className="bg-white rounded-2xl p-4">
-      <div className="text-[10px] font-semibold uppercase tracking-wide text-ink/35 mb-1">{label}</div>
-      <div className="font-display text-2xl text-ink">{value}</div>
-    </div>
-  );
-}
 
 function ListingCard({ listing: l, index, isAdmin, onEdit, onApprove, onReject, onDelete }) {
   const imgs = l.images && l.images.length ? l.images : l.image_url ? [l.image_url] : [];
