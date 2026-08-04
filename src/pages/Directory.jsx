@@ -9,6 +9,7 @@ import { Button } from "../components/ui/button";
 import { StatCard } from "../components/ui/primitives";
 import { Sheet, SheetHeader, Field } from "../components/ui/Sheet";
 import { useToast } from "../hooks/useToast";
+import { BrandedLoader } from "../components/ui/BrandedLoader";
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -83,7 +84,7 @@ export default function Directory() {
   if (employees === null) {
     return (
       <div className="max-w-3xl mx-auto px-5 py-20 flex justify-center">
-        <div className="w-6 h-6 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" />
+        <BrandedLoader size={24} />
       </div>
     );
   }
@@ -135,7 +136,8 @@ export default function Directory() {
           <>
             {tree.length === 0 && (
               <div className="bg-surface border border-ink/[0.06] shadow-soft rounded-3xl text-center py-16 text-ink/40">
-                <div className="font-display text-lg text-ink mb-1">No team members yet</div>
+                <img src="/logo.png" alt="" className="w-12 h-12 object-contain mx-auto mb-3 opacity-25" />
+            <div className="font-display text-lg text-ink mb-1">No team members yet</div>
                 <p className="text-sm">Add your first team member to get started.</p>
               </div>
             )}

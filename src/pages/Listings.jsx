@@ -10,6 +10,7 @@ import { Button } from "../components/ui/button";
 import { Camera } from "lucide-react";
 import { Pill, StatCard } from "../components/ui/primitives";
 import ListingFormModal from "../components/listings/ListingFormModal";
+import { BrandedLoader } from "../components/ui/BrandedLoader";
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -82,9 +83,10 @@ export default function Listings() {
       </Button>
 
       {listings === null ? (
-        <div className="flex justify-center py-16"><div className="w-6 h-6 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" /></div>
+        <div className="flex justify-center py-16"><BrandedLoader size={24} /></div>
       ) : listings.length === 0 ? (
         <div className="bg-white rounded-3xl text-center py-16 text-ink/40">
+          <img src="/logo.png" alt="" className="w-12 h-12 object-contain mx-auto mb-3 opacity-25" />
           <div className="font-display text-lg text-ink mb-1">{isAdmin ? "No submissions yet" : "No listings yet"}</div>
           <p className="text-sm">Click Add Listing to submit your first property.</p>
         </div>

@@ -6,6 +6,7 @@ import { todayStr, fmtTime, fmtHours, getLocation } from "../lib/attendance";
 import { MapPin } from "lucide-react";
 import { Card, SectionTitle, Pill } from "../components/ui/primitives";
 import { Button } from "../components/ui/button";
+import { BrandedLoader } from "../components/ui/BrandedLoader";
 
 export default function Attendance() {
   const { isAdmin } = useAuth();
@@ -143,7 +144,7 @@ function TeamAttendanceToday() {
     <Card>
       <SectionTitle>Today&apos;s Team Attendance {rows ? `(${rows.length} checked in)` : ""}</SectionTitle>
       {rows === null ? (
-        <div className="flex justify-center py-8"><div className="w-5 h-5 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" /></div>
+        <div className="flex justify-center py-8"><BrandedLoader size={20} /></div>
       ) : rows.length === 0 ? (
         <div className="text-sm text-ink/40">Nobody has checked in yet today.</div>
       ) : (
@@ -180,7 +181,7 @@ function MyAttendanceHistory() {
     <Card>
       <SectionTitle>My Attendance (last 14 days)</SectionTitle>
       {rows === null ? (
-        <div className="flex justify-center py-8"><div className="w-5 h-5 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" /></div>
+        <div className="flex justify-center py-8"><BrandedLoader size={20} /></div>
       ) : rows.length === 0 ? (
         <div className="text-sm text-ink/40">No attendance recorded yet.</div>
       ) : (

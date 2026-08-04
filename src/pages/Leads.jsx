@@ -11,6 +11,7 @@ import LeadDetailModal from "../components/leads/LeadDetailModal";
 import ScheduleVisitModal from "../components/leads/ScheduleVisitModal";
 import ScheduleCallModal from "../components/leads/ScheduleCallModal";
 import CallOutcomeWatcher from "../components/leads/CallOutcomeWatcher";
+import { BrandedLoader } from "../components/ui/BrandedLoader";
 
 const CRM_ADMIN_EMAIL = "sandyjangir07@gmail.com";
 const EASE = [0.22, 1, 0.36, 1];
@@ -89,9 +90,10 @@ export default function Leads() {
       </div>
 
       {leads === null ? (
-        <div className="flex justify-center py-16"><div className="w-6 h-6 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" /></div>
+        <div className="flex justify-center py-16"><BrandedLoader size={24} /></div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-3xl text-center py-16 text-ink/40">
+          <img src="/logo.png" alt="" className="w-12 h-12 object-contain mx-auto mb-3 opacity-25" />
           <div className="font-display text-lg text-ink mb-1">No leads found</div>
           <p className="text-sm">Add your first lead or adjust the filter.</p>
         </div>

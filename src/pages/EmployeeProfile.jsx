@@ -11,6 +11,7 @@ import PersonalSection from "../components/profile/PersonalSection";
 import EmploymentSection from "../components/profile/EmploymentSection";
 import HierarchySection from "../components/profile/HierarchySection";
 import ActivitySection from "../components/profile/ActivitySection";
+import { BrandedLoader } from "../components/ui/BrandedLoader";
 
 export default function EmployeeProfile() {
   const { id } = useParams();
@@ -72,7 +73,7 @@ export default function EmployeeProfile() {
   if (!employee) {
     return (
       <div className="max-w-2xl mx-auto px-5 py-20 flex justify-center">
-        <div className="w-6 h-6 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" />
+        <BrandedLoader size={24} />
       </div>
     );
   }

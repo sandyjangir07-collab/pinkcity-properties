@@ -3,6 +3,7 @@ import { sb } from "../lib/supabase";
 import { useToast } from "../hooks/useToast";
 import { Card, SectionTitle } from "../components/ui/primitives";
 import { Button } from "../components/ui/button";
+import { BrandedLoader } from "../components/ui/BrandedLoader";
 
 export default function CommissionSlabs() {
   const [slabs, setSlabs] = useState(null);
@@ -55,7 +56,7 @@ export default function CommissionSlabs() {
   if (slabs === null) {
     return (
       <div className="max-w-2xl mx-auto px-5 py-20 flex justify-center">
-        <div className="w-6 h-6 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" />
+        <BrandedLoader size={24} />
       </div>
     );
   }

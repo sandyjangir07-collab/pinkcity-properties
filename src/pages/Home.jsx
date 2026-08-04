@@ -3,6 +3,7 @@ import { useAuth } from "../hooks/useAuth";
 import CreateProfile from "./CreateProfile";
 import PendingApprovalNotice from "./PendingApprovalNotice";
 import Directory from "./Directory";
+import { BrandedLoader } from "../components/ui/BrandedLoader";
 
 export default function Home() {
   const { isAdmin, employee, loading } = useAuth();
@@ -10,7 +11,7 @@ export default function Home() {
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto px-5 py-20 flex justify-center">
-        <div className="w-6 h-6 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" />
+        <BrandedLoader size={24} />
       </div>
     );
   }

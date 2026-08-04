@@ -13,6 +13,7 @@ import ScheduleVisitModal from "../components/leads/ScheduleVisitModal";
 import ScheduleCallModal from "../components/leads/ScheduleCallModal";
 import CallOutcomeWatcher from "../components/leads/CallOutcomeWatcher";
 import { ReviewTokenModal } from "./Plots";
+import { BrandedLoader } from "../components/ui/BrandedLoader";
 
 export default function Today() {
   const { user, profile, isAdmin } = useAuth();
@@ -197,7 +198,7 @@ export default function Today() {
         <Card>
           <SectionTitle>Follow-ups Due</SectionTitle>
           {followups === null ? (
-            <div className="flex justify-center py-8"><div className="w-5 h-5 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" /></div>
+            <div className="flex justify-center py-8"><BrandedLoader size={20} /></div>
           ) : followups.length === 0 ? (
             <div className="text-sm text-ink/40">Nothing due today. You&apos;re all caught up.</div>
           ) : (

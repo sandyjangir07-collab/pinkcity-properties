@@ -6,6 +6,7 @@ import { downloadQuotationPDF, formatINRQ } from "../lib/quotationPdf";
 import { Card, SectionTitle } from "../components/ui/primitives";
 import { FileDown, MessageCircle } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { BrandedLoader } from "../components/ui/BrandedLoader";
 
 function computeQuotation(sizeStr, rateStr, corner, park) {
   const size = parseFloat(sizeStr) || 0;
@@ -174,7 +175,7 @@ export default function Quotation() {
         <Card>
           <SectionTitle>My Quotations</SectionTitle>
           {history === null ? (
-            <div className="flex justify-center py-8"><div className="w-5 h-5 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" /></div>
+            <div className="flex justify-center py-8"><BrandedLoader size={20} /></div>
           ) : history.length === 0 ? (
             <div className="text-sm text-ink/40">No quotations yet — build your first one above.</div>
           ) : (

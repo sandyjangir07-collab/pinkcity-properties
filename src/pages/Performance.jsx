@@ -8,6 +8,7 @@ import { initials } from "../lib/utils";
 import LeadDetailModal from "../components/leads/LeadDetailModal";
 import ScheduleVisitModal from "../components/leads/ScheduleVisitModal";
 import ScheduleCallModal from "../components/leads/ScheduleCallModal";
+import { BrandedLoader } from "../components/ui/BrandedLoader";
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -90,7 +91,7 @@ export default function Performance() {
       )}
 
       {members === null ? (
-        <div className="flex justify-center py-16"><div className="w-6 h-6 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" /></div>
+        <div className="flex justify-center py-16"><BrandedLoader size={24} /></div>
       ) : members.length === 0 ? (
         <div className="bg-white rounded-3xl text-center py-16 text-ink/40">
           <div className="font-display text-lg text-ink">No team members yet</div>

@@ -7,6 +7,7 @@ import { PROPERTY_IMAGES_BUCKET } from "../lib/constants";
 import { User, Users, Image, Camera } from "lucide-react";
 import { Sheet, SheetHeader, Field } from "../components/ui/Sheet";
 import { Button } from "../components/ui/button";
+import { BrandedLoader } from "../components/ui/BrandedLoader";
 
 const STATUS_STYLE = {
   available: "bg-emerald-50 border-emerald-200 text-emerald-700",
@@ -52,7 +53,7 @@ export default function Plots() {
   if (listings === null) {
     return (
       <div className="max-w-3xl mx-auto px-5 py-20 flex justify-center">
-        <div className="w-6 h-6 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" />
+        <BrandedLoader size={24} />
       </div>
     );
   }

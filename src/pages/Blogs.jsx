@@ -6,6 +6,7 @@ import { CAT_EMOJI } from "../lib/blogConstants";
 import { Button } from "../components/ui/button";
 import { Pill } from "../components/ui/primitives";
 import BlogFormModal from "../components/blogs/BlogFormModal";
+import { BrandedLoader } from "../components/ui/BrandedLoader";
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -49,7 +50,7 @@ export default function Blogs() {
       </Button>
 
       {posts === null ? (
-        <div className="flex justify-center py-16"><div className="w-6 h-6 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" /></div>
+        <div className="flex justify-center py-16"><BrandedLoader size={24} /></div>
       ) : posts.length === 0 ? (
         <div className="bg-white rounded-3xl text-center py-16 text-ink/40">
           <div className="font-display text-lg text-ink mb-1">No blog posts yet</div>

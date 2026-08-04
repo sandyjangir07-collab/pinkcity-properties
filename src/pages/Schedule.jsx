@@ -9,6 +9,7 @@ import { Button } from "../components/ui/button";
 import { Phone, MessageCircle } from "lucide-react";
 import { Pill } from "../components/ui/primitives";
 import ScheduleVisitModal from "../components/leads/ScheduleVisitModal";
+import { BrandedLoader } from "../components/ui/BrandedLoader";
 
 const STATUS_TONE = { done: "green", cancelled: "red", no_show: "red" };
 const STATUS_LABEL = { done: "✓ Done", cancelled: "Cancelled", no_show: "No Show", scheduled: "Scheduled" };
@@ -73,7 +74,7 @@ export default function Schedule() {
       </div>
 
       {visits === null ? (
-        <div className="flex justify-center py-16"><div className="w-6 h-6 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" /></div>
+        <div className="flex justify-center py-16"><BrandedLoader size={24} /></div>
       ) : (
         <>
           {todayVisits.length > 0 && (

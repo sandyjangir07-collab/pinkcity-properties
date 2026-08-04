@@ -1,10 +1,11 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { BrandedLoader } from "./ui/BrandedLoader";
 
 function Spinner() {
   return (
     <div className="max-w-2xl mx-auto px-5 py-20 flex justify-center">
-      <div className="w-6 h-6 rounded-full border-2 border-ink/15 border-t-stone-500 animate-spin" />
+      <BrandedLoader size={24} />
     </div>
   );
 }
