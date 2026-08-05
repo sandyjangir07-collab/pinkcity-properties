@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
+import { ChevronLeft } from "lucide-react";
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -18,9 +19,16 @@ export function Sheet({ open, onClose, children, maxWidth = "max-w-sm" }) {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 20, opacity: 0 }}
             transition={{ duration: 0.3, ease: EASE }}
-            className={`w-full ${maxWidth} bg-sand rounded-t-3xl sm:rounded-3xl p-7 max-h-[90vh] overflow-y-auto`}
+            className={`relative w-full ${maxWidth} bg-sand rounded-t-3xl sm:rounded-3xl p-7 pt-14 max-h-[90vh] overflow-y-auto`}
           >
-            <div className="w-10 h-1 rounded-full bg-ink/15 mx-auto -mt-3 mb-5 sm:hidden" />
+            <div className="w-10 h-1 rounded-full bg-ink/15 mx-auto absolute top-2.5 left-1/2 -translate-x-1/2 sm:hidden" />
+            <button
+              onClick={onClose}
+              aria-label="Back"
+              className="absolute top-4 left-4 w-9 h-9 rounded-full border border-ink/10 bg-white flex items-center justify-center text-ink/60 hover:text-ink hover:border-ink/20 transition-colors active:scale-90"
+            >
+              <ChevronLeft className="w-[18px] h-[18px]" />
+            </button>
             {children}
           </motion.div>
         </motion.div>
