@@ -5,6 +5,7 @@ import { RequireAuth, RequireAdmin } from "./components/RouteGuards";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
+import Directory from "./pages/Directory";
 import Today from "./pages/Today";
 import Attendance from "./pages/Attendance";
 import Schedule from "./pages/Schedule";
@@ -33,6 +34,7 @@ export default function App() {
               }
             >
               <Route path="/" element={<Home />} />
+              <Route path="/team" element={<Directory />} />
               <Route path="/today" element={<Today />} />
               <Route path="/attendance" element={<Attendance />} />
               <Route path="/schedule" element={<Schedule />} />

@@ -2,38 +2,14 @@ import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Users, Calendar, Phone, Home as HomeIcon, Ticket, CalendarClock, Clock,
-  FileText, TrendingUp, Newspaper, CheckCircle, BadgeIndianRupee,
   Menu, X, ExternalLink, Zap,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import JaliPattern from "./JaliPattern";
 import Magnetic from "./Magnetic";
+import { NAV_LINKS as LINKS, NAV_ACCENT as ACCENT } from "../lib/navLinks";
 
 const PUBLIC_SITE_URL = "https://pinkcity-front-end.vercel.app";
-
-// Each link gets one of three accent families (stone/jali/brass) — grouped
-// thematically so the menu reads as colorful, not random.
-const LINKS = [
-  { to: "/", end: true, label: "Team", Icon: Users, accent: "stone" },
-  { to: "/today", label: "Today", Icon: Calendar, accent: "stone" },
-  { to: "/attendance", label: "Attendance", Icon: Clock, accent: "stone" },
-  { to: "/leads", label: "Leads", Icon: Phone, accent: "jali" },
-  { to: "/listings", label: "Listings", Icon: HomeIcon, accent: "jali" },
-  { to: "/plots", label: "Plots & Tokens", Icon: Ticket, accent: "jali" },
-  { to: "/schedule", label: "Schedule", Icon: CalendarClock, accent: "jali" },
-  { to: "/quotation", label: "Quotation", Icon: FileText, accent: "brass" },
-  { to: "/commission-slabs", label: "Commission Slabs", Icon: BadgeIndianRupee, accent: "brass", adminOnly: true },
-  { to: "/performance", label: "Performance", Icon: TrendingUp, accent: "brass", adminOnly: true },
-  { to: "/blogs", label: "Blogs", Icon: Newspaper, accent: "stone", adminOnly: true },
-  { to: "/approvals", label: "Approvals", Icon: CheckCircle, accent: "jali", adminOnly: true },
-];
-
-const ACCENT = {
-  stone: { bg: "bg-stone-600", soft: "bg-stone-50", text: "text-stone-600", ring: "border-stone-600" },
-  jali: { bg: "bg-jali", soft: "bg-jali-50", text: "text-jali", ring: "border-jali" },
-  brass: { bg: "bg-brass", soft: "bg-brass/10", text: "text-brass", ring: "border-brass" },
-};
 
 const EASE = [0.22, 1, 0.36, 1];
 

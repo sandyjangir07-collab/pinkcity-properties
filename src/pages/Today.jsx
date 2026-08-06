@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { NavLink } from "react-router-dom";
+import { motion } from "framer-motion";
 import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
@@ -7,6 +9,7 @@ import { todayStr, fmtTime, fmtHours, getLocation } from "../lib/attendance";
 import { Phone, MessageCircle, Key, Search, MapPin, Clock3 } from "lucide-react";
 import { Card, SectionTitle, Pill } from "../components/ui/primitives";
 import { Button } from "../components/ui/button";
+import { NAV_LINKS, NAV_ACCENT } from "../lib/navLinks";
 import LeadFormModal from "../components/leads/LeadFormModal";
 import LeadDetailModal from "../components/leads/LeadDetailModal";
 import ScheduleVisitModal from "../components/leads/ScheduleVisitModal";
@@ -14,6 +17,8 @@ import ScheduleCallModal from "../components/leads/ScheduleCallModal";
 import CallOutcomeWatcher from "../components/leads/CallOutcomeWatcher";
 import { ReviewTokenModal } from "./Plots";
 import { BrandedLoader } from "../components/ui/BrandedLoader";
+
+const EASE = [0.22, 1, 0.36, 1];
 
 export default function Today() {
   const { user, profile, isAdmin } = useAuth();
@@ -144,10 +149,42 @@ export default function Today() {
   const firstName = (profile?.full_name || "").split(" ")[0] || "there";
   const busyToday = followups && followups.length === 0 && visits.length === 0;
 
+  const visibleLinks = NAV_LINKS.filter((l) => l.to !== "/today" && (!l.adminOnly || isAdmin));
+
   return (
     <div className="max-w-2xl mx-auto px-5 py-10">
+      <div className="text-[11px] font-semibold uppercase tracking-widest2 text-stone-500 mb-3">Admin Panel</div>
+      <h1 className="font-display text-[28px] font-medium leading-tight text-ink mb-1.5">Home</h1>
+      <p className="text-ink/50 text-[13.5px] mb-6">Jump straight to any module, or see what's on today below.</p>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-9">
+        {visibleLinks.map((l, i) => {
+          const a = NAV_ACCENT[l.accent];
+          return (
+            <motion.div
+              key={l.to}
+              initial={{ opacity: 0, y: 10, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.25, delay: i * 0.025, ease: EASE }}
+              whileHover={{ y: -3 }}
+              whileTap={{ scale: 0.96 }}
+            >
+              <NavLink
+                to={l.to}
+                className="flex flex-col items-start gap-2.5 rounded-2xl border border-ink/[0.06] bg-surface p-3.5 h-full shadow-soft hover:border-ink/[0.14] hover:shadow-lift transition-all"
+              >
+                <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${a.soft}`}>
+                  <l.Icon className={`w-[17px] h-[17px] ${a.text}`} />
+                </span>
+                <span className="text-[12.5px] font-semibold leading-tight text-ink">{l.label}</span>
+              </NavLink>
+            </motion.div>
+          );
+        })}
+      </div>
+
       <div className="text-[11px] font-semibold uppercase tracking-widest2 text-stone-500 mb-3">
-        {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
+        Today · {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
       </div>
       <h1 className="font-display text-[28px] font-medium leading-tight text-ink mb-2">{greeting}, {firstName}.</h1>
       <p className="text-ink/50 text-[13.5px] mb-8">
