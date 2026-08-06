@@ -84,7 +84,7 @@ export default function Blogs() {
                     <Pill tone={p.status === "published" ? "green" : "yellow"}>{p.status === "published" ? "● Published" : "◐ Draft"}</Pill>
                   </div>
                   <div className="flex gap-1.5 flex-wrap">
-                    <a href={`/blog-post.html?slug=${p.slug}`} target="_blank" rel="noreferrer" className="text-xs font-medium text-ink/60 border border-ink/10 rounded-full px-3 py-1.5 no-underline">
+                    <a href={`https://pinkcity-front-end.vercel.app/blog/${p.slug}`} target="_blank" rel="noreferrer" className="text-xs font-medium text-ink/60 border border-ink/10 rounded-full px-3 py-1.5 no-underline">
                       Preview
                     </a>
                     <button onClick={() => setFormTarget(p.id)} className="text-xs font-medium text-ink/60 border border-ink/10 rounded-full px-3 py-1.5">Edit</button>
