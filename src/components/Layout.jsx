@@ -9,7 +9,7 @@ import JaliPattern from "./JaliPattern";
 import Magnetic from "./Magnetic";
 import { NAV_LINKS as LINKS, NAV_ACCENT as ACCENT } from "../lib/navLinks";
 
-const PUBLIC_SITE_URL = "https://pinkcity-front-end.vercel.app";
+const PUBLIC_SITE_URL = "https://pinkcityproperties.com";
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -42,9 +42,16 @@ export default function Layout() {
             </button>
           </Magnetic>
 
-          <span className="w-11 h-11 rounded-full bg-stone-600 flex items-center justify-center p-1.5 shrink-0 shadow-[0_3px_10px_-3px_rgba(196,56,104,0.5)]">
+          <a
+            href={PUBLIC_SITE_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="w-11 h-11 rounded-full bg-stone-600 flex items-center justify-center p-1.5 shrink-0 shadow-[0_3px_10px_-3px_rgba(196,56,104,0.5)] active:scale-90 transition-transform"
+            aria-label="Go to website"
+            title="Go to website"
+          >
             <img src="/logo.png" alt="" className="w-full h-full object-contain" onError={(e) => (e.currentTarget.style.display = "none")} />
-          </span>
+          </a>
 
           <span className="font-display text-[19px] font-semibold tracking-tight text-ink hidden sm:inline">
             PinkCity<span className="text-stone-600">.</span>
