@@ -99,9 +99,12 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
   }
 
   async function handleDelete() {
-    if (!window.confirm("Delete this lead and all its notes?")) return;
-    await sb.from("lead_notes").delete().eq("lead_id", leadId);
-    await sb.from("leads").delete().eq("id", leadId);
+    if (!window.confirm("Delete this lead? It'll be hidden from lists but can be recovered by an admin if needed.")) return;
+    const submitterName = profile?.full_name || profile?.email || user.email;
+    await sb
+      .from("leads")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: user.id, deleted_by_name: submitterName })
+      .eq("id", leadId);
     showToast("Lead deleted.");
     onDeleted();
   }

@@ -24,7 +24,7 @@ export default function Performance() {
     const [{ data: listings }, { data: visits }, { data: leads }, { data: profiles }] = await Promise.all([
       sb.from("listings").select("uid,submitter_name,status"),
       sb.from("visits").select("logged_by,logged_by_name,visitor_name,visitor_phone,listing_title,visit_date,visit_time"),
-      sb.from("leads").select("id,created_by,created_by_name,status,name,phone,preferred_location,lead_number"),
+      sb.from("leads").select("id,created_by,created_by_name,status,name,phone,preferred_location,lead_number").is("deleted_at", null),
       sb.from("profiles").select("id,full_name,email,role"),
     ]);
 

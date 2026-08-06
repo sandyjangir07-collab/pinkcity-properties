@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Phone, MessageCircle, Search, Sparkles, Flame, TrendingUp, Plus } from "lucide-react";
+import { Phone, MessageCircle, Search, Sparkles, Flame, TrendingUp, Plus, Trash2 } from "lucide-react";
 import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
+import { useToast } from "../hooks/useToast";
 import { STATUS_TEXT, SOURCE_LABELS, STATUS_DOT, isStaleLead, timeAgo, waNumberFor } from "../lib/leadConstants";
 import { leadScore } from "../lib/leadScore";
 import LeadFormModal from "../components/leads/LeadFormModal";
@@ -42,11 +43,14 @@ function ScoreRing({ score }) {
 
 export default function Leads() {
   const { user } = useAuth();
+  const showToast = useToast();
   const isAdmin = user?.email === CRM_ADMIN_EMAIL;
   const [leads, setLeads] = useState(null);
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [deletedLeads, setDeletedLeads] = useState(null);
 
   const [formTarget, setFormTarget] = useState(null);
   const [detailLeadId, setDetailLeadId] = useState(null);
@@ -54,16 +58,33 @@ export default function Leads() {
   const [callTarget, setCallTarget] = useState(null);
 
   async function load() {
-    let q = sb.from("leads").select("*").order("created_at", { ascending: false });
+    let q = sb.from("leads").select("*").is("deleted_at", null).order("created_at", { ascending: false });
     if (!isAdmin) q = q.eq("created_by", user.id);
     const { data } = await q;
     setLeads(data || []);
+  }
+
+  async function loadDeleted() {
+    const { data } = await sb.from("leads").select("*").not("deleted_at", "is", null).order("deleted_at", { ascending: false });
+    setDeletedLeads(data || []);
+  }
+
+  async function restoreLead(id) {
+    await sb.from("leads").update({ deleted_at: null, deleted_by: null, deleted_by_name: null }).eq("id", id);
+    showToast("✓ Lead restored!");
+    loadDeleted();
+    refresh();
   }
 
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshKey]);
+
+  useEffect(() => {
+    if (isAdmin && showDeleted) loadDeleted();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showDeleted]);
 
   const scored = useMemo(() => (leads || []).map((l) => ({ ...l, _score: leadScore(l) })), [leads]);
 
@@ -93,10 +114,65 @@ export default function Leads() {
   return (
     <div className="max-w-2xl mx-auto pb-28">
       <section className="px-5 pt-8">
-        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-600">Sales CRM</div>
-        <h1 className="mt-2 font-display text-[32px] font-semibold leading-[1.03] tracking-tight text-ink">Leads Pipeline</h1>
-        <p className="mt-2.5 text-[13.5px] leading-relaxed text-ink/50">Every enquiry, its next action and who owns it — at a glance.</p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-600">Sales CRM</div>
+            <h1 className="mt-2 font-display text-[32px] font-semibold leading-[1.03] tracking-tight text-ink">Leads Pipeline</h1>
+          </div>
+          {isAdmin && (
+            <button
+              onClick={() => setShowDeleted((s) => !s)}
+              className={`shrink-0 mt-1 flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition-colors ${
+                showDeleted ? "bg-red-50 text-red-600 border border-red-200" : "border border-ink/10 text-ink/50"
+              }`}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {showDeleted ? "Back to leads" : "Deleted"}
+            </button>
+          )}
+        </div>
+        <p className="mt-2.5 text-[13.5px] leading-relaxed text-ink/50">
+          {showDeleted ? "Deleted by your team — restore any of these if they were removed by mistake." : "Every enquiry, its next action and who owns it — at a glance."}
+        </p>
       </section>
+
+      {showDeleted ? (
+        <section className="mt-6 px-5">
+          {deletedLeads === null ? (
+            <div className="flex justify-center py-16"><BrandedLoader size={28} /></div>
+          ) : deletedLeads.length === 0 ? (
+            <div className="rounded-[28px] border border-dashed border-ink/15 bg-white/60 p-9 text-center">
+              <p className="font-display text-lg text-ink">Nothing deleted</p>
+              <p className="mt-1.5 text-xs text-ink/45">Deleted leads will show up here, recoverable any time.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {deletedLeads.map((l) => (
+                <div key={l.id} className="rounded-[22px] border border-red-100 bg-red-50/40 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-ink truncate">{l.name} <span className="text-[11px] font-medium text-ink/35">PC{l.lead_number}</span></div>
+                      <div className="text-[11.5px] text-ink/45 mt-0.5">
+                        {l.phone}{l.preferred_location ? ` · ${l.preferred_location}` : ""}
+                      </div>
+                      <div className="text-[11px] text-red-500 mt-1.5">
+                        Deleted by {l.deleted_by_name || "—"} · {timeAgo(l.deleted_at)}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => restoreLead(l.id)}
+                      className="shrink-0 rounded-full bg-stone-600 text-sand text-xs font-semibold px-4 py-2.5 active:scale-95 transition-transform"
+                    >
+                      Restore
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      ) : (
+        <>
 
       <section className="mt-6 grid grid-cols-3 gap-3 px-5">
         {[
@@ -162,6 +238,8 @@ export default function Leads() {
           </div>
         )}
       </section>
+        </>
+      )}
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-ink/[0.06] bg-sand/95 backdrop-blur px-5 py-4">
         <div className="mx-auto max-w-md flex items-center gap-3">

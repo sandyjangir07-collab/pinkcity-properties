@@ -118,7 +118,7 @@ export default function Layout() {
                 </button>
               </div>
 
-              <div className="relative grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="relative grid grid-cols-3 gap-2">
                 {visibleLinks.map((l, i) => {
                   const a = ACCENT[l.accent];
                   return (
@@ -135,7 +135,7 @@ export default function Layout() {
                         end={l.end}
                         onClick={() => setMenuOpen(false)}
                         className={({ isActive }) =>
-                          `flex flex-col items-start gap-3 rounded-[22px] border p-4 h-full transition-all duration-300 ${
+                          `flex flex-col items-center gap-2 rounded-2xl border p-2.5 h-full text-center transition-all duration-300 ${
                             isActive
                               ? `${a.bg} ${a.ring} text-sand shadow-lift`
                               : "bg-surface border-ink/[0.06] text-ink shadow-soft hover:border-ink/[0.14] hover:shadow-lift"
@@ -144,10 +144,10 @@ export default function Layout() {
                       >
                         {({ isActive }) => (
                           <>
-                            <span className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-colors ${isActive ? "bg-white/15" : a.soft}`}>
-                              <l.Icon className={`w-[18px] h-[18px] ${isActive ? "text-sand" : a.text}`} />
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${isActive ? "bg-white/15" : a.soft}`}>
+                              <l.Icon className={`w-[15px] h-[15px] ${isActive ? "text-sand" : a.text}`} />
                             </span>
-                            <span className="text-[13.5px] font-semibold leading-tight">{l.label}</span>
+                            <span className="text-[10.5px] font-semibold leading-tight">{l.label}</span>
                           </>
                         )}
                       </NavLink>

@@ -42,6 +42,7 @@ export default function Today() {
       sb
         .from("leads")
         .select("*")
+        .is("deleted_at", null)
         .or(`created_by.eq.${user.id},assigned_to.eq.${user.id}`)
         .not("status", "in", "(closed,lost)")
         .lte("follow_up_date", today)
@@ -157,26 +158,26 @@ export default function Today() {
       <h1 className="font-display text-[28px] font-medium leading-tight text-ink mb-1.5">Home</h1>
       <p className="text-ink/50 text-[13.5px] mb-6">Jump straight to any module, or see what's on today below.</p>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-9">
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-8">
         {visibleLinks.map((l, i) => {
           const a = NAV_ACCENT[l.accent];
           return (
             <motion.div
               key={l.to}
-              initial={{ opacity: 0, y: 10, scale: 0.96 }}
+              initial={{ opacity: 0, y: 8, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.25, delay: i * 0.025, ease: EASE }}
-              whileHover={{ y: -3 }}
-              whileTap={{ scale: 0.96 }}
+              transition={{ duration: 0.2, delay: i * 0.02, ease: EASE }}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.95 }}
             >
               <NavLink
                 to={l.to}
-                className="flex flex-col items-start gap-2.5 rounded-2xl border border-ink/[0.06] bg-surface p-3.5 h-full shadow-soft hover:border-ink/[0.14] hover:shadow-lift transition-all"
+                className={`flex flex-col items-center gap-1.5 rounded-2xl border border-ink/[0.05] ${a.soft} p-2.5 h-full text-center transition-all hover:border-ink/[0.12] hover:shadow-soft`}
               >
-                <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${a.soft}`}>
-                  <l.Icon className={`w-[17px] h-[17px] ${a.text}`} />
+                <span className={`w-8 h-8 rounded-lg flex items-center justify-center bg-white/70`}>
+                  <l.Icon className={`w-[15px] h-[15px] ${a.text}`} />
                 </span>
-                <span className="text-[12.5px] font-semibold leading-tight text-ink">{l.label}</span>
+                <span className="text-[10.5px] font-semibold leading-tight text-ink">{l.label}</span>
               </NavLink>
             </motion.div>
           );
