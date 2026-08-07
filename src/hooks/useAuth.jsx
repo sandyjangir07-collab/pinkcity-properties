@@ -3,10 +3,6 @@ import { sb } from "../lib/supabase";
 
 const AuthContext = createContext(null);
 
-// Supabase's query/RPC builders are "thenable" (work with await) but are NOT
-// full native Promises — they don't have their own .catch()/.finally(). Chaining
-// .catch() directly on one throws a TypeError immediately. Always route through
-// a real try/catch (or Promise.resolve(...).catch(...)) instead.
 async function safeRpc(name, args) {
   try {
     return await sb.rpc(name, args);
@@ -17,9 +13,9 @@ async function safeRpc(name, args) {
 }
 
 export function AuthProvider({ children }) {
-  const [session, setSession] = useState(undefined); // undefined = loading, null = signed out
-  const [profile, setProfile] = useState(null); // profiles row (role: admin | team)
-  const [employee, setEmployee] = useState(null); // own employees row, if any
+  const [session, setSession] = useState(undefined);
+  const [profile, setProfile] = useState(null);
+  const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const loadProfileAndEmployee = useCallback(async (userId) => {
@@ -42,8 +38,6 @@ export function AuthProvider({ children }) {
 
   const refreshEmployee = useCallback(async () => {
     if (!session?.user?.id) return;
-    // Give the user a chance to auto-link an employee record created for
-    // their email before they ever logged in (mirrors login.html behaviour).
     if (!employee) {
       await safeRpc("link_my_employee_profile");
     }
@@ -65,8 +59,6 @@ export function AuthProvider({ children }) {
         setSession(null);
       })
       .finally(() => {
-        // Guaranteed to run no matter what fails above — the spinner must
-        // never be left stuck on.
         setLoading(false);
       });
 
@@ -74,13 +66,26 @@ export function AuthProvider({ children }) {
       setSession(newSession);
       if (newSession?.user?.id) {
         await loadProfileAndEmployee(newSession.user.id);
+        if (window.opener && window.opener !== window) {
+          window.close();
+        }
       } else {
         setProfile(null);
         setEmployee(null);
       }
     });
 
-    return () => sub.subscription.unsubscribe();
+    function onVisible() {
+      if (document.visibilityState === "visible") {
+        sb.auth.getSession().catch((e) => console.error("Resume session check failed:", e));
+      }
+    }
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      sub.subscription.unsubscribe();
+      document.removeEventListener("visibilitychange", onVisible);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
