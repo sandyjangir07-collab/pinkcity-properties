@@ -72,7 +72,6 @@ export default function Login() {
     setBusy(false);
   }
 
-
   return (
     <div className="relative min-h-screen flex items-center justify-center p-5 overflow-hidden bg-sand">
       <div className="absolute inset-0 opacity-[0.05] text-stone-600">
