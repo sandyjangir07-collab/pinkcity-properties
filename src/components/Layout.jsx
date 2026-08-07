@@ -7,6 +7,7 @@ import {
 import { useAuth } from "../hooks/useAuth";
 import JaliPattern from "./JaliPattern";
 import Magnetic from "./Magnetic";
+import NotificationBell from "./NotificationBell";
 import { NAV_LINKS as LINKS, NAV_ACCENT as ACCENT } from "../lib/navLinks";
 
 const PUBLIC_SITE_URL = "https://pinkcityproperties.com";
@@ -61,6 +62,10 @@ export default function Layout() {
             <Zap className="w-3.5 h-3.5" />
             {isAdmin ? "Admin" : "Team"}
           </span>
+
+          <div className="shrink-0">
+            <NotificationBell />
+          </div>
 
           <div className="min-w-0 flex-1">
             <AnimatePresence mode="wait">
