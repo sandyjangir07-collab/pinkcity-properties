@@ -74,25 +74,6 @@ export function AuthProvider({ children }) {
       setSession(newSession);
       if (newSession?.user?.id) {
         await loadProfileAndEmployee(newSession.user.id);
-        // This tab is the Google-auth popup, not the main app window. Don't
-        // assume the opener will automatically pick up the session written
-        // to localStorage — hand it off explicitly and deterministically,
-        // then close.
-        if (window.opener && window.opener !== window) {
-          try {
-            window.opener.postMessage(
-              {
-                type: "pinkcity-auth",
-                access_token: newSession.access_token,
-                refresh_token: newSession.refresh_token,
-              },
-              window.location.origin
-            );
-          } catch (e) {
-            console.error("postMessage to opener failed:", e);
-          }
-          window.close();
-        }
       } else {
         setProfile(null);
         setEmployee(null);
