@@ -10,4 +10,12 @@ if (!url || !anonKey) {
   );
 }
 
-export const sb = createClient(url, anonKey);
+export const sb = createClient(url, anonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage,
+    storageKey: "pinkcity-crm-auth",
+  },
+});

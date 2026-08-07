@@ -5,11 +5,12 @@ import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { TYPE_LABEL, EMOJI } from "../lib/listingConstants";
-import { Phone, Building2 } from "lucide-react";
+import { Phone, Building2, MapPin } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Camera } from "lucide-react";
 import { Pill, StatCard } from "../components/ui/primitives";
 import ListingFormModal from "../components/listings/ListingFormModal";
+import VisitLogModal from "../components/listings/VisitLogModal";
 import { BrandedLoader } from "../components/ui/BrandedLoader";
 
 const EASE = [0.22, 1, 0.36, 1];
@@ -19,6 +20,7 @@ export default function Listings() {
   const showToast = useToast();
   const [listings, setListings] = useState(null);
   const [formTarget, setFormTarget] = useState(null);
+  const [visitTarget, setVisitTarget] = useState(null);
 
   async function load() {
     let q = sb.from("listings").select("*").order("created_at", { ascending: false });
@@ -93,7 +95,7 @@ export default function Listings() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {listings.map((l, i) => (
-            <ListingCard key={l.id} listing={l} index={i} isAdmin={isAdmin} onEdit={() => setFormTarget(l.id)} onApprove={approve} onReject={reject} onDelete={del} />
+            <ListingCard key={l.id} listing={l} index={i} isAdmin={isAdmin} onEdit={() => setFormTarget(l.id)} onApprove={approve} onReject={reject} onDelete={del} onLogVisit={() => setVisitTarget({ listingId: l.id, listingTitle: l.title })} />
           ))}
         </div>
       )}
@@ -107,12 +109,13 @@ export default function Listings() {
           load();
         }}
       />
+      <VisitLogModal target={visitTarget} onClose={() => setVisitTarget(null)} />
     </div>
   );
 }
 
 
-function ListingCard({ listing: l, index, isAdmin, onEdit, onApprove, onReject, onDelete }) {
+function ListingCard({ listing: l, index, isAdmin, onEdit, onApprove, onReject, onDelete, onLogVisit }) {
   const imgs = l.images && l.images.length ? l.images : l.image_url ? [l.image_url] : [];
   const tone = l.status === "pending" ? "yellow" : l.status === "active" ? "green" : "red";
   const badgeText = l.status === "pending" ? "◐ Pending" : l.status === "active" ? "● Live" : "✕ Rejected";
@@ -147,6 +150,9 @@ function ListingCard({ listing: l, index, isAdmin, onEdit, onApprove, onReject, 
         {isAdmin && l.submitter_phone && <div className="text-xs text-ink/45 mb-1.5 flex items-center gap-1.5"><Phone className="w-3 h-3" /> {l.submitter_phone}</div>}
         {imgs.length > 1 && <div className="text-[11px] text-ink/35 mb-2 inline-flex items-center gap-1"><Camera className="w-3 h-3" /> {imgs.length} photos</div>}
         <div className="flex flex-wrap gap-1.5 mt-2">
+          {l.status === "active" && (
+            <button onClick={onLogVisit} className="text-xs font-medium text-jali border border-jali/30 rounded-full px-3 py-1.5 inline-flex items-center gap-1.5"><MapPin className="w-3 h-3" /> Log Visit</button>
+          )}
           {l.type === "colony" && (
             <Link to="/plots" className="text-xs font-medium text-stone-600 border border-stone-200 rounded-full px-3 py-1.5 no-underline inline-flex items-center gap-1.5"><Building2 className="w-3 h-3" /> Manage Availability</Link>
           )}

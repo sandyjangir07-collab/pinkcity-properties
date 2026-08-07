@@ -74,13 +74,34 @@ export function AuthProvider({ children }) {
       setSession(newSession);
       if (newSession?.user?.id) {
         await loadProfileAndEmployee(newSession.user.id);
+        // This tab is the Google-auth popup, not the main app window — its
+        // only job was to establish the session (written to localStorage,
+        // same origin as the opener). Close immediately instead of
+        // rendering the app inside the popup.
+        if (window.opener && window.opener !== window) {
+          window.close();
+        }
       } else {
         setProfile(null);
         setEmployee(null);
       }
     });
 
-    return () => sub.subscription.unsubscribe();
+    // iOS/Android can throttle or pause timers while the PWA is backgrounded,
+    // so Supabase's own auto-refresh can miss a beat. Re-checking on resume
+    // catches that instead of leaving a stale/expired token sitting around
+    // until the next API call fails.
+    function onVisible() {
+      if (document.visibilityState === "visible") {
+        sb.auth.getSession().catch((e) => console.error("Resume session check failed:", e));
+      }
+    }
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      sub.subscription.unsubscribe();
+      document.removeEventListener("visibilitychange", onVisible);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

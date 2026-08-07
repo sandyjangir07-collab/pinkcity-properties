@@ -4,10 +4,11 @@ import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { compressImageFile, fileToUploadableBuffer, formatDateTime, formatINR } from "../lib/utils";
 import { PROPERTY_IMAGES_BUCKET } from "../lib/constants";
-import { User, Users, Image, Camera } from "lucide-react";
+import { User, Users, Image, Camera, Plus } from "lucide-react";
 import { Sheet, SheetHeader, Field } from "../components/ui/Sheet";
 import { Button } from "../components/ui/button";
 import { BrandedLoader } from "../components/ui/BrandedLoader";
+import BulkAddUnitsModal from "../components/listings/BulkAddUnitsModal";
 
 const STATUS_STYLE = {
   available: "bg-emerald-50 border-emerald-200 text-emerald-700",
@@ -24,17 +25,16 @@ export default function Plots() {
   const [units, setUnits] = useState([]);
   const [submitTarget, setSubmitTarget] = useState(null);
   const [reviewTarget, setReviewTarget] = useState(null);
+  const [bulkAddOpen, setBulkAddOpen] = useState(false);
 
   useEffect(() => {
-    sb.from("colony_units")
-      .select("listing_id, listings!inner(id,title,area,status)")
-      .eq("listings.status", "active")
+    sb.from("listings")
+      .select("id,title,area,status")
+      .eq("status", "active")
+      .eq("type", "colony")
+      .order("created_at", { ascending: false })
       .then(({ data }) => {
-        const byId = {};
-        (data || []).forEach((row) => {
-          if (row.listings) byId[row.listings.id] = row.listings;
-        });
-        const list = Object.values(byId);
+        const list = data || [];
         setListings(list);
         if (list.length && !selectedListingId) setSelectedListingId(list[0].id);
       });
@@ -73,13 +73,23 @@ export default function Plots() {
         </div>
       ) : (
         <>
-          <div className="max-w-xs mb-5">
-            <span className="block text-[10px] font-semibold tracking-wide uppercase text-ink/40 mb-1.5">Project</span>
-            <select className="field-input" value={selectedListingId || ""} onChange={(e) => setSelectedListingId(e.target.value)}>
-              {listings.map((l) => (
-                <option key={l.id} value={l.id}>{l.title} {l.area ? `— ${l.area}` : ""}</option>
-              ))}
-            </select>
+          <div className="flex items-end gap-3 mb-5 flex-wrap">
+            <div className="max-w-xs flex-1">
+              <span className="block text-[10px] font-semibold tracking-wide uppercase text-ink/40 mb-1.5">Project</span>
+              <select className="field-input" value={selectedListingId || ""} onChange={(e) => setSelectedListingId(e.target.value)}>
+                {listings.map((l) => (
+                  <option key={l.id} value={l.id}>{l.title} {l.area ? `— ${l.area}` : ""}</option>
+                ))}
+              </select>
+            </div>
+            {isAdmin && (
+              <button
+                onClick={() => setBulkAddOpen(true)}
+                className="h-12 px-4 rounded-full bg-stone-600 text-sand text-sm font-semibold inline-flex items-center gap-1.5 shrink-0"
+              >
+                <Plus className="w-4 h-4" /> Add Plots
+              </button>
+            )}
           </div>
 
           <div className="bg-white rounded-3xl p-5">
@@ -132,6 +142,14 @@ export default function Plots() {
           setReviewTarget(null);
           loadUnits(selectedListingId);
           showToast(approved ? "✓ Token approved — plot marked Sold." : "Submission rejected — plot is Available again.");
+        }}
+      />
+      <BulkAddUnitsModal
+        target={bulkAddOpen ? { listingId: selectedListingId, listingTitle: listings.find((l) => l.id === selectedListingId)?.title } : null}
+        onClose={() => setBulkAddOpen(false)}
+        onSaved={() => {
+          setBulkAddOpen(false);
+          loadUnits(selectedListingId);
         }}
       />
     </div>

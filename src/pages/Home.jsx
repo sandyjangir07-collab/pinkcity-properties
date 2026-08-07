@@ -19,5 +19,5 @@ export default function Home() {
   if (isAdmin) return <Today />;
   if (!employee) return <CreateProfile />;
   if (employee.profile_status === "pending_review") return <PendingApprovalNotice />;
-  return <Navigate to={`/employees/${employee.id}`} replace />;
+  return <Navigate to="/leads" replace />;
 }

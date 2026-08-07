@@ -91,6 +91,7 @@ function EditPersonalModal({ open, onClose, employee, addresses, onSaved }) {
     blood_group: employee.blood_group || "",
     mobile: employee.mobile || "",
     alternate_mobile: employee.alternate_mobile || "",
+    email: employee.email || "",
     emergency_contact_name: employee.emergency_contact_name || "",
     emergency_contact_number: employee.emergency_contact_number || "",
   }));
@@ -118,6 +119,7 @@ function EditPersonalModal({ open, onClose, employee, addresses, onSaved }) {
         blood_group: form.blood_group || null,
         mobile: form.mobile.trim() || null,
         alternate_mobile: form.alternate_mobile.trim() || null,
+        email: form.email.trim() || null,
         emergency_contact_name: form.emergency_contact_name.trim() || null,
         emergency_contact_number: form.emergency_contact_number.trim() || null,
       })
@@ -175,6 +177,7 @@ function EditPersonalModal({ open, onClose, employee, addresses, onSaved }) {
           <Field label="Mobile"><input className="field-input" value={form.mobile} onChange={(e) => set("mobile", e.target.value)} /></Field>
         </div>
         <Field label="Alternate Mobile"><input className="field-input" value={form.alternate_mobile} onChange={(e) => set("alternate_mobile", e.target.value)} /></Field>
+        <Field label="Email"><input className="field-input" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} /></Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Emergency Contact Name *"><input className="field-input" value={form.emergency_contact_name} onChange={(e) => set("emergency_contact_name", e.target.value)} /></Field>
           <Field label="Emergency Contact Number *"><input className="field-input" value={form.emergency_contact_number} onChange={(e) => set("emergency_contact_number", e.target.value)} /></Field>

@@ -158,31 +158,43 @@ export default function Today() {
       <h1 className="font-display text-[28px] font-medium leading-tight text-ink mb-1.5">Home</h1>
       <p className="text-ink/50 text-[13.5px] mb-6">Jump straight to any module, or see what's on today below.</p>
 
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-8">
-        {visibleLinks.map((l, i) => {
-          const a = NAV_ACCENT[l.accent];
-          return (
-            <motion.div
-              key={l.to}
-              initial={{ opacity: 0, y: 8, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.2, delay: i * 0.02, ease: EASE }}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <NavLink
-                to={l.to}
-                className={`flex flex-col items-center gap-1.5 rounded-2xl border border-ink/[0.05] ${a.soft} p-2.5 h-full text-center transition-all hover:border-ink/[0.12] hover:shadow-soft`}
-              >
-                <span className={`w-8 h-8 rounded-lg flex items-center justify-center bg-white/70`}>
-                  <l.Icon className={`w-[15px] h-[15px] ${a.text}`} />
-                </span>
-                <span className="text-[10.5px] font-semibold leading-tight text-ink">{l.label}</span>
-              </NavLink>
-            </motion.div>
-          );
-        })}
-      </div>
+      {[
+        { label: "Sales & Leads", paths: ["/leads", "/listings", "/plots", "/schedule", "/quotation"] },
+        { label: "Team & Admin", paths: ["/team", "/attendance", "/performance", "/commission-slabs", "/approvals", "/blogs"] },
+      ].map((group) => {
+        const items = visibleLinks.filter((l) => group.paths.includes(l.to));
+        if (items.length === 0) return null;
+        return (
+          <div key={group.label} className="mb-7">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/35 mb-2.5">{group.label}</div>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {items.map((l, i) => {
+                const a = NAV_ACCENT[l.accent];
+                return (
+                  <motion.div
+                    key={l.to}
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.2, delay: i * 0.02, ease: EASE }}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <NavLink
+                      to={l.to}
+                      className={`flex flex-col items-center gap-1.5 rounded-2xl border border-ink/[0.05] ${a.soft} p-2.5 h-full text-center transition-all hover:border-ink/[0.12] hover:shadow-soft`}
+                    >
+                      <span className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/70">
+                        <l.Icon className={`w-[15px] h-[15px] ${a.text}`} />
+                      </span>
+                      <span className="text-[10.5px] font-semibold leading-tight text-ink">{l.label}</span>
+                    </NavLink>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
 
       <div className="text-[11px] font-semibold uppercase tracking-widest2 text-stone-500 mb-3">
         Today · {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
