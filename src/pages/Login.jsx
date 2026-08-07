@@ -38,6 +38,21 @@ export default function Login() {
       });
   }, []);
 
+  useEffect(() => {
+    function onMessage(event) {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== "pinkcity-auth") return;
+      const { access_token, refresh_token } = event.data;
+      if (!access_token || !refresh_token) return;
+      sb.auth.setSession({ access_token, refresh_token }).catch((e) => {
+        console.error("setSession from popup handoff failed:", e);
+        setErr("Signed in, but couldn't finish setting up your session — please try again.");
+      });
+    }
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+
   function handleGoogleClick(e) {
     e.preventDefault();
     if (!googleUrl) return;
@@ -71,6 +86,7 @@ export default function Login() {
     if (error) setErr(error.message);
     setBusy(false);
   }
+
 
   return (
     <div className="relative min-h-screen flex items-center justify-center p-5 overflow-hidden bg-sand">
