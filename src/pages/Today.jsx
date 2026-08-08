@@ -6,7 +6,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { STATUS_LABELS, waNumberFor, timeAgo } from "../lib/leadConstants";
 import { todayStr, fmtTime, fmtHours, getLocation } from "../lib/attendance";
-import { Phone, MessageCircle, Key, Search, MapPin, Clock3 } from "lucide-react";
+import { Phone, MessageCircle, Key, Search, MapPin, Clock3, CalendarDays, AlertTriangle, ChevronRight, ArrowUpRight, Sparkles, CheckCircle2, Home as HomeIcon, Users, Ticket } from "lucide-react";
 import { Card, SectionTitle, Pill } from "../components/ui/primitives";
 import { Button } from "../components/ui/button";
 import { NAV_LINKS, NAV_ACCENT } from "../lib/navLinks";
@@ -35,6 +35,17 @@ export default function Today() {
   const [visitTarget, setVisitTarget] = useState(null);
   const [callTarget, setCallTarget] = useState(null);
   const [reviewUnitId, setReviewUnitId] = useState(null);
+  const [submissions, setSubmissions] = useState(null);
+
+  async function loadSubmissions() {
+    if (!isAdmin) return;
+    const { data } = await sb
+      .from("listings")
+      .select("id,title,type,status,created_by_name,created_at")
+      .order("created_at", { ascending: false })
+      .limit(3);
+    setSubmissions(data || []);
+  }
 
   async function loadFollowupsAndVisits() {
     const today = todayStr();
@@ -85,6 +96,7 @@ export default function Today() {
     loadFollowupsAndVisits();
     loadTokens();
     loadAttendance();
+    loadSubmissions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
 
@@ -152,72 +164,166 @@ export default function Today() {
 
   const visibleLinks = NAV_LINKS.filter((l) => l.to !== "/today" && (!l.adminOnly || isAdmin));
 
+  const overdueCount = (followups || []).filter((l) => l.follow_up_date < todayStr()).length;
+
+  const GROUPS = [
+    { title: "Sales & Leads", caption: "Pipeline, inventory and paperwork", paths: ["/leads", "/listings", "/plots", "/schedule", "/quotation"] },
+    { title: "Team & Admin", caption: "People, compliance and payouts", paths: ["/team", "/attendance", "/commission-slabs", "/performance", "/blogs", "/approvals"] },
+  ];
+
   return (
-    <div className="max-w-2xl mx-auto px-5 py-10">
-      <div className="text-[11px] font-semibold uppercase tracking-widest2 text-stone-500 mb-3">Admin Panel</div>
-      <h1 className="font-display text-[28px] font-medium leading-tight text-ink mb-1.5">Home</h1>
-      <p className="text-ink/50 text-[13.5px] mb-6">Jump straight to any module, or see what's on today below.</p>
+    <div className="relative overflow-hidden">
+      <div aria-hidden className="pointer-events-none fixed -left-24 -top-16 h-72 w-72 rounded-full bg-stone-500/[0.12] blur-3xl" />
+      <div aria-hidden className="pointer-events-none fixed -right-20 top-52 h-64 w-64 rounded-full bg-brass/[0.16] blur-3xl" />
 
-      {[
-        { label: "Sales & Leads", paths: ["/leads", "/listings", "/plots", "/schedule", "/quotation"] },
-        { label: "Team & Admin", paths: ["/team", "/attendance", "/performance", "/commission-slabs", "/approvals", "/blogs"] },
-      ].map((group) => {
-        const items = visibleLinks.filter((l) => group.paths.includes(l.to));
-        if (items.length === 0) return null;
-        return (
-          <div key={group.label} className="mb-7">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/35 mb-2.5">{group.label}</div>
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-              {items.map((l, i) => {
-                const a = NAV_ACCENT[l.accent];
-                return (
-                  <motion.div
-                    key={l.to}
-                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.2, delay: i * 0.02, ease: EASE }}
-                    whileHover={{ y: -2 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <NavLink
-                      to={l.to}
-                      className={`flex flex-col items-center gap-1.5 rounded-2xl border border-ink/[0.05] ${a.soft} p-2.5 h-full text-center transition-all hover:border-ink/[0.12] hover:shadow-soft`}
+      <div className="relative max-w-2xl mx-auto px-5 py-10">
+        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-600">Admin Panel</div>
+        <h1 className="mt-2 font-display text-[38px] font-semibold leading-[0.98] tracking-tight text-ink">Home</h1>
+        <p className="mt-2.5 max-w-[30ch] text-[13.5px] leading-relaxed text-ink/50">Jump straight to any module, or see what&apos;s on today below.</p>
+
+        {GROUPS.map((group) => {
+          const items = visibleLinks.filter((l) => group.paths.includes(l.to));
+          if (items.length === 0) return null;
+          return (
+            <div key={group.title} className="mt-9">
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink/45">{group.title}</div>
+                  <div className="mt-1 text-[11.5px] text-ink/35">{group.caption}</div>
+                </div>
+                <span className="h-px flex-1 -translate-y-0.5 bg-gradient-to-r from-ink/10 to-transparent" />
+              </div>
+              <div className="mt-3.5 grid grid-cols-3 gap-2.5">
+                {items.map((l, i) => {
+                  const a = NAV_ACCENT[l.accent];
+                  return (
+                    <motion.div
+                      key={l.to}
+                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ duration: 0.2, delay: i * 0.02, ease: EASE }}
+                      whileHover={{ y: -2 }}
+                      whileTap={{ scale: 0.95 }}
                     >
-                      <span className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/70">
-                        <l.Icon className={`w-[15px] h-[15px] ${a.text}`} />
+                      <NavLink
+                        to={l.to}
+                        className={`flex aspect-[1/1.05] flex-col items-center justify-center gap-2 rounded-[22px] border border-ink/[0.05] ${a.soft} px-1.5 text-center shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-lift`}
+                      >
+                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/80">
+                          <l.Icon className={`w-[16px] h-[16px] ${a.text}`} />
+                        </span>
+                        <span className="text-[11px] font-semibold leading-tight text-ink">{l.label}</span>
+                      </NavLink>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+
+        <div className="mt-11 text-[10px] font-bold uppercase tracking-[0.2em] text-stone-600">
+          Today · {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
+        </div>
+        <h2 className="mt-2.5 font-display text-[27px] font-medium leading-tight tracking-tight text-ink">{greeting}, {firstName}.</h2>
+        <p className="mt-2 text-[13.5px] text-ink/50">
+          {busyToday ? "You're all caught up — nothing due today." : "Here's what needs your attention today."}
+        </p>
+
+        {/* Attendance — solid card, matching Prime's exact treatment */}
+        <div className="relative mt-5 overflow-hidden rounded-[26px] border border-stone-700/20 bg-stone-600 p-5 shadow-lift">
+          <div aria-hidden className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-brass/40 blur-2xl" />
+          <div className="relative flex items-center gap-3">
+            <div className="min-w-0">
+              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-sand/60">Attendance</div>
+              <div className="mt-1.5 flex items-center gap-1.5 text-[15px] font-semibold text-sand">
+                <Clock3 className="w-4 h-4 shrink-0" />
+                {attendanceStatus}
+              </div>
+            </div>
+            <button
+              onClick={handleAttendanceAction}
+              disabled={attendanceBusy || attendanceDone || attendance === undefined}
+              className="ml-auto shrink-0 rounded-full bg-white px-5 py-3 text-[13.5px] font-semibold text-stone-600 shadow-soft transition-transform active:scale-95 disabled:opacity-60"
+            >
+              {attendanceBusy ? "Getting location…" : attendanceBtnLabel}
+            </button>
+          </div>
+        </div>
+
+        {/* Stats — real counts, not placeholder */}
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <div className="rounded-[22px] border border-brass/25 bg-brass/10 p-4">
+            <CalendarDays className="h-[17px] w-[17px] text-brass" />
+            <div className="mt-2.5 font-display text-[28px] font-semibold leading-none text-ink">{followups === null ? "—" : followups.length}</div>
+            <div className="mt-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-ink/40">Follow-ups today</div>
+          </div>
+          <div className="rounded-[22px] border border-stone-200 bg-stone-50 p-4">
+            <AlertTriangle className="h-[17px] w-[17px] text-stone-600" />
+            <div className="mt-2.5 font-display text-[28px] font-semibold leading-none text-ink">{followups === null ? "—" : overdueCount}</div>
+            <div className="mt-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-ink/40">Overdue</div>
+          </div>
+        </div>
+
+        {/* Recent submissions — real listings, not demo data */}
+        {isAdmin && (
+          <div className="mt-9">
+            <div className="flex items-end justify-between">
+              <h3 className="font-display text-[19px] font-medium text-ink">Recent submissions</h3>
+              <NavLink to="/listings" className="inline-flex items-center gap-1 text-[12px] font-semibold text-stone-600">
+                View all <ArrowUpRight className="h-3.5 w-3.5" />
+              </NavLink>
+            </div>
+            <div className="mt-3 space-y-2.5">
+              {submissions === null ? (
+                <div className="flex justify-center py-6"><BrandedLoader size={22} /></div>
+              ) : submissions.length === 0 ? (
+                <div className="text-sm text-ink/40 py-2">No listings submitted yet.</div>
+              ) : (
+                submissions.map((s) => (
+                  <NavLink
+                    key={s.id}
+                    to="/listings"
+                    className="flex items-center gap-3 rounded-[22px] border border-ink/[0.05] bg-white px-4 py-3.5 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-lift"
+                  >
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-stone-50 text-stone-600 ring-2 ring-stone-500/10">
+                      <HomeIcon className="h-[16px] w-[16px]" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13.5px] font-semibold text-ink">{s.title}</span>
+                      <span className="mt-0.5 block truncate text-[11px] font-medium text-ink/40">
+                        {s.type} · {s.created_by_name || "—"} · {timeAgo(s.created_at)}
                       </span>
-                      <span className="text-[10.5px] font-semibold leading-tight text-ink">{l.label}</span>
-                    </NavLink>
-                  </motion.div>
-                );
-              })}
+                    </span>
+                    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] ${s.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-brass/15 text-brass"}`}>
+                      {s.status === "active" ? <CheckCircle2 className="h-2.5 w-2.5" /> : <Clock3 className="h-2.5 w-2.5" />}
+                      {s.status === "active" ? "Approved" : "Pending"}
+                    </span>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-ink/30" />
+                  </NavLink>
+                ))
+              )}
+            </div>
+
+            <NavLink to="/leads" className="mt-5 flex items-center justify-center gap-2 rounded-2xl bg-stone-600 py-4 text-[13.5px] font-semibold text-sand shadow-lift transition-transform active:scale-[0.98]">
+              <Sparkles className="h-4 w-4" />
+              Open leads pipeline
+            </NavLink>
+
+            <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+              <NavLink to="/team" className="flex items-center justify-center gap-2 rounded-2xl border border-ink/10 bg-white py-3.5 text-[12.5px] font-semibold text-ink shadow-soft">
+                <Users className="h-4 w-4 text-stone-600" />
+                Team
+              </NavLink>
+              <NavLink to="/plots" className="flex items-center justify-center gap-2 rounded-2xl border border-ink/10 bg-white py-3.5 text-[12.5px] font-semibold text-ink shadow-soft">
+                <Ticket className="h-4 w-4 text-stone-600" />
+                New token
+              </NavLink>
             </div>
           </div>
-        );
-      })}
+        )}
 
-      <div className="text-[11px] font-semibold uppercase tracking-widest2 text-stone-500 mb-3">
-        Today · {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
-      </div>
-      <h1 className="font-display text-[28px] font-medium leading-tight text-ink mb-2">{greeting}, {firstName}.</h1>
-      <p className="text-ink/50 text-[13.5px] mb-8">
-        {busyToday ? "You're all caught up — nothing due today." : "Here's what needs your attention today."}
-      </p>
-
-      <div className="space-y-4">
-        <Card className="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-ink/40">Attendance</div>
-            <div className="flex items-center gap-1.5 text-[15px] font-semibold text-ink mt-1">
-              <Clock3 className="w-4 h-4 text-stone-600" />
-              {attendanceStatus}
-            </div>
-          </div>
-          <Button size="sm" disabled={attendanceBusy || attendanceDone || attendance === undefined} onClick={handleAttendanceAction}>
-            {attendanceBusy ? "Getting location…" : attendanceBtnLabel}
-          </Button>
-        </Card>
-
+      <div className="space-y-4 mt-9">
         {isAdmin && (
           <Card>
             <SectionTitle>Pending Token Reviews</SectionTitle>
@@ -268,6 +374,7 @@ export default function Today() {
             </div>
           )}
         </Card>
+      </div>
       </div>
 
       <LeadFormModal target={formTarget} onClose={() => setFormTarget(null)} onSaved={() => { setFormTarget(null); refreshAll(); }} />
