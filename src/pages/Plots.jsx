@@ -61,14 +61,14 @@ export default function Plots() {
   return (
     <div className="max-w-3xl mx-auto px-5 py-10">
       <div className="text-xs font-medium tracking-widest2 uppercase text-stone-500 mb-3">PinkCity Properties</div>
-      <h1 className="font-display text-3xl text-ink mb-2">Plots &amp; Tokens</h1>
+      <h1 className="font-display text-[28px] text-ink mb-2">Plots &amp; Tokens</h1>
       <p className="text-ink/50 text-sm mb-8">
         {isAdmin ? "Tap a green plot to submit a token, or a yellow plot to review one." : "Tap a green plot to submit a token for it."}
       </p>
 
       {listings.length === 0 ? (
         <div className="bg-white rounded-3xl text-center py-16 text-ink/40">
-          <div className="font-display text-lg text-ink mb-1">No plotted listings yet</div>
+          <div className="font-display text-[19px] text-ink mb-1">No plotted listings yet</div>
           <p className="text-sm">Colony-style listings with individual plots will show up here.</p>
         </div>
       ) : (
@@ -116,7 +116,7 @@ export default function Plots() {
             </div>
             {units.length === 0 && (
               <div className="text-center py-16 text-ink/40">
-                <div className="font-display text-lg text-ink mb-1">No plots yet</div>
+                <div className="font-display text-[19px] text-ink mb-1">No plots yet</div>
                 <p className="text-sm">This project has no individual plots configured.</p>
               </div>
             )}

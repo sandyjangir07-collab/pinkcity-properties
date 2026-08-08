@@ -12,8 +12,8 @@ export function StatCard({ label, value, tone = "stone", Icon, className = "" })
   return (
     <div className={`rounded-2xl border border-ink/[0.06] bg-gradient-to-br ${tones[tone]} p-4 transition-transform hover:-translate-y-0.5 ${className}`}>
       {Icon && <Icon className="w-4 h-4 mb-2 opacity-70" />}
-      <div className="font-display text-2xl leading-none text-ink">{value}</div>
-      <div className="text-[10px] font-semibold uppercase tracking-wide text-ink/40 mt-1.5">{label}</div>
+      <div className="font-display text-[22px] font-semibold leading-none text-ink">{value}</div>
+      <div className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-ink/40 mt-1.5">{label}</div>
     </div>
   );
 }
@@ -21,7 +21,7 @@ export function StatCard({ label, value, tone = "stone", Icon, className = "" })
 export function SectionTitle({ children, action }) {
   return (
     <div className="flex items-center justify-between mb-4">
-      <h2 className="font-display text-lg text-ink">{children}</h2>
+      <h2 className="font-display text-[19px] font-medium text-ink">{children}</h2>
       {action}
     </div>
   );

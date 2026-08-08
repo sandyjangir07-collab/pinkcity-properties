@@ -65,7 +65,7 @@ export default function CreateProfile() {
   return (
     <div className="max-w-xl mx-auto px-5 py-10">
       <div className="text-xs font-medium tracking-widest2 uppercase text-stone-500 mb-3">Welcome to PinkCity</div>
-      <h1 className="font-display text-3xl text-ink mb-2">Create Your Profile</h1>
+      <h1 className="font-display text-[28px] text-ink mb-2">Create Your Profile</h1>
       <p className="text-ink/50 text-sm mb-8">Fill in your details below. An admin will review and approve your profile before you can access the team directory.</p>
 
       <Card>

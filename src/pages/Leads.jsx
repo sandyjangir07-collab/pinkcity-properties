@@ -142,7 +142,7 @@ export default function Leads() {
             <div className="flex justify-center py-16"><BrandedLoader size={28} /></div>
           ) : deletedLeads.length === 0 ? (
             <div className="rounded-[28px] border border-dashed border-ink/15 bg-white/60 p-9 text-center">
-              <p className="font-display text-lg text-ink">Nothing deleted</p>
+              <p className="font-display text-[19px] text-ink">Nothing deleted</p>
               <p className="mt-1.5 text-xs text-ink/45">Deleted leads will show up here, recoverable any time.</p>
             </div>
           ) : (
@@ -227,7 +227,7 @@ export default function Leads() {
         ) : visible.length === 0 ? (
           <div className="rounded-[28px] border border-dashed border-ink/15 bg-white/60 p-9 text-center">
             <img src="/logo.png" alt="" className="w-12 h-12 object-contain mx-auto mb-3 opacity-25" />
-            <p className="font-display text-lg text-ink">No leads here</p>
+            <p className="font-display text-[19px] text-ink">No leads here</p>
             <p className="mt-1.5 text-xs text-ink/45">Try another stage or clear your search.</p>
           </div>
         ) : (

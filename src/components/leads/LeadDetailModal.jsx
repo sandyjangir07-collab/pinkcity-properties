@@ -128,7 +128,7 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
           {(lead.name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
         </span>
         <div className="min-w-0">
-          <h1 className="font-display text-xl font-semibold leading-tight text-ink truncate">{lead.name}</h1>
+          <h1 className="font-display text-[21px] font-semibold leading-tight text-ink truncate">{lead.name}</h1>
           <p className="mt-1 text-xs font-medium text-ink/45">
             PC{lead.lead_number} · {lead.created_by_name || "—"} · Added {new Date(lead.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
           </p>
@@ -203,7 +203,7 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
 
       {/* Stage */}
       <div className="mt-6">
-        <h2 className="font-display text-lg font-medium text-ink">Stage</h2>
+        <h2 className="font-display text-[19px] font-medium text-ink">Stage</h2>
         <div className="mt-3 flex flex-wrap gap-2">
           {Object.keys(STATUS_TEXT).map((s) => (
             <button
@@ -219,7 +219,7 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
 
       {/* Activity timeline */}
       <div className="mt-6">
-        <h2 className="font-display text-lg font-medium text-ink">Activity</h2>
+        <h2 className="font-display text-[19px] font-medium text-ink">Activity</h2>
         <div className="mt-3 flex items-center gap-2.5">
           <input className="field-input flex-1" placeholder="Add a note…" value={noteInput} onChange={(e) => setNoteInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addNote()} />
           <button onClick={addNote} aria-label="Add note" className="inline-flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl bg-stone-600 text-sand shadow-lift active:scale-95 transition-transform">

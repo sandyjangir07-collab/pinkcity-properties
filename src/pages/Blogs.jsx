@@ -41,7 +41,7 @@ export default function Blogs() {
   return (
     <div className="max-w-5xl mx-auto px-5 py-10">
       <div className="text-xs font-medium tracking-widest2 uppercase text-stone-500 mb-3">Admin</div>
-      <h1 className="font-display text-3xl text-ink mb-2">Blog Posts</h1>
+      <h1 className="font-display text-[28px] text-ink mb-2">Blog Posts</h1>
       <p className="text-ink/50 text-sm mb-8">Write, publish, and manage articles for the public site.</p>
 
       <Button onClick={() => setFormTarget("new")} className="mb-6">
@@ -53,7 +53,7 @@ export default function Blogs() {
         <div className="flex justify-center py-16"><BrandedLoader size={24} /></div>
       ) : posts.length === 0 ? (
         <div className="bg-white rounded-3xl text-center py-16 text-ink/40">
-          <div className="font-display text-lg text-ink mb-1">No blog posts yet</div>
+          <div className="font-display text-[19px] text-ink mb-1">No blog posts yet</div>
           <p className="text-sm">Click New Post to write your first article.</p>
         </div>
       ) : (

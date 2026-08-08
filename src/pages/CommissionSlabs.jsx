@@ -64,7 +64,7 @@ export default function CommissionSlabs() {
   return (
     <div className="max-w-2xl mx-auto px-5 py-10">
       <div className="text-xs font-medium tracking-widest2 uppercase text-stone-500 mb-3">Admin</div>
-      <h1 className="font-display text-3xl text-ink mb-2">Commission Slabs</h1>
+      <h1 className="font-display text-[28px] text-ink mb-2">Commission Slabs</h1>
       <p className="text-ink/50 text-sm mb-8">Rates are ₹ per Gaj of plot size, not a percentage of sale price.</p>
 
       <div className="space-y-4">

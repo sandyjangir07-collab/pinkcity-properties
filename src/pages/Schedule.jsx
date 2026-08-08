@@ -58,7 +58,7 @@ export default function Schedule() {
     <div className="max-w-3xl mx-auto px-5 py-10">
       <div className="text-xs font-medium tracking-widest2 uppercase text-stone-500 mb-3">Site Visits</div>
       <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
-        <h1 className="font-display text-3xl text-ink">Visit Calendar</h1>
+        <h1 className="font-display text-[28px] text-ink">Visit Calendar</h1>
         <div className="flex gap-2">
           <select className="field-input w-auto" value={filter} onChange={(e) => setFilter(e.target.value)}>
             <option value="upcoming">Upcoming</option>
@@ -92,7 +92,7 @@ export default function Schedule() {
 
           {rest.length === 0 && todayVisits.length === 0 ? (
             <div className="bg-white rounded-3xl text-center py-16 text-ink/40">
-              <div className="font-display text-lg text-ink">No visits found</div>
+              <div className="font-display text-[19px] text-ink">No visits found</div>
             </div>
           ) : (
             <div className="space-y-2.5">
@@ -121,7 +121,7 @@ function SchedCard({ visit: v, isToday, onDone, onCancel }) {
       className="bg-white rounded-3xl p-4 flex gap-3.5 items-center"
     >
       <div className={`text-center shrink-0 rounded-2xl px-3 py-2 min-w-[56px] ${isToday ? "bg-stone-600 text-sand" : "bg-stone-50 text-ink"}`}>
-        <div className="font-display text-xl leading-none">{day}</div>
+        <div className="font-display text-[21px] leading-none">{day}</div>
         <div className="text-[10px] font-semibold mt-1">{mon}</div>
       </div>
       <div className="flex-1 min-w-0">

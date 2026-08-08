@@ -78,7 +78,7 @@ export default function Performance() {
   return (
     <div className="max-w-4xl mx-auto px-5 py-10">
       <div className="text-xs font-medium tracking-widest2 uppercase text-stone-500 mb-3">Admin</div>
-      <h1 className="font-display text-3xl text-ink mb-2">Performance</h1>
+      <h1 className="font-display text-[28px] text-ink mb-2">Performance</h1>
       <p className="text-ink/50 text-sm mb-8">Team activity across listings, leads, and site visits.</p>
 
       {totals && (
@@ -94,7 +94,7 @@ export default function Performance() {
         <div className="flex justify-center py-16"><BrandedLoader size={24} /></div>
       ) : members.length === 0 ? (
         <div className="bg-white rounded-3xl text-center py-16 text-ink/40">
-          <div className="font-display text-lg text-ink">No team members yet</div>
+          <div className="font-display text-[19px] text-ink">No team members yet</div>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -202,7 +202,7 @@ function MiniStat({ n, label, tone }) {
   const text = tone === "green" ? "text-emerald-600" : tone === "jali" ? "text-jali" : tone === "brass" ? "text-brass" : "text-ink";
   return (
     <div className={`text-center ${bg} rounded-xl py-2`}>
-      <div className={`font-display text-lg ${text}`}>{n}</div>
+      <div className={`font-display text-[17px] ${text}`}>{n}</div>
       <div className="text-[10px] text-ink/40">{label}</div>
     </div>
   );

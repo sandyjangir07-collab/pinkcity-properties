@@ -124,7 +124,7 @@ export default function Layout() {
               </div>
 
               <div className="relative flex items-center justify-between mb-5">
-                <div className="font-display text-xl text-ink">Menu</div>
+                <div className="font-display text-[21px] text-ink">Menu</div>
                 <button onClick={() => setMenuOpen(false)} className="w-9 h-9 rounded-full flex items-center justify-center text-ink/50 hover:bg-ink/[0.05] hover:text-stone-600 transition-colors" aria-label="Close menu">
                   <X className="w-5 h-5" />
                 </button>

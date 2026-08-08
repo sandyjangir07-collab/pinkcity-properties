@@ -67,7 +67,7 @@ export default function Listings() {
   return (
     <div className="max-w-5xl mx-auto px-5 py-10">
       <div className="text-xs font-medium tracking-widest2 uppercase text-stone-500 mb-3">PinkCity Properties</div>
-      <h1 className="font-display text-3xl text-ink mb-2">Listings</h1>
+      <h1 className="font-display text-[28px] text-ink mb-2">Listings</h1>
       <p className="text-ink/50 text-sm mb-8">{isAdmin ? "Review submissions and manage everything that's live." : "Your submitted properties."}</p>
 
       {stats && (
@@ -89,7 +89,7 @@ export default function Listings() {
       ) : listings.length === 0 ? (
         <div className="bg-white rounded-3xl text-center py-16 text-ink/40">
           <img src="/logo.png" alt="" className="w-12 h-12 object-contain mx-auto mb-3 opacity-25" />
-          <div className="font-display text-lg text-ink mb-1">{isAdmin ? "No submissions yet" : "No listings yet"}</div>
+          <div className="font-display text-[19px] text-ink mb-1">{isAdmin ? "No submissions yet" : "No listings yet"}</div>
           <p className="text-sm">Click Add Listing to submit your first property.</p>
         </div>
       ) : (
@@ -137,7 +137,7 @@ function ListingCard({ listing: l, index, isAdmin, onEdit, onApprove, onReject, 
       <div className="p-4">
         <div className="flex justify-between gap-2">
           <div className="font-medium text-sm text-ink">{l.title}</div>
-          <div className="font-display text-lg text-ink shrink-0">{l.price}</div>
+          <div className="font-display text-[19px] text-ink shrink-0">{l.price}</div>
         </div>
         <div className="text-xs text-ink/45 mt-1">
           {[TYPE_LABEL[l.type], l.size, l.area].filter(Boolean).join(" · ")}

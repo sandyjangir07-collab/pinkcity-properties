@@ -122,7 +122,7 @@ export default function Directory() {
         {searchResults !== null ? (
           searchResults.length === 0 ? (
             <div className="bg-surface border border-ink/[0.06] shadow-soft rounded-3xl text-center py-16 text-ink/40">
-              <div className="font-display text-lg text-ink mb-1">No employees found</div>
+              <div className="font-display text-[19px] text-ink mb-1">No employees found</div>
               <p className="text-sm">Try a different name or employee ID.</p>
             </div>
           ) : (
@@ -137,7 +137,7 @@ export default function Directory() {
             {tree.length === 0 && (
               <div className="bg-surface border border-ink/[0.06] shadow-soft rounded-3xl text-center py-16 text-ink/40">
                 <img src="/logo.png" alt="" className="w-12 h-12 object-contain mx-auto mb-3 opacity-25" />
-            <div className="font-display text-lg text-ink mb-1">No team members yet</div>
+            <div className="font-display text-[19px] text-ink mb-1">No team members yet</div>
                 <p className="text-sm">Add your first team member to get started.</p>
               </div>
             )}

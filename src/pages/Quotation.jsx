@@ -122,7 +122,7 @@ export default function Quotation() {
   return (
     <div className="max-w-2xl mx-auto px-5 py-10">
       <div className="text-xs font-medium tracking-widest2 uppercase text-stone-500 mb-3">PinkCity Properties</div>
-      <h1 className="font-display text-3xl text-ink mb-2">Quotation Builder</h1>
+      <h1 className="font-display text-[28px] text-ink mb-2">Quotation Builder</h1>
       <p className="text-ink/50 text-sm mb-8">Build a plot quotation, download it as a branded PDF, or share it on WhatsApp.</p>
 
       <div className="space-y-4">
@@ -159,7 +159,7 @@ export default function Quotation() {
 
           <div className="flex justify-between items-center bg-stone-50 rounded-2xl px-4 py-3.5 mb-4">
             <span className="text-sm font-semibold text-ink">Total Quoted Price</span>
-            <span className="font-display text-2xl text-stone-600">{formatINRQ(q.total)}</span>
+            <span className="font-display text-[22px] text-stone-600">{formatINRQ(q.total)}</span>
           </div>
 
           {err && <p className="text-sm text-red-600 mb-3">{err}</p>}
