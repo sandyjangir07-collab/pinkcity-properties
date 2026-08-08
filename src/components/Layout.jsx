@@ -58,16 +58,12 @@ export default function Layout() {
             PinkCity<span className="text-stone-600">.</span>
           </span>
 
-          <span className="ml-1 inline-flex items-center gap-1.5 rounded-full bg-stone-50 px-3 py-1.5 text-[12px] font-semibold text-stone-600 shrink-0">
+          <span className="ml-1 inline-flex items-center gap-1.5 rounded-full bg-stone-600 px-3 py-1.5 text-[12px] font-semibold text-sand shadow-[0_3px_10px_-3px_rgba(196,56,104,0.5)] shrink-0">
             <Zap className="w-3.5 h-3.5" />
             {isAdmin ? "Admin" : "Team"}
           </span>
 
-          <div className="shrink-0">
-            <NotificationBell />
-          </div>
-
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 hidden md:block">
             <AnimatePresence mode="wait">
               <motion.div
                 key={current?.label || "PinkCity"}
@@ -75,14 +71,15 @@ export default function Layout() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.2 }}
-                className="text-[13px] font-medium text-ink/50 truncate text-right pr-1 hidden md:block"
+                className="text-[13px] font-medium text-ink/50 truncate text-right pr-1"
               >
                 {current?.label}
               </motion.div>
             </AnimatePresence>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 ml-auto">
+            <NotificationBell />
             <a
               href={PUBLIC_SITE_URL}
               target="_blank"
