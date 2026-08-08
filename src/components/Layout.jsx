@@ -92,7 +92,7 @@ export default function Layout() {
             <span className="text-sm text-ink/50 hidden xl:block max-w-[140px] truncate">{profile?.full_name || profile?.email}</span>
             <button
               onClick={signOut}
-              className="text-xs font-medium border border-ink/10 rounded-full px-3.5 py-2 text-ink/70 hover:border-ink/25 hover:text-ink transition-colors"
+              className="text-xs font-semibold rounded-full px-3.5 py-2 bg-ink text-sand hover:bg-ink/85 transition-colors"
             >
               Sign out
             </button>
