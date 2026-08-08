@@ -4,7 +4,7 @@ import { sb } from "../../lib/supabase";
 import { useToast } from "../../hooks/useToast";
 import { Card } from "../ui/primitives";
 
-const CALLMEBOT_NUMBER = "+34 644 84 71 47";
+const CALLMEBOT_NUMBER = "+34 694 25 79 52";
 
 export default function WhatsAppOptIn({ employee, onUpdated }) {
   const showToast = useToast();
