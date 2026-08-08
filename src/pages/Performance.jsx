@@ -21,11 +21,12 @@ export default function Performance() {
   const [callTarget, setCallTarget] = useState(null);
 
   async function load() {
-    const [{ data: listings }, { data: visits }, { data: leads }, { data: profiles }] = await Promise.all([
+    const [{ data: listings }, { data: visits }, { data: leads }, { data: profiles }, { data: employees }] = await Promise.all([
       sb.from("listings").select("uid,submitter_name,status"),
       sb.from("visits").select("logged_by,logged_by_name,visitor_name,visitor_phone,listing_title,visit_date,visit_time"),
       sb.from("leads").select("id,created_by,created_by_name,status,name,phone,preferred_location,lead_number").is("deleted_at", null),
       sb.from("profiles").select("id,full_name,email,role"),
+      sb.from("employees").select("user_id,profile_status,status"),
     ]);
 
     setTotals({
@@ -35,9 +36,11 @@ export default function Performance() {
       closed: (leads || []).filter((l) => l.status === "closed").length,
     });
 
+    const approvedUserIds = new Set((employees || []).filter((e) => e.profile_status === "approved").map((e) => e.user_id));
+
     const byId = {};
     (profiles || [])
-      .filter((p) => p.role !== "admin")
+      .filter((p) => p.role !== "admin" && approvedUserIds.has(p.id))
       .forEach((p) => {
         byId[p.id] = { name: p.full_name || p.email, email: p.email, listings: 0, visits: 0, leads: 0, closed: 0, leadList: [], visitList: [] };
       });

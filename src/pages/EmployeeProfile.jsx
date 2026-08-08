@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { Trash2 } from "lucide-react";
 import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
@@ -11,15 +12,18 @@ import PersonalSection from "../components/profile/PersonalSection";
 import EmploymentSection from "../components/profile/EmploymentSection";
 import HierarchySection from "../components/profile/HierarchySection";
 import ActivitySection from "../components/profile/ActivitySection";
+import WhatsAppOptIn from "../components/profile/WhatsAppOptIn";
 import { BrandedLoader } from "../components/ui/BrandedLoader";
 
 export default function EmployeeProfile() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { isAdmin, employee: ownEmployee } = useAuth();
   const showToast = useToast();
   const [employee, setEmployee] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [deleting, setDeleting] = useState(false);
   const photoInput = useRef(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
@@ -36,6 +40,19 @@ export default function EmployeeProfile() {
 
   const isSelf = ownEmployee?.id === id;
   const canEdit = isSelf || isAdmin;
+
+  async function handleDeleteEmployee() {
+    if (!window.confirm(`Delete ${employee.full_name}? This removes their profile, documents, and hierarchy links permanently — it can't be undone.`)) return;
+    setDeleting(true);
+    const { error } = await sb.from("employees").delete().eq("id", id);
+    setDeleting(false);
+    if (error) {
+      showToast(error.message);
+      return;
+    }
+    showToast("Employee deleted.");
+    navigate("/team");
+  }
 
   async function handlePhotoUpload(file) {
     if (!file || !employee) return;
@@ -115,6 +132,24 @@ export default function EmployeeProfile() {
         <EmploymentSection employee={employee} isAdmin={isAdmin} onUpdated={() => { load(); setRefreshKey((k) => k + 1); }} />
         <HierarchySection employee={employee} isAdmin={isAdmin} canEdit={canEdit} refreshKey={refreshKey} />
         <ActivitySection employee={employee} refreshKey={refreshKey} />
+        {isSelf && <WhatsAppOptIn employee={employee} onUpdated={() => { load(); setRefreshKey((k) => k + 1); }} />}
+
+        {isAdmin && !isSelf && (
+          <div className="rounded-3xl border border-red-200 bg-red-50/60 p-5">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-red-600 mb-1">Danger Zone</div>
+            <p className="text-xs text-red-700/70 mb-3.5 leading-relaxed">
+              Permanently remove this person — their profile, documents, and hierarchy links. This can&apos;t be undone. Use this for accidental self-registrations or anyone who shouldn&apos;t have access.
+            </p>
+            <button
+              onClick={handleDeleteEmployee}
+              disabled={deleting}
+              className="inline-flex items-center gap-2 rounded-full bg-red-600 text-white text-xs font-semibold px-4 py-2.5 disabled:opacity-50 active:scale-95 transition-transform"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {deleting ? "Deleting…" : "Delete Employee"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import CreateProfile from "./CreateProfile";
+import NotRegistered from "./NotRegistered";
 import PendingApprovalNotice from "./PendingApprovalNotice";
 import Today from "./Today";
 import { BrandedLoader } from "../components/ui/BrandedLoader";
@@ -17,7 +17,7 @@ export default function Home() {
   }
 
   if (isAdmin) return <Today />;
-  if (!employee) return <CreateProfile />;
+  if (!employee) return <NotRegistered />;
   if (employee.profile_status === "pending_review") return <PendingApprovalNotice />;
   return <Navigate to="/leads" replace />;
 }
