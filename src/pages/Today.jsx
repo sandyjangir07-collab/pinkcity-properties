@@ -166,6 +166,20 @@ export default function Today() {
 
   const overdueCount = (followups || []).filter((l) => l.follow_up_date < todayStr()).length;
 
+  const PATH_TONE = {
+    "/leads": { bg: "bg-blue-100", text: "text-blue-600" },
+    "/listings": { bg: "bg-emerald-100", text: "text-emerald-600" },
+    "/plots": { bg: "bg-violet-100", text: "text-violet-600" },
+    "/schedule": { bg: "bg-teal-100", text: "text-teal-600" },
+    "/quotation": { bg: "bg-amber-100", text: "text-amber-700" },
+    "/team": { bg: "bg-stone-100", text: "text-stone-600" },
+    "/attendance": { bg: "bg-stone-100", text: "text-stone-600" },
+    "/commission-slabs": { bg: "bg-amber-100", text: "text-amber-700" },
+    "/performance": { bg: "bg-teal-100", text: "text-teal-600" },
+    "/blogs": { bg: "bg-violet-100", text: "text-violet-600" },
+    "/approvals": { bg: "bg-emerald-100", text: "text-emerald-600" },
+  };
+
   const GROUPS = [
     { title: "Sales & Leads", caption: "Pipeline, inventory and paperwork", paths: ["/leads", "/listings", "/plots", "/schedule", "/quotation"] },
     { title: "Team & Admin", caption: "People, compliance and payouts", paths: ["/team", "/attendance", "/commission-slabs", "/performance", "/blogs", "/approvals"] },
@@ -195,7 +209,7 @@ export default function Today() {
               </div>
               <div className="mt-3.5 grid grid-cols-3 gap-2.5">
                 {items.map((l, i) => {
-                  const a = NAV_ACCENT[l.accent];
+                  const a = PATH_TONE[l.to] || { bg: "bg-stone-100", text: "text-stone-600" };
                   return (
                     <motion.div
                       key={l.to}
@@ -207,7 +221,7 @@ export default function Today() {
                     >
                       <NavLink
                         to={l.to}
-                        className={`flex aspect-[1/1.05] flex-col items-center justify-center gap-2 rounded-[22px] border border-ink/[0.05] ${a.soft} px-1.5 text-center shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-lift`}
+                        className={`flex aspect-[1/1.05] flex-col items-center justify-center gap-2 rounded-[22px] border border-ink/[0.05] ${a.bg} px-1.5 text-center shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-lift`}
                       >
                         <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/80">
                           <l.Icon className={`w-[16px] h-[16px] ${a.text}`} />

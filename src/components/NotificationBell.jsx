@@ -90,10 +90,12 @@ export default function NotificationBell() {
         <button
           onClick={handleEnable}
           disabled={enabling}
-          className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-brass/10 text-brass px-3 py-1.5 text-[12px] font-semibold disabled:opacity-50"
+          aria-label="Enable notifications"
+          title="Enable notifications"
+          className="relative w-10 h-10 rounded-full flex items-center justify-center text-brass hover:bg-brass/10 transition-colors disabled:opacity-50"
         >
-          <BellRing className="w-3.5 h-3.5" />
-          {enabling ? "Enabling…" : "Enable alerts"}
+          <BellRing className={`w-[18px] h-[18px] ${enabling ? "animate-pulse" : ""}`} />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brass" />
         </button>
       )}
 
