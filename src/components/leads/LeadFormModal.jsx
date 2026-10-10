@@ -27,6 +27,7 @@ export default function LeadFormModal({ target, onClose, onSaved }) {
   const showToast = useToast();
   const [form, setForm] = useState(emptyForm);
   const [status, setStatus] = useState("new");
+  const [originalStatus, setOriginalStatus] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const isEdit = target && target !== "new";
@@ -65,6 +66,7 @@ export default function LeadFormModal({ target, onClose, onSaved }) {
         property_type: data.property_type || "",
       });
       setStatus(data.status || "new");
+      setOriginalStatus(data.status || "new");
     });
   }, [target]);
 
@@ -91,7 +93,8 @@ export default function LeadFormModal({ target, onClose, onSaved }) {
       notes: form.notes.trim() || null,
       source: form.source,
       property_type: form.property_type || null,
-      status,
+      // Closing a lead goes through the Stage buttons (asks for township/plot) — never from this form.
+      status: status === "closed" && originalStatus !== "closed" ? (originalStatus || "new") : status,
       updated_at: new Date().toISOString(),
       created_by: user.id,
       created_by_name: submitterName,
@@ -158,17 +161,24 @@ export default function LeadFormModal({ target, onClose, onSaved }) {
         <Field label="Notes"><textarea className="field-input min-h-[80px]" value={form.notes} onChange={(e) => set("notes", e.target.value)} /></Field>
         <Field label="Status">
           <div className="flex flex-wrap gap-2">
-            {Object.keys(STATUS_TEXT).map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setStatus(s)}
-                className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${status === s ? "bg-stone-600 text-sand border-stone-600" : "border-ink/10 text-ink/60"}`}
-              >
-                {STATUS_TEXT[s]}
-              </button>
-            ))}
+            {Object.keys(STATUS_TEXT).map((s) => {
+              const locked = s === "closed" && originalStatus !== "closed";
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  disabled={locked}
+                  onClick={() => setStatus(s)}
+                  className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${locked ? "border-ink/10 text-ink/25 cursor-not-allowed" : status === s ? "bg-stone-600 text-sand border-stone-600" : "border-ink/10 text-ink/60"}`}
+                >
+                  {STATUS_TEXT[s]}
+                </button>
+              );
+            })}
           </div>
+          {originalStatus !== "closed" && (
+            <p className="mt-2 text-[11.5px] text-ink/40">To close a lead, open it and use the Stage buttons — it asks which plot was sold.</p>
+          )}
         </Field>
         {err && <p className="text-sm text-red-600">{err}</p>}
         <Button disabled={busy} type="submit" className="w-full">{busy ? "Saving…" : "Save Lead"}</Button>
