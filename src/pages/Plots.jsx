@@ -278,6 +278,7 @@ export function ReviewTokenModal({ unitId, onClose, profile, onDecided }) {
   const [employees, setEmployees] = useState([]);
   const [mode, setMode] = useState(null);
   const [saleAmount, setSaleAmount] = useState("");
+  const [commissionAmount, setCommissionAmount] = useState("");
   const [associateId, setAssociateId] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const [busy, setBusy] = useState(false);
@@ -288,6 +289,7 @@ export function ReviewTokenModal({ unitId, onClose, profile, onDecided }) {
       setSubmission(null);
       setMode(null);
       setSaleAmount("");
+      setCommissionAmount("");
       setAssociateId("");
       setRejectReason("");
       setErr("");
@@ -321,6 +323,10 @@ export function ReviewTokenModal({ unitId, onClose, profile, onDecided }) {
       setErr("Please enter the sale amount before approving.");
       return;
     }
+    if (approve && (commissionAmount === "" || Number(commissionAmount) < 0)) {
+      setErr("Please enter the commission amount before approving.");
+      return;
+    }
     setBusy(true);
     setErr("");
     const { error } = await sb.rpc("review_token_submission", {
@@ -330,6 +336,7 @@ export function ReviewTokenModal({ unitId, onClose, profile, onDecided }) {
       p_rejection_reason: approve ? null : rejectReason.trim(),
       p_sale_amount: approve ? Number(saleAmount) : null,
       p_associate_employee_id: approve ? associateId || null : null,
+      p_commission_amount: approve ? Number(commissionAmount) : null,
     });
     setBusy(false);
     if (error) {
@@ -367,6 +374,10 @@ export function ReviewTokenModal({ unitId, onClose, profile, onDecided }) {
           {mode === "approve" && (
             <div className="mt-3.5 space-y-3">
               <Field label="Sale Amount (₹) *"><input className="field-input" type="number" placeholder="e.g. 4500000" value={saleAmount} onChange={(e) => setSaleAmount(e.target.value)} /></Field>
+              <Field label="Commission Amount (₹) *">
+                <input className="field-input" type="number" placeholder="e.g. 45000" value={commissionAmount} onChange={(e) => setCommissionAmount(e.target.value)} />
+                <p className="text-xs text-ink/40 mt-1.5">What the associate actually earns on this deal</p>
+              </Field>
               <Field label="Associate credited for this deal">
                 <select className="field-input" value={associateId} onChange={(e) => setAssociateId(e.target.value)}>
                   <option value="">— None —</option>

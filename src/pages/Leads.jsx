@@ -266,6 +266,7 @@ export default function Leads() {
         leadId={detailLeadId}
         onClose={() => setDetailLeadId(null)}
         onChanged={refresh}
+        onOpenLead={(id) => setDetailLeadId(id)}
         onEdit={(id) => {
           setDetailLeadId(null);
           setFormTarget(id);
@@ -320,6 +321,7 @@ function LeadCard({ lead: l, index, onOpen }) {
               {SOURCE_LABELS[l.source] || l.source}
             </span>
             {stale && <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[9.5px] font-bold uppercase tracking-[0.1em] text-amber-700">Stale</span>}
+            {l.possible_duplicate_of && <span className="rounded-full bg-rose-100 px-2.5 py-1 text-[9.5px] font-bold uppercase tracking-[0.1em] text-rose-700">Possible dup</span>}
           </span>
           <span className="mt-2 block text-[11px] text-ink/35">
             Last contacted: <span className="font-semibold text-ink/60">{timeAgo(l.updated_at || l.created_at)}</span>

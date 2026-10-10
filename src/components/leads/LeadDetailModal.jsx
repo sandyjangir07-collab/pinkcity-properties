@@ -1,11 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { sb } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
 import { STATUS_LABELS, STATUS_TEXT } from "../../lib/leadConstants";
 import { leadScore } from "../../lib/leadScore";
-import { Phone, MapPin, IndianRupee, CalendarDays, CalendarClock, Send, UserRound, Trash2, Sparkles } from "lucide-react";
+import { Phone, MapPin, IndianRupee, CalendarDays, CalendarClock, Send, UserRound, Trash2, Sparkles, AlertTriangle, Mic } from "lucide-react";
 import { Sheet } from "../ui/Sheet";
+import AiAssistPanel from "./AiAssistPanel";
+import CloseDealPanel from "./CloseDealPanel";
+
+const NOTE_TEMPLATES = [
+  "Called - no answer",
+  "Interested, will visit this weekend",
+  "Asked for more photos",
+  "Negotiating on price",
+  "Not interested right now",
+  "Requested loan/EMI details",
+];
 
 const STATUS_TONE = {
   new: "bg-blue-100 text-blue-700",
@@ -17,7 +28,7 @@ const STATUS_TONE = {
   lost: "bg-ink/[0.08] text-ink/50",
 };
 
-export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, onScheduleVisit, onScheduleCall, onDeleted }) {
+export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, onOpenLead, onScheduleVisit, onScheduleCall, onDeleted }) {
   const { user, profile } = useAuth();
   const showToast = useToast();
   const [lead, setLead] = useState(null);
@@ -25,11 +36,71 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
   const [call, setCall] = useState(null);
   const [timeline, setTimeline] = useState([]);
   const [noteInput, setNoteInput] = useState("");
+  const [dupLead, setDupLead] = useState(null);
+  const [closingFlow, setClosingFlow] = useState(false);
+
+  async function handleDealClosed(unit, townshipTitle) {
+    const submitterName = profile?.full_name || profile?.email || user.email;
+    await sb.from("leads").update({ status: "closed", updated_at: new Date().toISOString() }).eq("id", leadId);
+    await sb.from("lead_notes").insert({
+      lead_id: leadId,
+      note: `Closed — token submitted for ${townshipTitle}, Plot ${unit?.unit_number || "—"}${unit?.unit_size ? ` (${unit.unit_size})` : ""}. Pending admin approval.`,
+      status_change: STATUS_LABELS.closed,
+      created_by: user.id,
+      created_by_name: submitterName,
+      created_at: new Date().toISOString(),
+    });
+    setClosingFlow(false);
+    showToast("✓ Token submitted — lead marked closed, pending approval.");
+    await load();
+    onChanged();
+  }
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef(null);
+  const voiceSupported = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+
+  function toggleVoice() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-IN";
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.onresult = (e) => {
+      let transcript = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+      if (transcript.trim()) {
+        setNoteInput((prev) => (prev ? prev.trim() + " " + transcript.trim() : transcript.trim()));
+      }
+    };
+    recognition.onend = () => setListening(false);
+    recognition.onerror = () => setListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setListening(true);
+  }
+
+  useEffect(() => () => recognitionRef.current?.stop(), []);
 
   async function load() {
     const { data: l } = await sb.from("leads").select("*").eq("id", leadId).maybeSingle();
     if (!l) return;
     setLead(l);
+
+    if (l.possible_duplicate_of) {
+      const { data: d } = await sb
+        .from("leads")
+        .select("id,name,phone,lead_number,status,created_at,created_by_name")
+        .eq("id", l.possible_duplicate_of)
+        .maybeSingle();
+      setDupLead(d || null);
+    } else {
+      setDupLead(null);
+    }
 
     const { data: visits } = await sb
       .from("scheduled_visits")
@@ -98,6 +169,12 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
     await loadTimeline(lead);
   }
 
+  async function dismissDuplicate() {
+    await sb.from("leads").update({ possible_duplicate_of: null }).eq("id", leadId);
+    setDupLead(null);
+    showToast("✓ Marked as not a duplicate.");
+  }
+
   async function handleDelete() {
     if (!window.confirm("Delete this lead? It'll be hidden from lists but can be recovered by an admin if needed.")) return;
     const submitterName = profile?.full_name || profile?.email || user.email;
@@ -134,6 +211,35 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
           </p>
         </div>
       </div>
+
+      {dupLead && (
+        <div className="mb-3.5 rounded-[22px] border border-rose-200 bg-rose-50 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-[16px] w-[16px] shrink-0 text-rose-600" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-semibold leading-snug text-rose-700">Possible duplicate</p>
+              <p className="mt-0.5 text-[12.5px] leading-relaxed text-rose-700/80">
+                Same phone number as <span className="font-semibold">{dupLead.name}</span> (PC{dupLead.lead_number}), {STATUS_TEXT[dupLead.status] || dupLead.status} · added {new Date(dupLead.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                {dupLead.created_by_name ? ` by ${dupLead.created_by_name}` : ""}.
+              </p>
+              <div className="mt-2.5 flex gap-2">
+                <button
+                  onClick={() => onOpenLead && onOpenLead(dupLead.id)}
+                  className="rounded-full border border-rose-300 bg-white px-3.5 py-1.5 text-[11.5px] font-semibold text-rose-700 active:scale-95 transition-transform"
+                >
+                  View that lead
+                </button>
+                <button
+                  onClick={dismissDuplicate}
+                  className="rounded-full px-3.5 py-1.5 text-[11.5px] font-semibold text-rose-700/70 active:scale-95 transition-transform"
+                >
+                  Not a duplicate
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Score card */}
       <div className="rounded-[26px] border border-ink/[0.06] bg-white p-5 shadow-soft">
@@ -173,6 +279,8 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
         <p className="text-[13px] font-medium leading-relaxed text-stone-700">{interestLine}</p>
       </div>
 
+      <AiAssistPanel leadId={leadId} />
+
       {hasLoanInfo && (
         <div className="bg-stone-50/60 rounded-2xl p-4 mt-3.5 text-sm">
           <div className="text-[10px] font-semibold tracking-wide uppercase text-ink/35 mb-2">Loan Offer Details</div>
@@ -208,23 +316,73 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
           {Object.keys(STATUS_TEXT).map((s) => (
             <button
               key={s}
-              onClick={() => updateStatus(s)}
+              onClick={() => {
+                if (s === "closed" && lead.status !== "closed") {
+                  setClosingFlow(true);
+                } else {
+                  setClosingFlow(false);
+                  updateStatus(s);
+                }
+              }}
               className={`rounded-full px-4 py-2.5 text-xs font-semibold transition-all active:scale-95 ${lead.status === s ? `${STATUS_TONE[s]} shadow-soft` : "border border-ink/10 text-ink/50"}`}
             >
               {STATUS_TEXT[s]}
             </button>
           ))}
         </div>
+
+        {closingFlow && (
+          <CloseDealPanel
+            lead={lead}
+            onClosed={handleDealClosed}
+            onSkip={() => { setClosingFlow(false); updateStatus("closed"); }}
+            onCancel={() => setClosingFlow(false)}
+          />
+        )}
       </div>
 
       {/* Activity timeline */}
       <div className="mt-6">
         <h2 className="font-display text-[19px] font-medium text-ink">Activity</h2>
-        <div className="mt-3 flex items-center gap-2.5">
-          <input className="field-input flex-1" placeholder="Add a note…" value={noteInput} onChange={(e) => setNoteInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addNote()} />
-          <button onClick={addNote} aria-label="Add note" className="inline-flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl bg-stone-600 text-sand shadow-lift active:scale-95 transition-transform">
-            <Send className="h-4 w-4" />
-          </button>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {NOTE_TEMPLATES.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setNoteInput((prev) => (prev.trim() ? prev.trim() + "\n" + t : t))}
+              className="rounded-full border border-ink/10 bg-white px-3 py-1.5 text-[11px] font-medium text-ink/60 active:scale-95 transition-transform"
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-2.5 flex items-end gap-2.5">
+          <textarea
+            rows={3}
+            className="field-input flex-1 min-h-[92px] resize-none"
+            placeholder="Add a note about the conversation…"
+            value={noteInput}
+            onChange={(e) => setNoteInput(e.target.value)}
+            onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") addNote(); }}
+          />
+          <div className="flex shrink-0 flex-col gap-2">
+            {voiceSupported && (
+              <button
+                type="button"
+                onClick={toggleVoice}
+                aria-label={listening ? "Stop recording" : "Record note by voice"}
+                className={`inline-flex h-[44px] w-[44px] items-center justify-center rounded-2xl transition-all active:scale-95 ${
+                  listening ? "bg-red-500 text-white animate-pulse" : "border border-stone-200 bg-stone-50 text-stone-600"
+                }`}
+              >
+                <Mic className="h-4 w-4" />
+              </button>
+            )}
+            <button onClick={addNote} aria-label="Add note" className="inline-flex h-[44px] w-[44px] items-center justify-center rounded-2xl bg-stone-600 text-sand shadow-lift active:scale-95 transition-transform">
+              <Send className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {timeline.length === 0 ? (
