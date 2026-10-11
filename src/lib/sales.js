@@ -14,6 +14,7 @@ export function groupSales(rows) {
         buyer_name: d.buyer_name,
         buyer_phone: d.buyer_phone,
         associate_name: d.associate_name,
+        associate_id: d.associate_employee_id,
         reviewed_at: d.reviewed_at,
         is_manual: d.is_manual,
         sale_amount: null,
@@ -26,7 +27,17 @@ export function groupSales(rows) {
     if (d.sale_amount != null) g.sale_amount = (g.sale_amount || 0) + Number(d.sale_amount);
     g.commission += Number(d.commission_amount) || 0;
     if (d.buyer_phone && !g.buyer_phone) g.buyer_phone = d.buyer_phone;
-    g.plots.push({ township: d.township, plotNo: d.plotNo, plotArea: d.plotArea });
+    g.plots.push({
+      rowId: d.id,
+      unitId: d.unit_id,
+      listingId: d.listing_id,
+      township: d.township,
+      plotNo: d.plotNo,
+      plotArea: d.plotArea,
+      manualTownship: d.manual_township,
+      manualPlotNo: d.manual_plot_no,
+      manualPlotArea: d.manual_plot_area,
+    });
   }
   return [...map.values()];
 }

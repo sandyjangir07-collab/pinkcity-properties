@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { Phone, Search, Pencil, Plus } from "lucide-react";
+import { Phone, Search, Pencil, Plus, Trash2 } from "lucide-react";
 import { sb } from "../lib/supabase";
 import { formatINR, formatDate } from "../lib/utils";
 import { groupSales, plotLabel } from "../lib/sales";
 import { useToast } from "../hooks/useToast";
+import { useAuth } from "../hooks/useAuth";
 import { StatCard } from "../components/ui/primitives";
 import { BrandedLoader } from "../components/ui/BrandedLoader";
 import AddSaleModal from "../components/sales/AddSaleModal";
+import { Sheet, SheetHeader } from "../components/ui/Sheet";
 
 // Admin-only ledger of every approved sale: client, associate, township +
 // plot(s), amount received (where recorded) and the associate's commission.
@@ -24,17 +26,22 @@ function monthLabel(key) {
 
 export default function Sales() {
   const showToast = useToast();
+  const { profile, user } = useAuth();
   const [sales, setSales] = useState(null);
   const [month, setMonth] = useState("all");
   const [q, setQ] = useState("");
   const [editingKey, setEditingKey] = useState(null);
   const [phoneDraft, setPhoneDraft] = useState("");
   const [addOpen, setAddOpen] = useState(false);
+  const [editSale, setEditSale] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [freePlots, setFreePlots] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   async function load() {
     const { data, error } = await sb
       .from("token_submissions")
-      .select("id,sale_group_id,buyer_name,buyer_phone,associate_name,sale_amount,commission_amount,reviewed_at,listing_id,is_manual,manual_township,manual_plot_no,manual_plot_area,colony_units(unit_number,unit_size)")
+      .select("id,sale_group_id,unit_id,associate_employee_id,buyer_name,buyer_phone,associate_name,sale_amount,commission_amount,reviewed_at,listing_id,is_manual,manual_township,manual_plot_no,manual_plot_area,colony_units(unit_number,unit_size)")
       .eq("status", "approved")
       .order("reviewed_at", { ascending: false });
     if (error) {
@@ -95,6 +102,24 @@ export default function Sales() {
     setEditingKey(null);
     setPhoneDraft("");
     showToast("✓ Number saved.");
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const { error } = await sb.rpc("admin_delete_sale", {
+      p_row_ids: deleteTarget.ids,
+      p_free_plots: freePlots,
+      p_admin_name: profile?.full_name || profile?.email || user?.email || "Admin",
+    });
+    setDeleting(false);
+    if (error) {
+      showToast(error.message);
+      return;
+    }
+    setDeleteTarget(null);
+    showToast("✓ Sale deleted.");
+    load();
   }
 
   if (sales === null) {
@@ -188,11 +213,58 @@ export default function Sales() {
                 </div>
               </div>
             </div>
+
+            <div className="mt-3 flex items-center justify-end gap-2 border-t border-ink/[0.06] pt-3">
+              <button
+                onClick={() => setEditSale(s)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-ink/10 px-3.5 py-1.5 text-[11.5px] font-semibold text-ink/70 active:scale-95 transition-transform"
+              >
+                <Pencil className="h-3 w-3" /> Edit
+              </button>
+              <button
+                onClick={() => { setFreePlots(true); setDeleteTarget(s); }}
+                className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3.5 py-1.5 text-[11.5px] font-semibold text-red-600 active:scale-95 transition-transform"
+              >
+                <Trash2 className="h-3 w-3" /> Delete
+              </button>
+            </div>
           </div>
         ))}
       </div>
 
       <AddSaleModal open={addOpen} onClose={() => setAddOpen(false)} onAdded={load} />
+      <AddSaleModal open={!!editSale} sale={editSale} onClose={() => setEditSale(null)} onAdded={load} />
+
+      <Sheet open={!!deleteTarget} onClose={() => !deleting && setDeleteTarget(null)}>
+        {deleteTarget && (
+          <>
+            <SheetHeader title="Delete this sale?" sub="This removes it from the Sales page and from the associate's portal and totals. It can't be undone." />
+            <div className="rounded-2xl border border-ink/10 bg-white px-4 py-3 text-sm text-ink/70 space-y-0.5">
+              <div className="font-semibold text-ink">{deleteTarget.buyer_name || "—"}</div>
+              {deleteTarget.plots.map((p, i) => (
+                <div key={i}>{plotLabel(p)}</div>
+              ))}
+              <div className="text-ink/45">Associate: {deleteTarget.associate_name || "—"}</div>
+            </div>
+            {deleteTarget.plots.some((p) => p.unitId) && (
+              <label className="mt-4 flex items-start gap-2.5 text-sm text-ink/70">
+                <input type="checkbox" className="mt-0.5 h-4 w-4 accent-stone-600" checked={freePlots} onChange={(e) => setFreePlots(e.target.checked)} />
+                <span>Also mark the plot{deleteTarget.plots.filter((p) => p.unitId).length > 1 ? "s" : ""} Available again</span>
+              </label>
+            )}
+            <button
+              disabled={deleting}
+              onClick={confirmDelete}
+              className="mt-5 w-full rounded-full border border-red-200 bg-red-50 py-3 text-sm font-semibold text-red-600 disabled:opacity-50"
+            >
+              {deleting ? "Deleting…" : "Delete sale"}
+            </button>
+            <button disabled={deleting} onClick={() => setDeleteTarget(null)} className="mt-3 w-full rounded-full border border-ink/10 py-3 text-sm font-medium text-ink/60">
+              Cancel
+            </button>
+          </>
+        )}
+      </Sheet>
     </div>
   );
 }

@@ -12,11 +12,18 @@ function todayLocal() {
 }
 
 let plotKey = 0;
+function toLocalDate(iso) {
+  if (!iso) return todayLocal();
+  const d = new Date(iso);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 const newPlot = () => ({ key: ++plotKey, manual: false, townshipId: "", unitId: "", township: "", plotNo: "", plotArea: "" });
 
 // One plot in the sale: either picked from the system (township -> plot, area
 // auto-fills) or typed in by hand when it isn't in the system.
-function PlotRow({ index, plot, townships, excludeIds, onChange, onRemove }) {
+function PlotRow({ index, plot, townships, excludeIds, ownRowIds, onChange, onRemove }) {
   const [units, setUnits] = useState([]);
 
   useEffect(() => {
@@ -28,10 +35,10 @@ function PlotRow({ index, plot, townships, excludeIds, onChange, onRemove }) {
     (async () => {
       const [{ data: us }, { data: taken }] = await Promise.all([
         sb.from("colony_units").select("id,unit_number,unit_size,status").eq("listing_id", plot.townshipId).in("status", ["available", "sold"]).order("unit_number"),
-        sb.from("token_submissions").select("unit_id").eq("listing_id", plot.townshipId).in("status", ["approved", "pending"]),
+        sb.from("token_submissions").select("id,unit_id").eq("listing_id", plot.townshipId).in("status", ["approved", "pending"]),
       ]);
       if (cancelled) return;
-      const takenIds = new Set((taken || []).map((t) => t.unit_id));
+      const takenIds = new Set((taken || []).filter((t) => !ownRowIds.includes(t.id)).map((t) => t.unit_id));
       setUnits((us || []).filter((u) => !takenIds.has(u.id)));
     })();
     return () => {
@@ -107,11 +114,14 @@ function PlotRow({ index, plot, townships, excludeIds, onChange, onRemove }) {
   );
 }
 
-// Admin-only: record a sale that didn't come through Plots & Tokens. One sale
-// can cover several plots. Saved through admin_add_sale as an already-approved
-// deal credited to the chosen associate (counts in their portal and monthly
-// commission); plots picked from the system are marked Sold.
-export default function AddSaleModal({ open, onClose, onAdded }) {
+// Admin-only: record a sale that didn't come through Plots & Tokens, or edit
+// an existing sale (pass `sale`). One sale can cover several plots. Saved
+// through admin_add_sale / admin_update_sale as an approved deal credited to
+// the chosen associate (counts in their portal and monthly commission); plots
+// picked from the system are marked Sold, and plots removed from a sale go
+// back to Available.
+export default function AddSaleModal({ open, onClose, onAdded, sale }) {
+  const isEdit = !!sale;
   const { profile, user } = useAuth();
   const showToast = useToast();
   const [clientName, setClientName] = useState("");
@@ -120,6 +130,8 @@ export default function AddSaleModal({ open, onClose, onAdded }) {
   const [plots, setPlots] = useState([newPlot()]);
   const [commission, setCommission] = useState("");
   const [saleDate, setSaleDate] = useState(todayLocal());
+  const [originalDate, setOriginalDate] = useState("");
+  const [amount, setAmount] = useState("");
   const [employees, setEmployees] = useState([]);
   const [townships, setTownships] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -127,16 +139,37 @@ export default function AddSaleModal({ open, onClose, onAdded }) {
 
   useEffect(() => {
     if (!open) return;
-    setClientName("");
-    setClientPhone("");
-    setAssociateId("");
-    setPlots([newPlot()]);
-    setCommission("");
-    setSaleDate(todayLocal());
     setErr("");
+    if (sale) {
+      const date = toLocalDate(sale.reviewed_at);
+      setClientName(sale.buyer_name || "");
+      setClientPhone(sale.buyer_phone || "");
+      setAssociateId(sale.associate_id || "");
+      setPlots(
+        sale.plots.map((p) =>
+          p.unitId
+            ? { ...newPlot(), rowId: p.rowId, manual: false, townshipId: p.listingId || "", unitId: p.unitId }
+            : { ...newPlot(), rowId: p.rowId, manual: true, township: p.manualTownship || "", plotNo: p.manualPlotNo || "", plotArea: p.manualPlotArea || "" }
+        )
+      );
+      setCommission(String(sale.commission ?? ""));
+      setAmount(sale.sale_amount != null ? String(sale.sale_amount) : "");
+      setSaleDate(date);
+      setOriginalDate(date);
+    } else {
+      setClientName("");
+      setClientPhone("");
+      setAssociateId("");
+      setPlots([newPlot()]);
+      setCommission("");
+      setAmount("");
+      setSaleDate(todayLocal());
+      setOriginalDate("");
+    }
     sb.from("employees").select("id,full_name").order("full_name").then(({ data }) => setEmployees(data || []));
     sb.from("listings").select("id,title,area").eq("type", "colony").order("title").then(({ data }) => setTownships(data || []));
-  }, [open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, sale]);
 
   const updatePlot = (key, patch) => setPlots((list) => list.map((p) => (p.key === key ? { ...p, ...patch } : p)));
   const plotOk = (p) => (p.manual ? p.plotNo.trim() : p.unitId);
@@ -146,30 +179,45 @@ export default function AddSaleModal({ open, onClose, onAdded }) {
     if (!ready) return;
     setBusy(true);
     setErr("");
-    const { error } = await sb.rpc("admin_add_sale", {
-      p_buyer_name: clientName,
-      p_buyer_phone: clientPhone || null,
-      p_associate_employee_id: associateId,
-      p_plots: plots.map((p) =>
-        p.manual ? { unit_id: null, township: p.township, plot_no: p.plotNo, plot_area: p.plotArea } : { unit_id: p.unitId }
-      ),
-      p_commission_amount: Number(commission),
-      p_sale_date: saleDate || null,
-      p_admin_name: profile?.full_name || profile?.email || user?.email || "Admin",
-    });
+    const plotPayload = plots.map((p) => ({
+      ...(isEdit ? { row_id: p.rowId || null } : {}),
+      ...(p.manual ? { unit_id: null, township: p.township, plot_no: p.plotNo, plot_area: p.plotArea } : { unit_id: p.unitId }),
+    }));
+    const adminName = profile?.full_name || profile?.email || user?.email || "Admin";
+    const { error } = isEdit
+      ? await sb.rpc("admin_update_sale", {
+          p_row_ids: sale.ids,
+          p_buyer_name: clientName,
+          p_buyer_phone: clientPhone || null,
+          p_associate_employee_id: associateId,
+          p_plots: plotPayload,
+          p_commission_amount: Number(commission),
+          p_sale_amount: sale.sale_amount != null && amount !== "" ? Number(amount) : null,
+          p_sale_date: saleDate && saleDate !== originalDate ? saleDate : null,
+          p_admin_name: adminName,
+        })
+      : await sb.rpc("admin_add_sale", {
+          p_buyer_name: clientName,
+          p_buyer_phone: clientPhone || null,
+          p_associate_employee_id: associateId,
+          p_plots: plotPayload,
+          p_commission_amount: Number(commission),
+          p_sale_date: saleDate || null,
+          p_admin_name: adminName,
+        });
     setBusy(false);
     if (error) {
       setErr(error.message);
       return;
     }
-    showToast("✓ Sale added.");
+    showToast(isEdit ? "✓ Sale updated." : "✓ Sale added.");
     onAdded();
     onClose();
   }
 
   return (
     <Sheet open={open} onClose={onClose} maxWidth="max-w-md">
-      <SheetHeader title="Add a sale" sub="Saved as an approved deal and credited to the associate you pick." />
+      <SheetHeader title={isEdit ? "Edit sale" : "Add a sale"} sub={isEdit ? "Changes update the associate's portal too." : "Saved as an approved deal and credited to the associate you pick."} />
 
       <div className="space-y-3">
         <Field label="Client name *">
@@ -194,6 +242,7 @@ export default function AddSaleModal({ open, onClose, onAdded }) {
             plot={p}
             townships={townships}
             excludeIds={new Set(plots.filter((o) => o.key !== p.key && o.unitId).map((o) => o.unitId))}
+            ownRowIds={sale?.ids || []}
             onChange={(patch) => updatePlot(p.key, patch)}
             onRemove={plots.length > 1 ? () => setPlots((list) => list.filter((o) => o.key !== p.key)) : null}
           />
@@ -210,6 +259,11 @@ export default function AddSaleModal({ open, onClose, onAdded }) {
           <input className="field-input" type="number" inputMode="decimal" value={commission} onChange={(e) => setCommission(e.target.value)} placeholder="e.g. 45000" />
           {plots.length > 1 && <p className="mt-1.5 text-xs text-ink/40">One commission for the whole sale, not per plot.</p>}
         </Field>
+        {isEdit && sale.sale_amount != null && (
+          <Field label="Amount received (₹)">
+            <input className="field-input" type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          </Field>
+        )}
         <Field label="Sale date">
           <input className="field-input" type="date" value={saleDate} max={todayLocal()} onChange={(e) => setSaleDate(e.target.value)} />
         </Field>
@@ -222,7 +276,7 @@ export default function AddSaleModal({ open, onClose, onAdded }) {
         disabled={!ready || busy}
         className="mt-5 w-full rounded-full bg-gradient-to-br from-stone-500 to-stone-700 py-3.5 text-sm font-semibold text-sand disabled:opacity-40"
       >
-        {busy ? "Adding…" : "Add sale"}
+        {busy ? (isEdit ? "Saving…" : "Adding…") : isEdit ? "Save changes" : "Add sale"}
       </button>
     </Sheet>
   );
