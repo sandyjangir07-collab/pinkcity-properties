@@ -10,8 +10,13 @@ export function computeCommission({ deals }) {
   let totalCommission = 0;
   let thisMonthCommission = 0;
 
+  const seenSales = new Set();
   for (const deal of deals) {
-    totalDeals += 1;
+    const saleKey = deal.sale_group_id || deal.id;
+    if (!seenSales.has(saleKey)) {
+      seenSales.add(saleKey);
+      totalDeals += 1;
+    }
     totalSales += Number(deal.sale_amount) || 0;
     const commission = Number(deal.commission_amount) || 0;
     totalCommission += commission;

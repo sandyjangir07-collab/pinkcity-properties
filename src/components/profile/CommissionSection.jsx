@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { sb } from "../../lib/supabase";
 import { computeCommission } from "../../lib/commission";
+import { groupSales, plotLabel } from "../../lib/sales";
 import { formatDate, formatINR } from "../../lib/utils";
 import { BadgeIndianRupee } from "lucide-react";
 import { Card, SectionTitle, StatCard } from "../ui/primitives";
@@ -15,7 +16,7 @@ export default function CommissionSection({ employee, refreshKey }) {
   async function load() {
     const { data } = await sb
       .from("token_submissions")
-      .select("id,buyer_name,sale_amount,commission_amount,reviewed_at,listing_id,manual_township,manual_plot_no,manual_plot_area,colony_units(unit_number,unit_size)")
+      .select("id,sale_group_id,is_manual,buyer_name,buyer_phone,associate_name,sale_amount,commission_amount,reviewed_at,listing_id,manual_township,manual_plot_no,manual_plot_area,colony_units(unit_number,unit_size)")
       .eq("associate_employee_id", employee.id)
       .eq("status", "approved")
       .order("reviewed_at", { ascending: false });
@@ -29,12 +30,12 @@ export default function CommissionSection({ employee, refreshKey }) {
       titles = Object.fromEntries((ls || []).map((l) => [l.id, l.title]));
     }
     setDeals(
-      list.map((d) => ({
+      groupSales(list.map((d) => ({
         ...d,
         township: titles[d.listing_id] || d.manual_township || "",
         plotNo: d.colony_units?.unit_number || d.manual_plot_no || "",
         plotArea: d.colony_units?.unit_size || d.manual_plot_area || "",
-      }))
+      })))
     );
   }
 
@@ -66,17 +67,17 @@ export default function CommissionSection({ employee, refreshKey }) {
           <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-ink/40 mb-2.5">Sales</div>
           <div className="divide-y divide-ink/[0.06]">
             {deals.map((d) => (
-              <div key={d.id} className="flex items-start justify-between gap-3 py-3">
+              <div key={d.key} className="flex items-start justify-between gap-3 py-3">
                 <div className="min-w-0">
                   <div className="truncate text-[14px] font-semibold text-ink">{d.buyer_name || "—"}</div>
-                  <div className="mt-0.5 text-[12px] text-ink/50">
-                    {[d.township, d.plotNo ? `Plot ${d.plotNo}` : "", d.plotArea].filter(Boolean).join(" · ") || "—"}
-                  </div>
+                  {d.plots.map((p, i) => (
+                    <div key={i} className="mt-0.5 text-[12px] text-ink/50">{plotLabel(p)}</div>
+                  ))}
                   <div className="mt-0.5 text-[11px] text-ink/35">{formatDate(d.reviewed_at)}</div>
                 </div>
                 <div className="shrink-0 text-right">
-                  <div className="text-[13px] font-semibold text-ink">{formatINR(d.sale_amount)}</div>
-                  <div className="mt-0.5 text-[11.5px] font-medium text-emerald-700">+ {formatINR(d.commission_amount ?? 0)}</div>
+                  {d.sale_amount != null && <div className="text-[13px] font-semibold text-ink">{formatINR(d.sale_amount)}</div>}
+                  <div className="mt-0.5 text-[11.5px] font-medium text-emerald-700">+ {formatINR(d.commission)}</div>
                 </div>
               </div>
             ))}
