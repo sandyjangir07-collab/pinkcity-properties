@@ -18,6 +18,7 @@ import Listings from "./pages/Listings";
 import Plots from "./pages/Plots";
 import Approvals from "./pages/Approvals";
 import CommissionSlabs from "./pages/CommissionSlabs";
+import Sales from "./pages/Sales";
 
 export default function App() {
   return (
@@ -64,6 +65,14 @@ export default function App() {
                 element={
                   <RequireAdmin>
                     <Approvals />
+                  </RequireAdmin>
+                }
+              />
+              <Route
+                path="/sales"
+                element={
+                  <RequireAdmin>
+                    <Sales />
                   </RequireAdmin>
                 }
               />
