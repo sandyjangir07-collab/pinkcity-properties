@@ -9,15 +9,18 @@ import { Button } from "../components/ui/button";
 import { StatCard } from "../components/ui/primitives";
 import { Sheet, SheetHeader, Field } from "../components/ui/Sheet";
 import { useToast } from "../hooks/useToast";
+import { useAuth } from "../hooks/useAuth";
 import { BrandedLoader } from "../components/ui/BrandedLoader";
 
 const EASE = [0.22, 1, 0.36, 1];
 
 export default function Directory() {
+  const { isAdmin } = useAuth();
   const [employees, setEmployees] = useState(null);
   const [hierarchy, setHierarchy] = useState([]);
   const [docStatusByEmployee, setDocStatusByEmployee] = useState({});
-  const [totalSales, setTotalSales] = useState(0);
+  // Same source as the Sales page: every approved sale row is one plot sold.
+  const [plotsSold, setPlotsSold] = useState(0);
   const [addOpen, setAddOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [errorMsg, setErrorMsg] = useState(null);
@@ -26,17 +29,17 @@ export default function Directory() {
   async function load() {
     setErrorMsg(null);
     try {
-      const [{ data: emps, error: e1 }, { data: hier, error: e2 }, { data: docs, error: e3 }, { data: approvedTokens, error: e4 }] = await Promise.all([
+      const [{ data: emps, error: e1 }, { data: hier, error: e2 }, { data: docs, error: e3 }, { count: soldCount, error: e4 }] = await Promise.all([
         sb.from("employees").select("*").order("full_name"),
         sb.from("employee_hierarchy").select("*").eq("status", "approved"),
         sb.from("employee_documents").select("employee_id, document_type, status"),
-        sb.from("token_submissions").select("sale_amount").eq("status", "approved"),
+        sb.from("token_submissions").select("id", { count: "exact", head: true }).eq("status", "approved"),
       ]);
       const firstError = e1 || e2 || e3 || e4;
       if (firstError) throw firstError;
       setEmployees(emps || []);
       setHierarchy(hier || []);
-      setTotalSales((approvedTokens || []).reduce((sum, t) => sum + (Number(t.sale_amount) || 0), 0));
+      setPlotsSold(soldCount || 0);
 
       const byEmp = {};
       (docs || []).forEach((d) => {
@@ -97,10 +100,10 @@ export default function Directory() {
 
       {errorMsg && <div className="mb-6 rounded-2xl bg-red-50 text-red-600 text-sm px-5 py-4">{errorMsg}</div>}
 
-      <div className="grid grid-cols-3 gap-2.5 mb-8">
+      <div className={`grid ${isAdmin ? "grid-cols-3" : "grid-cols-2"} gap-2.5 mb-8`}>
         <StatCard value={String(employees.length)} label="Members" Icon={Users} tone="stone" />
         <StatCard value={`${fullyVerifiedCount}/${employees.length}`} label="Fully verified" Icon={ShieldCheck} tone="emerald" />
-        <StatCard value={`₹${totalSales.toLocaleString("en-IN")}`} label="Total Sales" Icon={TrendingUp} tone="brass" />
+        {isAdmin && <StatCard value={String(plotsSold)} label="Total plots sold" Icon={TrendingUp} tone="brass" />}
       </div>
 
       <div className="relative mb-6">
