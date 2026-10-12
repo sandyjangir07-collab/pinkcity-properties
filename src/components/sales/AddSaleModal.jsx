@@ -4,6 +4,7 @@ import { sb } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
 import { Sheet, SheetHeader, Field } from "../ui/Sheet";
+import { formatGaj } from "../../lib/sales";
 
 function todayLocal() {
   const d = new Date();
@@ -26,27 +27,44 @@ const newPlot = () => ({ key: ++plotKey, manual: false, townshipId: "", unitId: 
 function PlotRow({ index, plot, townships, excludeIds, ownRowIds, onChange, onRemove }) {
   const [units, setUnits] = useState([]);
 
+  // taken: unit id -> "approved" | "pending" for plots already in another sale
+  const [taken, setTaken] = useState({});
+
   useEffect(() => {
     if (plot.manual || !plot.townshipId) {
       setUnits([]);
+      setTaken({});
       return;
     }
     let cancelled = false;
     (async () => {
-      const [{ data: us }, { data: taken }] = await Promise.all([
-        sb.from("colony_units").select("id,unit_number,unit_size,status").eq("listing_id", plot.townshipId).in("status", ["available", "sold"]).order("unit_number"),
-        sb.from("token_submissions").select("id,unit_id").eq("listing_id", plot.townshipId).in("status", ["approved", "pending"]),
+      const [{ data: us }, { data: subs }] = await Promise.all([
+        sb.from("colony_units").select("id,unit_number,unit_size,status").eq("listing_id", plot.townshipId).range(0, 4999),
+        sb.from("token_submissions").select("id,unit_id,status").eq("listing_id", plot.townshipId).in("status", ["approved", "pending"]).range(0, 4999),
       ]);
       if (cancelled) return;
-      const takenIds = new Set((taken || []).filter((t) => !ownRowIds.includes(t.id)).map((t) => t.unit_id));
-      setUnits((us || []).filter((u) => !takenIds.has(u.id)));
+      const map = {};
+      for (const t of subs || []) {
+        if (ownRowIds.includes(t.id)) continue;
+        if (map[t.unit_id] !== "approved") map[t.unit_id] = t.status;
+      }
+      setTaken(map);
+      setUnits((us || []).sort((a, b) => String(a.unit_number).localeCompare(String(b.unit_number), undefined, { numeric: true })));
     })();
     return () => {
       cancelled = true;
     };
   }, [plot.manual, plot.townshipId]);
 
-  const available = units.filter((u) => u.id === plot.unitId || !excludeIds.has(u.id));
+  // Every plot is listed; ones that can't be picked are greyed out with the reason.
+  function reasonFor(u) {
+    if (u.id === plot.unitId) return null;
+    if (taken[u.id] === "approved") return "already has a sale";
+    if (taken[u.id] === "pending") return "token pending — approve it in Plots & Tokens";
+    if (excludeIds.has(u.id)) return "already in this sale";
+    return null;
+  }
+  const selectable = units.filter((u) => !reasonFor(u));
   const selected = units.find((u) => u.id === plot.unitId);
 
   return (
@@ -74,16 +92,21 @@ function PlotRow({ index, plot, townships, excludeIds, ownRowIds, onChange, onRe
             <Field label="Plot no *">
               <select className="field-input" value={plot.unitId} onChange={(e) => onChange({ unitId: e.target.value })}>
                 <option value="">Choose plot…</option>
-                {available.map((u) => (
-                  <option key={u.id} value={u.id}>{u.unit_number}{u.unit_size ? ` — ${u.unit_size}` : ""}</option>
-                ))}
+                {units.map((u) => {
+                  const reason = reasonFor(u);
+                  return (
+                    <option key={u.id} value={u.id} disabled={!!reason}>
+                      {u.unit_number}{u.unit_size ? ` — ${/^[\d.,]+$/.test(String(u.unit_size).trim()) ? formatGaj(u.unit_size) : u.unit_size}` : ""}{reason ? ` (${reason})` : ""}
+                    </option>
+                  );
+                })}
               </select>
-              {available.length === 0 && <p className="mt-1.5 text-xs text-ink/40">No open plots here — all already have a sale or a pending token.</p>}
+              {units.length > 0 && selectable.length === 0 && <p className="mt-1.5 text-xs text-ink/40">No open plots here — all already have a sale or a pending token.</p>}
             </Field>
           )}
           {selected && (
             <div className="rounded-xl border border-ink/10 bg-white px-4 py-2.5 text-sm text-ink/60">
-              Plot area: <span className="font-semibold text-ink">{selected.unit_size || "—"}</span>
+              Plot area: <span className="font-semibold text-ink">{selected.unit_size ? (/^[\d.,]+$/.test(String(selected.unit_size).trim()) ? formatGaj(selected.unit_size) : selected.unit_size) : "—"}</span>
             </div>
           )}
         </>
