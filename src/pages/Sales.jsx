@@ -88,7 +88,7 @@ export default function Sales() {
     });
   }, [sales, month, q]);
 
-  const totalReceived = filtered.reduce((sum, s) => sum + (s.sale_amount || 0), 0);
+  const totalPlots = filtered.reduce((sum, s) => sum + s.plots.length, 0);
 
   async function savePhone(sale) {
     const phone = phoneDraft.trim();
@@ -147,8 +147,8 @@ export default function Sales() {
       <p className="mt-2.5 text-[13.5px] leading-relaxed text-ink/50">Every approved sale in one place.</p>
 
       <div className="mt-6 grid grid-cols-2 gap-3">
-        <StatCard label={month === "all" ? "Total Sales" : "Sales in month"} value={filtered.length} tone="stone" />
-        <StatCard label="Amount Received" value={formatINR(totalReceived)} tone="emerald" />
+        <StatCard label="Sales" value={filtered.length} tone="stone" />
+        <StatCard label="Total plots" value={totalPlots} tone="brass" />
       </div>
 
       <div className="mt-5 flex gap-2.5">
@@ -192,8 +192,8 @@ export default function Sales() {
                 )}
               </div>
               <div className="shrink-0 text-right">
-                <div className="font-display text-[19px] font-semibold leading-none text-ink">{s.sale_amount != null ? formatINR(s.sale_amount) : "—"}</div>
-                <div className="mt-1 text-[10.5px] text-ink/40">{formatDate(s.reviewed_at)}</div>
+                {s.sale_amount != null && <div className="font-display text-[19px] font-semibold leading-none text-ink">{formatINR(s.sale_amount)}</div>}
+                <div className={`${s.sale_amount != null ? "mt-1" : ""} text-[10.5px] text-ink/40`}>{formatDate(s.reviewed_at)}</div>
               </div>
             </div>
 

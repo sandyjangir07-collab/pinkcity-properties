@@ -17,6 +17,7 @@ import ScheduleCallModal from "../components/leads/ScheduleCallModal";
 import CallOutcomeWatcher from "../components/leads/CallOutcomeWatcher";
 import { ReviewTokenModal } from "./Plots";
 import { BrandedLoader } from "../components/ui/BrandedLoader";
+import MySalesCard from "../components/sales/MySalesCard";
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -279,6 +280,8 @@ export default function Today() {
             <div className="mt-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-ink/40">Overdue</div>
           </div>
         </div>
+
+        <MySalesCard />
 
         {/* Recent submissions — real listings, not demo data */}
         {isAdmin && (
