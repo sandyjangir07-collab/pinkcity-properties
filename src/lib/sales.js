@@ -15,7 +15,7 @@ export function formatGaj(n) {
   return `${(Number(n) || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })} Gaj`;
 }
 
-function areaText(a) {
+export function areaText(a) {
   if (!a) return "";
   return /^[\d.,]+$/.test(String(a).trim()) ? formatGaj(gajOf(a)) : String(a);
 }
