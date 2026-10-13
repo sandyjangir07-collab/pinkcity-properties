@@ -11,6 +11,7 @@ import { Sheet, SheetHeader, Field } from "../components/ui/Sheet";
 import { useToast } from "../hooks/useToast";
 import { useAuth } from "../hooks/useAuth";
 import { BrandedLoader } from "../components/ui/BrandedLoader";
+import MyTeamStats from "../components/sales/MyTeamStats";
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -99,6 +100,8 @@ export default function Directory() {
       <p className="text-[13.5px] text-ink/50 mb-8">Employees, hierarchy, documents and commission — all in one place.</p>
 
       {errorMsg && <div className="mb-6 rounded-2xl bg-red-50 text-red-600 text-sm px-5 py-4">{errorMsg}</div>}
+
+      {!isAdmin && <MyTeamStats />}
 
       <div className={`grid ${isAdmin ? "grid-cols-3" : "grid-cols-2"} gap-2.5 mb-8`}>
         <StatCard value={String(employees.length)} label="Members" Icon={Users} tone="stone" />
