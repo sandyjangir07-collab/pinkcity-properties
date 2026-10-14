@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { sb } from "../../lib/supabase";
 import { computeCommission } from "../../lib/commission";
-import { groupSales, plotLabel } from "../../lib/sales";
+import { groupSales, plotLabel, attachPayments, PAYMENT_COLUMNS } from "../../lib/sales";
+import PaymentHistory from "../sales/PaymentHistory";
 import { formatDate, formatINR } from "../../lib/utils";
 import { BadgeIndianRupee } from "lucide-react";
 import { Card, SectionTitle, StatCard } from "../ui/primitives";
@@ -12,6 +13,7 @@ import { Card, SectionTitle, StatCard } from "../ui/primitives";
 export default function CommissionSection({ employee, refreshKey }) {
   const [stats, setStats] = useState(null);
   const [deals, setDeals] = useState([]);
+  const [openKey, setOpenKey] = useState(null);
 
   async function load() {
     const { data } = await sb
@@ -29,13 +31,18 @@ export default function CommissionSection({ employee, refreshKey }) {
       const { data: ls } = await sb.from("listings").select("id,title").in("id", ids);
       titles = Object.fromEntries((ls || []).map((l) => [l.id, l.title]));
     }
+    let pays = [];
+    if (list.length) {
+      const { data: pd } = await sb.from("sale_payments").select(PAYMENT_COLUMNS).in("sale_row_id", list.map((d) => d.id));
+      pays = pd || [];
+    }
     setDeals(
-      groupSales(list.map((d) => ({
+      attachPayments(groupSales(list.map((d) => ({
         ...d,
         township: titles[d.listing_id] || d.manual_township || "",
         plotNo: d.colony_units?.unit_number || d.manual_plot_no || "",
         plotArea: d.colony_units?.unit_size || d.manual_plot_area || "",
-      })))
+      }))), pays)
     );
   }
 
@@ -67,7 +74,8 @@ export default function CommissionSection({ employee, refreshKey }) {
           <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-ink/40 mb-2.5">Sales</div>
           <div className="divide-y divide-ink/[0.06]">
             {deals.map((d) => (
-              <div key={d.key} className="flex items-start justify-between gap-3 py-3">
+              <div key={d.key} className="py-3">
+              <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="truncate text-[14px] font-semibold text-ink">{d.buyer_name || "—"}</div>
                   {d.plots.map((p, i) => (
@@ -79,6 +87,15 @@ export default function CommissionSection({ employee, refreshKey }) {
                   {d.sale_amount != null && <div className="text-[13px] font-semibold text-ink">{formatINR(d.sale_amount)}</div>}
                   <div className="mt-0.5 text-[11.5px] font-medium text-emerald-700">+ {formatINR(d.commission)}</div>
                 </div>
+              </div>
+              <button
+                onClick={() => setOpenKey(openKey === d.key ? null : d.key)}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[11.5px] font-semibold text-violet-700"
+              >
+                {formatINR(d.received)} received{d.paymentCount > 0 ? ` · ${d.paymentCount} payment${d.paymentCount === 1 ? "" : "s"}` : ""}
+                <span className="text-violet-400">{openKey === d.key ? "▴" : "▾"}</span>
+              </button>
+              {openKey === d.key && <PaymentHistory sale={d} />}
               </div>
             ))}
           </div>

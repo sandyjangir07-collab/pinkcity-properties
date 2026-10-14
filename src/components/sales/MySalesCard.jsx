@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { sb } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
 import { formatINR, formatDate } from "../../lib/utils";
-import { groupSales, plotLabel, formatGaj } from "../../lib/sales";
+import { groupSales, plotLabel, formatGaj, attachPayments, PAYMENT_COLUMNS } from "../../lib/sales";
+import PaymentHistory from "./PaymentHistory";
 
 // Home-screen card: every sale an admin has credited to the logged-in
 // associate, with the total Gaj and the amount the admin entered for them.
@@ -10,6 +11,7 @@ export default function MySalesCard() {
   const { employee, isAdmin } = useAuth();
   const [sales, setSales] = useState(null);
   const [showAll, setShowAll] = useState(false);
+  const [openKey, setOpenKey] = useState(null);
 
   useEffect(() => {
     if (!employee?.id) {
@@ -31,15 +33,23 @@ export default function MySalesCard() {
         const { data: ls } = await sb.from("listings").select("id,title").in("id", ids);
         titles = Object.fromEntries((ls || []).map((l) => [l.id, l.title]));
       }
+      let pays = [];
+      if (list.length) {
+        const { data: pd } = await sb.from("sale_payments").select(PAYMENT_COLUMNS).in("sale_row_id", list.map((d) => d.id));
+        pays = pd || [];
+      }
       if (cancelled) return;
       setSales(
-        groupSales(
-          list.map((d) => ({
-            ...d,
-            township: titles[d.listing_id] || d.manual_township || "",
-            plotNo: d.colony_units?.unit_number || d.manual_plot_no || "",
-            plotArea: d.colony_units?.unit_size || d.manual_plot_area || "",
-          }))
+        attachPayments(
+          groupSales(
+            list.map((d) => ({
+              ...d,
+              township: titles[d.listing_id] || d.manual_township || "",
+              plotNo: d.colony_units?.unit_number || d.manual_plot_no || "",
+              plotArea: d.colony_units?.unit_size || d.manual_plot_area || "",
+            }))
+          ),
+          pays
         )
       );
     })();
@@ -59,6 +69,7 @@ export default function MySalesCard() {
   };
   const totalGaj = sales.reduce((sum, s) => sum + s.totalGaj, 0);
   const totalAmount = sales.reduce((sum, s) => sum + s.commission, 0);
+  const totalReceived = sales.reduce((sum, s) => sum + s.received, 0);
   const monthAmount = sales.filter((s) => sameMonth(s.reviewed_at)).reduce((sum, s) => sum + s.commission, 0);
   const visible = showAll ? sales : sales.slice(0, 5);
 
@@ -86,6 +97,11 @@ export default function MySalesCard() {
         </div>
       </div>
 
+      <div className="mt-3 rounded-[22px] border border-violet-200 bg-violet-50/60 p-4">
+        <div className="font-display text-[28px] font-semibold leading-none text-ink">{formatINR(totalReceived)}</div>
+        <div className="mt-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-ink/40">Received from clients</div>
+      </div>
+
       <div className="mt-3 space-y-2.5">
         {sales.length === 0 && (
           <div className="rounded-2xl border border-ink/[0.06] bg-surface p-5 text-center text-[13px] text-ink/40">
@@ -109,6 +125,14 @@ export default function MySalesCard() {
                 <div className="text-[14px] font-semibold text-emerald-700">{formatINR(s.commission)}</div>
               </div>
             </div>
+            <button
+              onClick={() => setOpenKey(openKey === s.key ? null : s.key)}
+              className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[11.5px] font-semibold text-violet-700"
+            >
+              {formatINR(s.received)} received{s.paymentCount > 0 ? ` · ${s.paymentCount} payment${s.paymentCount === 1 ? "" : "s"}` : ""}
+              <span className="text-violet-400">{openKey === s.key ? "▴" : "▾"}</span>
+            </button>
+            {openKey === s.key && <PaymentHistory sale={s} />}
           </div>
         ))}
         {sales.length > 5 && (

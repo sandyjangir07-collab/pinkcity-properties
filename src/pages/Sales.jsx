@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Phone, Search, Pencil, Plus, Trash2, Receipt, LayoutGrid, Ruler, BadgeIndianRupee } from "lucide-react";
+import { Phone, Search, Pencil, Plus, Trash2, Receipt, LayoutGrid, Ruler, BadgeIndianRupee, Wallet } from "lucide-react";
 import { sb } from "../lib/supabase";
 import { formatINR, initials } from "../lib/utils";
-import { groupSales, formatGaj, areaText } from "../lib/sales";
+import { groupSales, formatGaj, areaText, attachPayments, PAYMENT_COLUMNS } from "../lib/sales";
 import { useToast } from "../hooks/useToast";
 import { useAuth } from "../hooks/useAuth";
 import { BrandedLoader } from "../components/ui/BrandedLoader";
 import AddSaleModal from "../components/sales/AddSaleModal";
+import PaymentsModal from "../components/sales/PaymentsModal";
 import { Sheet, SheetHeader } from "../components/ui/Sheet";
 import { plotLabel } from "../lib/sales";
 
@@ -101,6 +102,25 @@ function Associate({ name }) {
   );
 }
 
+function ReceivedButton({ s, onPay, compact }) {
+  if (compact) {
+    return (
+      <button onClick={() => onPay(s)} className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[11.5px] font-semibold text-violet-700 active:scale-95">
+        <Wallet className="h-3 w-3" />
+        {s.paymentCount > 0 ? `${formatINR(s.received)} received · ${s.paymentCount}` : "Add payment"}
+      </button>
+    );
+  }
+  return (
+    <button onClick={() => onPay(s)} className="group text-left">
+      <div className={`text-[14px] font-bold ${s.paymentCount > 0 ? "text-violet-700" : "text-ink/25"}`}>{s.paymentCount > 0 ? formatINR(s.received) : "—"}</div>
+      <div className="text-[10.5px] text-ink/35 group-hover:text-violet-600">
+        {s.paymentCount > 0 ? `${s.paymentCount} payment${s.paymentCount === 1 ? "" : "s"}` : "Add payment"}
+      </div>
+    </button>
+  );
+}
+
 function PhoneCell({ s, editingKey, setEditingKey, phoneDraft, setPhoneDraft, savePhone }) {
   if (s.buyer_phone) {
     return (
@@ -124,9 +144,12 @@ function PhoneCell({ s, editingKey, setEditingKey, phoneDraft, setPhoneDraft, sa
   );
 }
 
-function Actions({ s, onEdit, onDelete }) {
+function Actions({ s, onEdit, onDelete, onPay }) {
   return (
     <div className="flex items-center gap-1.5">
+      <button onClick={() => onPay(s)} aria-label="Payments" title="Payments received" className="flex h-8 w-8 items-center justify-center rounded-full border border-violet-200 bg-violet-50 text-violet-600 transition hover:bg-violet-100 active:scale-95">
+        <Wallet className="h-3.5 w-3.5" />
+      </button>
       <button onClick={() => onEdit(s)} aria-label="Edit sale" title="Edit" className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/10 text-ink/55 transition hover:border-stone-300 hover:bg-stone-50 hover:text-stone-700 active:scale-95">
         <Pencil className="h-3.5 w-3.5" />
       </button>
@@ -137,7 +160,7 @@ function Actions({ s, onEdit, onDelete }) {
   );
 }
 
-const COLS = "lg:grid-cols-[56px_minmax(0,1.2fr)_minmax(0,2.1fr)_88px_minmax(0,1.1fr)_minmax(0,1fr)_76px]";
+const COLS = "lg:grid-cols-[56px_minmax(0,1.15fr)_minmax(0,1.9fr)_80px_minmax(0,1.05fr)_minmax(0,0.95fr)_minmax(0,0.95fr)_112px]";
 
 export default function Sales() {
   const showToast = useToast();
@@ -153,6 +176,7 @@ export default function Sales() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [freePlots, setFreePlots] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [payKey, setPayKey] = useState(null);
 
   async function load() {
     const { data, error } = await sb
@@ -173,14 +197,18 @@ export default function Sales() {
       const { data: ls } = await sb.from("listings").select("id,title").in("id", ids);
       titles = Object.fromEntries((ls || []).map((l) => [l.id, l.title]));
     }
+    const { data: pays } = await sb.from("sale_payments").select(PAYMENT_COLUMNS).range(0, 9999);
     setSales(
-      groupSales(
-        list.map((d) => ({
-          ...d,
-          township: titles[d.listing_id] || d.manual_township || "",
-          plotNo: d.colony_units?.unit_number || d.manual_plot_no || "",
-          plotArea: d.colony_units?.unit_size || d.manual_plot_area || "",
-        }))
+      attachPayments(
+        groupSales(
+          list.map((d) => ({
+            ...d,
+            township: titles[d.listing_id] || d.manual_township || "",
+            plotNo: d.colony_units?.unit_number || d.manual_plot_no || "",
+            plotArea: d.colony_units?.unit_size || d.manual_plot_area || "",
+          }))
+        ),
+        pays || []
       )
     );
   }
@@ -217,13 +245,14 @@ export default function Sales() {
       const key = s.reviewed_at ? monthKey(s.reviewed_at) : "none";
       let g = out[out.length - 1];
       if (!g || g.key !== key) {
-        g = { key, sales: [], plots: 0, gaj: 0, commission: 0 };
+        g = { key, sales: [], plots: 0, gaj: 0, commission: 0, received: 0 };
         out.push(g);
       }
       g.sales.push(s);
       g.plots += s.plots.length;
       g.gaj += s.totalGaj;
       g.commission += s.commission;
+      g.received += s.received;
     }
     return out;
   }, [filtered]);
@@ -231,6 +260,7 @@ export default function Sales() {
   const totalPlots = filtered.reduce((sum, s) => sum + s.plots.length, 0);
   const totalGaj = filtered.reduce((sum, s) => sum + s.totalGaj, 0);
   const totalCommission = filtered.reduce((sum, s) => sum + s.commission, 0);
+  const totalReceived = filtered.reduce((sum, s) => sum + s.received, 0);
   const filtersActive = month !== "all" || assoc !== "all" || q.trim() !== "";
 
   async function savePhone(sale) {
@@ -296,11 +326,12 @@ export default function Sales() {
       </div>
 
       {/* Summary band */}
-      <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Tile label="Sales" value={filtered.length} Icon={Receipt} className="bg-gradient-to-br from-stone-500 to-stone-700" />
         <Tile label="Total plots" value={totalPlots} Icon={LayoutGrid} className="bg-gradient-to-br from-brass to-[#8f6a2c]" />
         <Tile label="Total Gaj" value={totalGaj.toLocaleString("en-IN", { maximumFractionDigits: 2 })} Icon={Ruler} className="bg-gradient-to-br from-jali to-[#34505a]" />
         <Tile label="Commission" value={formatINR(totalCommission)} Icon={BadgeIndianRupee} className="bg-gradient-to-br from-emerald-500 to-emerald-700" />
+        <Tile label="Received" value={formatINR(totalReceived)} Icon={Wallet} className="col-span-2 bg-gradient-to-br from-violet-500 to-violet-700 lg:col-span-1" />
       </div>
 
       {/* Filters */}
@@ -332,6 +363,7 @@ export default function Sales() {
           <span>Gaj</span>
           <span>Associate</span>
           <span>Commission</span>
+          <span>Received</span>
           <span />
         </div>
       )}
@@ -353,7 +385,8 @@ export default function Sales() {
               <div className="text-[11.5px] text-ink/45">
                 <b className="font-semibold text-ink/70">{g.sales.length}</b> sales · <b className="font-semibold text-ink/70">{g.plots}</b> plots ·{" "}
                 <b className="font-semibold text-ink/70">{g.gaj.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</b> Gaj ·{" "}
-                <b className="font-semibold text-emerald-700">{formatINR(g.commission)}</b>
+                <b className="font-semibold text-emerald-700">{formatINR(g.commission)}</b> ·{" "}
+                <b className="font-semibold text-violet-700">{formatINR(g.received)}</b> received
               </div>
             </div>
 
@@ -379,13 +412,10 @@ export default function Sales() {
                       <Associate name={s.associate_name} />
                       <div>
                         <div className="text-[14px] font-bold text-emerald-700">{formatINR(s.commission)}</div>
-                        {(s.sale_amount != null || s.is_manual) && (
-                          <div className="text-[10.5px] text-ink/35">
-                            {s.sale_amount != null ? `Received ${formatINR(s.sale_amount)}` : "added manually"}
-                          </div>
-                        )}
+                        {s.is_manual && <div className="text-[10.5px] text-ink/35">added manually</div>}
                       </div>
-                      <Actions s={s} onEdit={setEditSale} onDelete={askDelete} />
+                      <ReceivedButton s={s} onPay={(x) => setPayKey(x.key)} />
+                      <Actions s={s} onEdit={setEditSale} onDelete={askDelete} onPay={(x) => setPayKey(x.key)} />
                     </div>
 
                     {/* Phone / tablet: compact card */}
@@ -396,9 +426,10 @@ export default function Sales() {
                           <div className="truncate text-[14.5px] font-semibold text-ink">{s.buyer_name || "—"}</div>
                           <PhoneCell s={s} {...phoneProps} />
                         </div>
-                        <Actions s={s} onEdit={setEditSale} onDelete={askDelete} />
+                        <Actions s={s} onEdit={setEditSale} onDelete={askDelete} onPay={(x) => setPayKey(x.key)} />
                       </div>
                       <PlotChips plots={s.plots} />
+                      <ReceivedButton s={s} onPay={(x) => setPayKey(x.key)} compact />
                       <div className="flex items-center justify-between gap-3 border-t border-ink/[0.05] pt-2.5">
                         <Associate name={s.associate_name} />
                         <div className="shrink-0 text-right">
@@ -418,6 +449,8 @@ export default function Sales() {
       <AddSaleModal open={addOpen} onClose={() => setAddOpen(false)} onAdded={load} />
       <AddSaleModal open={!!editSale} sale={editSale} onClose={() => setEditSale(null)} onAdded={load} />
 
+      <PaymentsModal open={!!payKey} sale={sales.find((x) => x.key === payKey) || null} onClose={() => setPayKey(null)} onChanged={load} />
+
       <Sheet open={!!deleteTarget} onClose={() => !deleting && setDeleteTarget(null)}>
         {deleteTarget && (
           <>
@@ -429,6 +462,11 @@ export default function Sales() {
               ))}
               <div className="text-ink/45">Associate: {deleteTarget.associate_name || "—"}</div>
             </div>
+            {deleteTarget.paymentCount > 0 && (
+              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
+                This also deletes <b>{deleteTarget.paymentCount} recorded payment{deleteTarget.paymentCount === 1 ? "" : "s"}</b> totalling <b>{formatINR(deleteTarget.received)}</b>.
+              </div>
+            )}
             {deleteTarget.plots.some((p) => p.unitId) && (
               <label className="mt-4 flex items-start gap-2.5 text-sm text-ink/70">
                 <input type="checkbox" className="mt-0.5 h-4 w-4 accent-stone-600" checked={freePlots} onChange={(e) => setFreePlots(e.target.checked)} />

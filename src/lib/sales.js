@@ -53,6 +53,7 @@ export function groupSales(rows) {
     g.totalGaj += gajOf(d.plotArea);
     g.plots.push({
       rowId: d.id,
+      saleAmount: d.sale_amount,
       unitId: d.unit_id,
       listingId: d.listing_id,
       township: d.township,
@@ -69,3 +70,29 @@ export function groupSales(rows) {
 export function plotLabel(p) {
   return [p.township, p.plotNo ? `Plot ${p.plotNo}` : "", areaText(p.plotArea)].filter(Boolean).join(" · ") || "—";
 }
+
+// Attach recorded payments (sale_payments rows) to each plot of each sale.
+// A plot's `received` is the sum of its payments; a sale's is the sum over its plots.
+export function attachPayments(sales, payments) {
+  const byRow = new Map();
+  for (const p of payments || []) {
+    if (!byRow.has(p.sale_row_id)) byRow.set(p.sale_row_id, []);
+    byRow.get(p.sale_row_id).push(p);
+  }
+  return sales.map((s) => {
+    let received = 0;
+    let paymentCount = 0;
+    const plots = s.plots.map((pl) => {
+      const list = (byRow.get(pl.rowId) || []).slice().sort(
+        (a, b) => String(a.received_on).localeCompare(String(b.received_on)) || String(a.created_at).localeCompare(String(b.created_at))
+      );
+      const sum = list.reduce((t, x) => t + (Number(x.amount) || 0), 0);
+      received += sum;
+      paymentCount += list.length;
+      return { ...pl, payments: list, received: sum };
+    });
+    return { ...s, plots, received, paymentCount };
+  });
+}
+
+export const PAYMENT_COLUMNS = "id,sale_row_id,amount,received_on,note,created_at";
