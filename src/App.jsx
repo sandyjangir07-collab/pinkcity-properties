@@ -19,6 +19,9 @@ import Plots from "./pages/Plots";
 import Approvals from "./pages/Approvals";
 import CommissionSlabs from "./pages/CommissionSlabs";
 import Sales from "./pages/Sales";
+import ResalePlots from "./pages/ResalePlots";
+import ResalePlotDetail from "./pages/ResalePlotDetail";
+import ResalePlotForm from "./pages/ResalePlotForm";
 
 export default function App() {
   return (
@@ -60,6 +63,24 @@ export default function App() {
               <Route path="/leads" element={<Leads />} />
               <Route path="/listings" element={<Listings />} />
               <Route path="/plots" element={<Plots />} />
+              <Route path="/resale" element={<ResalePlots />} />
+              <Route
+                path="/resale/new"
+                element={
+                  <RequireAdmin>
+                    <ResalePlotForm />
+                  </RequireAdmin>
+                }
+              />
+              <Route
+                path="/resale/:id/edit"
+                element={
+                  <RequireAdmin>
+                    <ResalePlotForm />
+                  </RequireAdmin>
+                }
+              />
+              <Route path="/resale/:id" element={<ResalePlotDetail />} />
               <Route
                 path="/approvals"
                 element={

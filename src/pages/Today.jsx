@@ -176,6 +176,7 @@ export default function Today() {
     "/team": { bg: "bg-stone-100", text: "text-stone-600" },
     "/attendance": { bg: "bg-stone-100", text: "text-stone-600" },
     "/sales": { bg: "bg-rose-100", text: "text-rose-600" },
+    "/resale": { bg: "bg-teal-100", text: "text-teal-700" },
     "/commission-slabs": { bg: "bg-amber-100", text: "text-amber-700" },
     "/performance": { bg: "bg-teal-100", text: "text-teal-600" },
     "/blogs": { bg: "bg-violet-100", text: "text-violet-600" },
@@ -183,7 +184,7 @@ export default function Today() {
   };
 
   const GROUPS = [
-    { title: "Sales & Leads", caption: "Pipeline, inventory and paperwork", paths: ["/leads", "/listings", "/plots", "/schedule", "/quotation", "/sales"] },
+    { title: "Sales & Leads", caption: "Pipeline, inventory and paperwork", paths: ["/leads", "/listings", "/plots", "/resale", "/schedule", "/quotation", "/sales"] },
     { title: "Team & Admin", caption: "People, compliance and payouts", paths: ["/team", "/attendance", "/commission-slabs", "/performance", "/blogs", "/approvals"] },
   ];
 
