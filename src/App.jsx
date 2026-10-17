@@ -19,6 +19,7 @@ import Plots from "./pages/Plots";
 import Approvals from "./pages/Approvals";
 import CommissionSlabs from "./pages/CommissionSlabs";
 import Sales from "./pages/Sales";
+import Commissions from "./pages/Commissions";
 import ResalePlots from "./pages/ResalePlots";
 import ResalePlotDetail from "./pages/ResalePlotDetail";
 import ResalePlotForm from "./pages/ResalePlotForm";
@@ -94,6 +95,14 @@ export default function App() {
                 element={
                   <RequireAdmin>
                     <Sales />
+                  </RequireAdmin>
+                }
+              />
+              <Route
+                path="/commissions"
+                element={
+                  <RequireAdmin>
+                    <Commissions />
                   </RequireAdmin>
                 }
               />

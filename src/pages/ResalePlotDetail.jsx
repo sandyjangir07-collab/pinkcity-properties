@@ -9,6 +9,7 @@ import { BrandedLoader } from "../components/ui/BrandedLoader";
 import { Sheet, SheetHeader } from "../components/ui/Sheet";
 import SitePlanViewer from "../components/resale/SitePlanViewer";
 import RequestSheet from "../components/resale/RequestSheet";
+import BrochureSheet from "../components/resale/BrochureSheet";
 import {
   BUCKET_PLANS, BUCKET_OWNER_DOCS, RESALE_STATUS, formatGaj, isImagePath, shareText, shareOrCopy, signedUrl, friendlyError,
 } from "../lib/resale";
@@ -34,6 +35,7 @@ export default function ResalePlotDetail() {
   const [docs, setDocs] = useState([]);
   const [viewer, setViewer] = useState(false);
   const [reqOpen, setReqOpen] = useState(false);
+  const [brochureOpen, setBrochureOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
 
   async function load() {
@@ -248,10 +250,14 @@ export default function ResalePlotDetail() {
         <button onClick={share} className="flex min-h-[50px] items-center justify-center gap-2 rounded-full border border-stone-100 bg-white text-[14.5px] font-semibold text-stone-700">
           <Share2 className="h-4 w-4" /> Share Property Details
         </button>
+        <button onClick={() => setBrochureOpen(true)} className="flex min-h-[50px] items-center justify-center gap-2 rounded-full border border-stone-100 bg-stone-50 text-[14.5px] font-semibold text-stone-700 sm:col-span-2">
+          <FileText className="h-4 w-4" /> Customer Brochure (PDF)
+        </button>
       </div>
 
       <SitePlanViewer open={viewer} plot={plot} canDownload={canDownload} onClose={() => setViewer(false)} />
       <RequestSheet open={reqOpen} plot={plot} onClose={() => setReqOpen(false)} />
+      <BrochureSheet open={brochureOpen} plot={plot} onClose={() => setBrochureOpen(false)} />
 
       <Sheet open={archiveOpen} onClose={() => setArchiveOpen(false)}>
         <SheetHeader title={plot.archived ? "Restore this listing?" : "Archive this listing?"} sub={plot.archived ? "It will show in the inventory again." : "It disappears from the team's inventory. You can restore it later."} />

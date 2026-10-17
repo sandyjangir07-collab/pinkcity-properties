@@ -3,6 +3,7 @@ import { sb } from "../../lib/supabase";
 import { computeCommission } from "../../lib/commission";
 import { groupSales, plotLabel, attachPayments, PAYMENT_COLUMNS } from "../../lib/sales";
 import PaymentHistory from "../sales/PaymentHistory";
+import CommissionBalance from "../commissions/CommissionBalance";
 import { formatDate, formatINR } from "../../lib/utils";
 import { BadgeIndianRupee } from "lucide-react";
 import { Card, SectionTitle, StatCard } from "../ui/primitives";
@@ -68,6 +69,8 @@ export default function CommissionSection({ employee, refreshKey }) {
         <StatCard label="This Month" value={`₹${stats.thisMonthCommission.toLocaleString("en-IN")}`} tone="emerald" />
         <StatCard label="All-Time Commission" value={`₹${stats.totalCommission.toLocaleString("en-IN")}`} tone="brass" />
       </div>
+
+      <CommissionBalance employeeId={employee.id} earned={stats.totalCommission} monthEarned={stats.thisMonthCommission} />
 
       {deals.length > 0 && (
         <div className="mt-5">

@@ -1,6 +1,6 @@
 import {
   Users, Calendar, Phone, Home as HomeIcon, Ticket, CalendarClock, Clock,
-  FileText, TrendingUp, Newspaper, CheckCircle, BadgeIndianRupee, Receipt, MapPinned,
+  FileText, TrendingUp, Newspaper, CheckCircle, BadgeIndianRupee, Receipt, MapPinned, Banknote,
 } from "lucide-react";
 
 export const NAV_LINKS = [
@@ -14,6 +14,7 @@ export const NAV_LINKS = [
   { to: "/schedule", label: "Schedule", Icon: CalendarClock, accent: "jali" },
   { to: "/quotation", label: "Quotation", Icon: FileText, accent: "brass" },
   { to: "/sales", label: "Sales", Icon: Receipt, accent: "brass", adminOnly: true },
+  { to: "/commissions", label: "Commissions", Icon: Banknote, accent: "brass", adminOnly: true },
   { to: "/commission-slabs", label: "Commission Slabs", Icon: BadgeIndianRupee, accent: "brass", adminOnly: true },
   { to: "/performance", label: "Performance", Icon: TrendingUp, accent: "brass", adminOnly: true },
   { to: "/blogs", label: "Blogs", Icon: Newspaper, accent: "stone", adminOnly: true },

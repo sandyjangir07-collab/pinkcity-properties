@@ -12,6 +12,7 @@ import { StatCard } from "../ui/primitives";
 export default function MyTeamStats() {
   const { employee } = useAuth();
   const [rows, setRows] = useState(null);
+  const [paid, setPaid] = useState(0);
 
   useEffect(() => {
     if (!employee?.id) {
@@ -25,6 +26,12 @@ export default function MyTeamStats() {
       .eq("status", "approved")
       .then(({ data }) => {
         if (!cancelled) setRows(data || []);
+      });
+    sb.from("commission_payouts")
+      .select("amount")
+      .eq("employee_id", employee.id)
+      .then(({ data }) => {
+        if (!cancelled) setPaid((data || []).reduce((t, r) => t + (Number(r.amount) || 0), 0));
       });
     return () => {
       cancelled = true;
@@ -51,7 +58,7 @@ export default function MyTeamStats() {
         <StatCard value={formatINR(total)} label="Commission earned" Icon={BadgeIndianRupee} tone="emerald" />
       </div>
       <div className="mt-2.5 flex items-center justify-between text-[12px]">
-        <span className="font-medium text-emerald-700">{formatINR(month)} this month</span>
+        <span className="font-medium text-emerald-700">{formatINR(month)} this month · {formatINR(paid)} paid · {formatINR(Math.max(total - paid, 0))} due</span>
         <Link to={`/employees/${employee.id}`} className="inline-flex items-center gap-0.5 font-semibold text-stone-600">
           View my sales <ChevronRight className="h-3.5 w-3.5" />
         </Link>

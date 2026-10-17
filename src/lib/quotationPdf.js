@@ -14,7 +14,7 @@ export function formatINRQ(n) {
 }
 
 let logoDataUrl = null;
-async function getLogoDataUrl() {
+export async function getLogoDataUrl() {
   if (logoDataUrl) return logoDataUrl;
   try {
     const res = await fetch("/logo.png");
@@ -32,7 +32,7 @@ async function getLogoDataUrl() {
 }
 
 let cachedFontData = null;
-async function loadPdfFonts(doc) {
+export async function loadPdfFonts(doc) {
   if (!cachedFontData) {
     async function fetchBase64(url) {
       const res = await fetch(url);

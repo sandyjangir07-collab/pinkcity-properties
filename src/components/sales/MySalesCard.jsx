@@ -4,6 +4,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { formatINR, formatDate } from "../../lib/utils";
 import { groupSales, plotLabel, formatGaj, attachPayments, PAYMENT_COLUMNS } from "../../lib/sales";
 import PaymentHistory from "./PaymentHistory";
+import CommissionBalance from "../commissions/CommissionBalance";
 
 // Home-screen card: every sale an admin has credited to the logged-in
 // associate, with the total Gaj and the amount the admin entered for them.
@@ -89,13 +90,7 @@ export default function MySalesCard() {
           <div className="mt-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-ink/40">Total Gaj</div>
         </div>
       </div>
-      <div className="mt-3 rounded-[22px] border border-emerald-200 bg-emerald-50/60 p-4">
-        <div className="font-display text-[28px] font-semibold leading-none text-ink">{formatINR(totalAmount)}</div>
-        <div className="mt-1.5 flex items-center justify-between text-[9px] font-bold uppercase tracking-[0.1em] text-ink/40">
-          <span>Amount earned</span>
-          <span className="text-emerald-700">{formatINR(monthAmount)} this month</span>
-        </div>
-      </div>
+      <CommissionBalance employeeId={employee.id} earned={totalAmount} monthEarned={monthAmount} />
 
       <div className="mt-3 rounded-[22px] border border-violet-200 bg-violet-50/60 p-4">
         <div className="font-display text-[28px] font-semibold leading-none text-ink">{formatINR(totalReceived)}</div>
