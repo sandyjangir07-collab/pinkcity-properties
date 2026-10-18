@@ -256,10 +256,9 @@ export default function Leads() {
       <LeadFormModal
         target={formTarget}
         onClose={() => setFormTarget(null)}
-        onSaved={({ isNew, lead }) => {
+        onSaved={() => {
           setFormTarget(null);
           refresh();
-          if (isNew) setVisitTarget({ leadId: lead.id, name: lead.name, phone: lead.phone });
         }}
       />
       <LeadDetailModal
