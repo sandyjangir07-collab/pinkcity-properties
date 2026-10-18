@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { sb } from "../../lib/supabase";
+import { useAuth } from "../../hooks/useAuth";
 import { computeCommission } from "../../lib/commission";
 import { groupSales, plotLabel, attachPayments, PAYMENT_COLUMNS } from "../../lib/sales";
 import PaymentHistory from "../sales/PaymentHistory";
@@ -12,6 +13,7 @@ import { Card, SectionTitle, StatCard } from "../ui/primitives";
 // a sale directly) — not computed from a slab rate. This section totals up
 // what's recorded and lists the associate's sales.
 export default function CommissionSection({ employee, refreshKey }) {
+  const { employee: me } = useAuth();
   const [stats, setStats] = useState(null);
   const [deals, setDeals] = useState([]);
   const [openKey, setOpenKey] = useState(null);
@@ -70,7 +72,7 @@ export default function CommissionSection({ employee, refreshKey }) {
         <StatCard label="All-Time Commission" value={`₹${stats.totalCommission.toLocaleString("en-IN")}`} tone="brass" />
       </div>
 
-      <CommissionBalance employeeId={employee.id} earned={stats.totalCommission} monthEarned={stats.thisMonthCommission} />
+      <CommissionBalance employeeId={employee.id} earned={stats.totalCommission} monthEarned={stats.thisMonthCommission} canConfirm={me?.id === employee.id} />
 
       {deals.length > 0 && (
         <div className="mt-5">

@@ -33,7 +33,7 @@ export default function Commissions() {
     const [emps, deals, pays] = await Promise.all([
       sb.from("employees").select("id,full_name").order("full_name"),
       sb.from("token_submissions").select("associate_employee_id,commission_amount,reviewed_at").eq("status", "approved").not("associate_employee_id", "is", null).range(0, 9999),
-      sb.from("commission_payouts").select("id,employee_id,amount,paid_on,note,created_at").order("paid_on", { ascending: false }).range(0, 9999),
+      sb.from("commission_payouts").select("id,employee_id,amount,paid_on,note,created_at,status,responded_at,response_note").order("paid_on", { ascending: false }).range(0, 9999),
     ]);
     const err = emps.error || deals.error || pays.error;
     if (err) {
@@ -72,6 +72,8 @@ export default function Commissions() {
   const idle = (data || []).length - rows.length;
   const totals = rows.reduce((t, r) => ({ earned: t.earned + r.earned, paid: t.paid + r.paid, due: t.due + r.due }), { earned: 0, paid: 0, due: 0 });
   const openRow = (data || []).find((r) => r.id === openId) || null;
+  const awaitingCount = (data || []).reduce((n, r) => n + r.payouts.filter((p) => p.status === "pending").length, 0);
+  const disputedCount = (data || []).reduce((n, r) => n + r.payouts.filter((p) => p.status === "disputed").length, 0);
 
   if (data === null) return <div className="mx-auto flex max-w-6xl justify-center px-5 py-24"><BrandedLoader size={24} /></div>;
 
@@ -87,6 +89,13 @@ export default function Commissions() {
         <SummaryTile label="Still due" value={formatINRCompact(Math.max(totals.due, 0))} className="bg-gradient-to-br from-amber-500 to-orange-600" base={24} fit={10} />
       </div>
 
+      {(awaitingCount > 0 || disputedCount > 0) && (
+        <div className="mt-4 space-y-1 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px]">
+          {disputedCount > 0 && <div className="font-semibold text-red-600">{disputedCount} payout{disputedCount === 1 ? "" : "s"} reported as not received. Check the associate's card below.</div>}
+          {awaitingCount > 0 && <div className="text-amber-800">{awaitingCount} payout{awaitingCount === 1 ? " is" : "s are"} waiting for the associate to confirm.</div>}
+        </div>
+      )}
+
       <div className="mt-6 space-y-2.5">
         {rows.length === 0 && (
           <div className="rounded-2xl border border-ink/[0.06] bg-surface p-10 text-center text-[13px] text-ink/40">No commission recorded yet. It appears here once a sale with a commission is added.</div>
@@ -100,6 +109,10 @@ export default function Commissions() {
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-[15px] font-semibold text-ink">{r.name}</div>
                   <div className="text-[11.5px] text-ink/40">{r.deals.length} plot{r.deals.length === 1 ? "" : "s"} · {r.payouts.length} payout{r.payouts.length === 1 ? "" : "s"}</div>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {r.payouts.some((p) => p.status === "disputed") && <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">Not received</span>}
+                    {r.payouts.some((p) => p.status === "pending") && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">Awaiting confirmation</span>}
+                  </div>
                 </div>
                 <button onClick={() => setOpenId(r.id)} className="inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full bg-stone-600 px-4 text-[12.5px] font-semibold text-white active:scale-95">
                   <Wallet className="h-3.5 w-3.5" /> Pay

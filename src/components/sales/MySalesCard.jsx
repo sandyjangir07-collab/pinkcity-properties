@@ -90,7 +90,7 @@ export default function MySalesCard() {
           <div className="mt-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-ink/40">Total Gaj</div>
         </div>
       </div>
-      <CommissionBalance employeeId={employee.id} earned={totalAmount} monthEarned={monthAmount} />
+      <CommissionBalance employeeId={employee.id} earned={totalAmount} monthEarned={monthAmount} canConfirm />
 
       <div className="mt-3 rounded-[22px] border border-violet-200 bg-violet-50/60 p-4">
         <div className="font-display text-[28px] font-semibold leading-none text-ink">{formatINR(totalReceived)}</div>

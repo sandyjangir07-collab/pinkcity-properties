@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Lock } from "lucide-react";
 import { sb } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
 import { formatINR, formatDate, fitFont } from "../../lib/utils";
-import { summarize, statement, monthLabel } from "../../lib/payouts";
+import { summarize, statement, monthLabel, PAYOUT_STATUS } from "../../lib/payouts";
 import { Sheet, SheetHeader } from "../ui/Sheet";
 
 function todayLocal() {
@@ -37,7 +37,7 @@ export default function PayoutSheet({ open, row, onClose, onChanged }) {
   }, [open, row?.id]);
 
   if (!row) return <Sheet open={false} onClose={onClose} />;
-  const { paid, earned } = summarize(row.deals, row.payouts);
+  const { paid, earned, awaiting, disputed } = summarize(row.deals, row.payouts);
   const over = Number(amount) > Math.max(due, 0) && Number(amount) > 0;
   const months = statement(row.deals, row.payouts);
 
@@ -53,7 +53,7 @@ export default function PayoutSheet({ open, row, onClose, onChanged }) {
     });
     setBusy(false);
     if (error) return showToast(error.message);
-    showToast("✓ Payout recorded. The associate has been notified.");
+    showToast("✓ Payout recorded. They've been asked to confirm.");
     onChanged();
   }
 
@@ -75,6 +75,13 @@ export default function PayoutSheet({ open, row, onClose, onChanged }) {
         <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 p-3 text-white"><div className="whitespace-nowrap font-display font-semibold leading-tight" style={{ fontSize: fitFont(formatINR(paid), 17, 8) }}>{formatINR(paid)}</div><div className="mt-1 text-[9px] font-bold uppercase tracking-[0.1em] text-white/70">Paid</div></div>
         <div className={`rounded-2xl p-3 text-white ${due > 0 ? "bg-gradient-to-br from-amber-500 to-orange-600" : "bg-gradient-to-br from-slate-400 to-slate-500"}`}><div className="whitespace-nowrap font-display font-semibold leading-tight" style={{ fontSize: fitFont(formatINR(Math.abs(due)), 17, 8) }}>{formatINR(Math.abs(due))}</div><div className="mt-1 text-[9px] font-bold uppercase tracking-[0.1em] text-white/75">{due < 0 ? "Advance" : "Still due"}</div></div>
       </div>
+
+      {(awaiting > 0 || disputed > 0) && (
+        <div className="mt-3 space-y-1 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-[12.5px]">
+          {awaiting > 0 && <div className="text-amber-800">{formatINR(awaiting)} paid and awaiting {row.name}'s confirmation</div>}
+          {disputed > 0 && <div className="font-semibold text-red-600">{formatINR(disputed)} reported as NOT received. It isn't counted as paid until it's sorted out.</div>}
+        </div>
+      )}
 
       <div className="mt-4 space-y-2.5 rounded-2xl border border-ink/10 bg-white p-3.5">
         <div className="text-[13px] font-semibold text-ink">Record a payout</div>
@@ -98,17 +105,31 @@ export default function PayoutSheet({ open, row, onClose, onChanged }) {
         <div className="mt-4">
           <div className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-ink/40">Payouts made</div>
           <div className="divide-y divide-ink/[0.06] rounded-2xl border border-ink/[0.06] bg-surface px-3.5">
-            {row.payouts.map((p) => (
-              <div key={p.id} className="flex items-center justify-between gap-3 py-2.5">
-                <div className="min-w-0 text-[12.5px] text-ink/60"><span className="font-medium text-ink/80">{formatDate(p.paid_on)}</span>{p.note ? ` · ${p.note}` : ""}</div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <span className="text-[13px] font-semibold text-ink">{formatINR(p.amount)}</span>
-                  <button onClick={() => remove(p.id)} aria-label="Delete payout" className={`flex h-7 items-center justify-center rounded-full text-[10.5px] font-semibold ${confirmId === p.id ? "bg-red-500 px-2.5 text-white" : "w-7 text-ink/35 hover:text-red-500"}`}>
-                    {confirmId === p.id ? "Delete?" : <Trash2 className="h-3.5 w-3.5" />}
-                  </button>
+            {row.payouts.map((p) => {
+              const st = PAYOUT_STATUS[p.status] || PAYOUT_STATUS.pending;
+              return (
+                <div key={p.id} className="py-2.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 text-[12.5px] text-ink/60"><span className="font-medium text-ink/80">{formatDate(p.paid_on)}</span>{p.note ? ` · ${p.note}` : ""}</div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className="text-[13px] font-semibold text-ink">{formatINR(p.amount)}</span>
+                      {p.status === "confirmed" ? (
+                        <span title="Confirmed by the associate, so it can't be deleted" className="flex h-7 w-7 items-center justify-center text-ink/30"><Lock className="h-3.5 w-3.5" /></span>
+                      ) : (
+                        <button onClick={() => remove(p.id)} aria-label="Delete payout" className={`flex h-7 items-center justify-center rounded-full text-[10.5px] font-semibold ${confirmId === p.id ? "bg-red-500 px-2.5 text-white" : "w-7 text-ink/35 hover:text-red-500"}`}>
+                          {confirmId === p.id ? "Delete?" : <Trash2 className="h-3.5 w-3.5" />}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${st.cls}`}>{st.label}</span>
+                    {p.status === "confirmed" && p.responded_at && <span className="text-[11px] text-ink/40">on {formatDate(p.responded_at)}</span>}
+                    {p.status === "disputed" && p.response_note && <span className="text-[11.5px] text-red-600">"{p.response_note}"</span>}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

@@ -28,10 +28,10 @@ export default function MyTeamStats() {
         if (!cancelled) setRows(data || []);
       });
     sb.from("commission_payouts")
-      .select("amount")
+      .select("amount,status")
       .eq("employee_id", employee.id)
       .then(({ data }) => {
-        if (!cancelled) setPaid((data || []).reduce((t, r) => t + (Number(r.amount) || 0), 0));
+        if (!cancelled) setPaid((data || []).filter((r) => r.status !== "disputed").reduce((t, r) => t + (Number(r.amount) || 0), 0));
       });
     return () => {
       cancelled = true;
