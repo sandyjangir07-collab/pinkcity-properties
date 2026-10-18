@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Wallet } from "lucide-react";
 import { sb } from "../lib/supabase";
 import { useToast } from "../hooks/useToast";
-import { formatINR, initials } from "../lib/utils";
+import { formatINR, formatINRCompact, fitFont, initials } from "../lib/utils";
 import { summarize } from "../lib/payouts";
 import { BrandedLoader } from "../components/ui/BrandedLoader";
 import PayoutSheet from "../components/commissions/PayoutSheet";
@@ -13,6 +13,15 @@ const tone = (name) => {
   for (const c of String(name || "?")) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return TONES[h % TONES.length];
 };
+
+function SummaryTile({ label, value, className, base, fit }) {
+  return (
+    <div className={`rounded-2xl p-4 text-white shadow-lift ${className}`}>
+      <div className="whitespace-nowrap font-display font-semibold leading-none lg:text-[28px]" style={{ fontSize: fitFont(value, base, fit) }}>{value}</div>
+      <div className="mt-2.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white/75">{label}</div>
+    </div>
+  );
+}
 
 // Admin: what every associate has earned, what you've paid them, and what's still due.
 export default function Commissions() {
@@ -72,10 +81,10 @@ export default function Commissions() {
       <h1 className="mt-2 font-display text-[34px] font-semibold leading-[0.98] tracking-tight text-ink">Commissions</h1>
       <p className="mt-2 text-[13.5px] text-ink/50">What each associate has earned, what you've paid, and what's still due.</p>
 
-      <div className="mt-6 grid grid-cols-3 gap-3">
-        <div className="rounded-2xl bg-gradient-to-br from-stone-500 to-stone-700 p-4 text-white shadow-lift"><div className="font-display text-[20px] font-semibold leading-none lg:text-[28px]">{formatINR(totals.earned)}</div><div className="mt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-white/70">Total earned</div></div>
-        <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 p-4 text-white shadow-lift"><div className="font-display text-[20px] font-semibold leading-none lg:text-[28px]">{formatINR(totals.paid)}</div><div className="mt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-white/70">Total paid</div></div>
-        <div className="rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-4 text-white shadow-lift"><div className="font-display text-[20px] font-semibold leading-none lg:text-[28px]">{formatINR(Math.max(totals.due, 0))}</div><div className="mt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-white/75">Still due</div></div>
+      <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <SummaryTile label="Total earned" value={formatINRCompact(totals.earned)} className="col-span-2 bg-gradient-to-br from-stone-500 to-stone-700 lg:col-span-1" base={28} fit={14} />
+        <SummaryTile label="Total paid" value={formatINRCompact(totals.paid)} className="bg-gradient-to-br from-emerald-500 to-emerald-700" base={24} fit={10} />
+        <SummaryTile label="Still due" value={formatINRCompact(Math.max(totals.due, 0))} className="bg-gradient-to-br from-amber-500 to-orange-600" base={24} fit={10} />
       </div>
 
       <div className="mt-6 space-y-2.5">

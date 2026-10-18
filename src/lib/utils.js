@@ -93,3 +93,17 @@ import { twMerge } from "tailwind-merge";
 export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
+
+// Font size (px) that keeps an amount inside its box: full `base` size up to
+// `fitChars` characters, then scaled down so long amounts never touch the edges.
+export function fitFont(str, base, fitChars) {
+  const n = String(str).length;
+  return Math.max(11, Math.floor(base * Math.min(1, fitChars / n)));
+}
+
+// ₹1.25 Cr once an amount reaches a crore, so tiles stay readable.
+export function formatINRCompact(n) {
+  const v = Number(n) || 0;
+  if (Math.abs(v) >= 10000000) return `${v < 0 ? "-" : ""}₹${(Math.abs(v) / 10000000).toFixed(2).replace(/\.?0+$/, "")} Cr`;
+  return formatINR(v);
+}

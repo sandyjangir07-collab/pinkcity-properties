@@ -3,7 +3,7 @@ import { Trash2 } from "lucide-react";
 import { sb } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
-import { formatINR, formatDate } from "../../lib/utils";
+import { formatINR, formatDate, fitFont } from "../../lib/utils";
 import { summarize, statement, monthLabel } from "../../lib/payouts";
 import { Sheet, SheetHeader } from "../ui/Sheet";
 
@@ -71,9 +71,9 @@ export default function PayoutSheet({ open, row, onClose, onChanged }) {
       <SheetHeader title={row.name} sub="Commission paid vs still due" />
 
       <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-2xl bg-gradient-to-br from-stone-500 to-stone-700 p-3 text-white"><div className="font-display text-[17px] font-semibold leading-tight">{formatINR(earned)}</div><div className="mt-1 text-[9px] font-bold uppercase tracking-[0.1em] text-white/70">Earned</div></div>
-        <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 p-3 text-white"><div className="font-display text-[17px] font-semibold leading-tight">{formatINR(paid)}</div><div className="mt-1 text-[9px] font-bold uppercase tracking-[0.1em] text-white/70">Paid</div></div>
-        <div className={`rounded-2xl p-3 text-white ${due > 0 ? "bg-gradient-to-br from-amber-500 to-orange-600" : "bg-gradient-to-br from-slate-400 to-slate-500"}`}><div className="font-display text-[17px] font-semibold leading-tight">{formatINR(Math.abs(due))}</div><div className="mt-1 text-[9px] font-bold uppercase tracking-[0.1em] text-white/75">{due < 0 ? "Advance" : "Still due"}</div></div>
+        <div className="rounded-2xl bg-gradient-to-br from-stone-500 to-stone-700 p-3 text-white"><div className="whitespace-nowrap font-display font-semibold leading-tight" style={{ fontSize: fitFont(formatINR(earned), 17, 8) }}>{formatINR(earned)}</div><div className="mt-1 text-[9px] font-bold uppercase tracking-[0.1em] text-white/70">Earned</div></div>
+        <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 p-3 text-white"><div className="whitespace-nowrap font-display font-semibold leading-tight" style={{ fontSize: fitFont(formatINR(paid), 17, 8) }}>{formatINR(paid)}</div><div className="mt-1 text-[9px] font-bold uppercase tracking-[0.1em] text-white/70">Paid</div></div>
+        <div className={`rounded-2xl p-3 text-white ${due > 0 ? "bg-gradient-to-br from-amber-500 to-orange-600" : "bg-gradient-to-br from-slate-400 to-slate-500"}`}><div className="whitespace-nowrap font-display font-semibold leading-tight" style={{ fontSize: fitFont(formatINR(Math.abs(due)), 17, 8) }}>{formatINR(Math.abs(due))}</div><div className="mt-1 text-[9px] font-bold uppercase tracking-[0.1em] text-white/75">{due < 0 ? "Advance" : "Still due"}</div></div>
       </div>
 
       <div className="mt-4 space-y-2.5 rounded-2xl border border-ink/10 bg-white p-3.5">
