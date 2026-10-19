@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf";
 import { formatINRQ, loadPdfFonts, getLogoDataUrl } from "./quotationPdf";
-import { RESALE_STATUS, formatGaj, isImagePath, BUCKET_PLANS, signedUrl } from "./resale";
+import { RESALE_STATUS, formatGaj } from "./resale";
+import { loadPlanPages } from "./planPages";
 
 // One-page customer brochure for a resale plot. Built only from the plot's
 // public facts (never owner details) so an associate can send it as-is.
@@ -18,45 +19,9 @@ const STATUS_COLORS = {
   unavailable: { bg: [254, 226, 226], fg: [185, 28, 28] },
 };
 
-// Browser: fetch the plan and re-encode as a compact JPEG with its real size.
-export async function loadPlanImage(url, maxDim = 1800) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Couldn't load the site plan image.");
-  const blob = await res.blob();
-  let source;
-  let w;
-  let h;
-  if (typeof createImageBitmap === "function") {
-    source = await createImageBitmap(blob);
-    w = source.width;
-    h = source.height;
-  } else {
-    const objectUrl = URL.createObjectURL(blob);
-    source = await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = objectUrl;
-    });
-    w = source.naturalWidth;
-    h = source.naturalHeight;
-  }
-  const scale = Math.min(1, maxDim / Math.max(w, h));
-  const cw = Math.max(1, Math.round(w * scale));
-  const ch = Math.max(1, Math.round(h * scale));
-  const canvas = document.createElement("canvas");
-  canvas.width = cw;
-  canvas.height = ch;
-  const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, cw, ch);
-  ctx.drawImage(source, 0, 0, cw, ch);
-  return { dataUrl: canvas.toDataURL("image/jpeg", 0.88), w: cw, h: ch };
-}
-
 export async function createBrochure(plot, opts = {}, deps = {}) {
-  const { includeRegistration = true, includeNotes = false, contactName = "", contactMobile = "" } = opts;
-  const loadImage = deps.loadImage || (async (p) => loadPlanImage(await signedUrl(BUCKET_PLANS, p.site_plan_path, 300)));
+  const { includeRegistration = true, includeNotes = false, includeFullPlan = true, contactName = "", contactMobile = "" } = opts;
+  const loadPlan = deps.loadPlan || loadPlanPages;
 
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   await loadPdfFonts(doc);
@@ -175,35 +140,47 @@ export async function createBrochure(plot, opts = {}, deps = {}) {
     y += 16 + lines.length * 14 + 12;
   }
 
-  // Site plan
+  // Site plan (an image, or the pages of a PDF): a preview here, full size on the pages after
   const footerTop = H - 100;
-  let planDrawn = false;
-  if (plot.site_plan_path && isImagePath(plot.site_plan_path)) {
+  let plan = { pages: [], total: 0 };
+  let planStatus = plot.site_plan_path ? "failed" : "none";
+  if (plot.site_plan_path) {
     try {
-      const img = await loadImage(plot);
-      doc.setFont("NotoSans", "bold");
-      doc.setFontSize(12);
-      doc.setTextColor(...INK);
-      text("Site plan", M, y);
-      const boxY = y + 10;
-      const boxH = footerTop - boxY - 16;
-      const boxW = W - 2 * M;
-      if (boxH > 90) {
-        doc.setDrawColor(...BORDER);
-        doc.setFillColor(255, 255, 255);
-        doc.roundedRect(M, boxY, boxW, boxH, 12, 12, "FD");
-        const pad = 10;
-        const scale = Math.min((boxW - 2 * pad) / img.w, (boxH - 2 * pad) / img.h);
-        const iw = img.w * scale;
-        const ih = img.h * scale;
-        doc.addImage(img.dataUrl, "JPEG", M + (boxW - iw) / 2, boxY + (boxH - ih) / 2, iw, ih);
-        planDrawn = true;
-      }
+      plan = await loadPlan(plot);
+      if (plan.pages.length) planStatus = "embedded";
     } catch {
-      /* falls through to the note below */
+      /* the brochure still goes out, with a note instead of the plan */
     }
   }
-  if (!planDrawn && plot.site_plan_path) {
+  const preview = plan.pages[0];
+  let previewDrawn = false;
+  if (preview) {
+    doc.setFont("NotoSans", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(...INK);
+    text("Site plan", M, y);
+    const boxY = y + 10;
+    const boxH = footerTop - boxY - 16;
+    const boxW = W - 2 * M;
+    if (boxH > 90) {
+      doc.setDrawColor(...BORDER);
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(M, boxY, boxW, boxH, 12, 12, "FD");
+      const pad = 10;
+      const scale = Math.min((boxW - 2 * pad) / preview.w, (boxH - 2 * pad) / preview.h);
+      const iw = preview.w * scale;
+      const ih = preview.h * scale;
+      doc.addImage(preview.dataUrl, "JPEG", M + (boxW - iw) / 2, boxY + (boxH - ih) / 2, iw, ih);
+      previewDrawn = true;
+      if (includeFullPlan) {
+        doc.setFont("NotoSans", "normal");
+        doc.setFontSize(8.5);
+        doc.setTextColor(...MUTED);
+        text("Full-size plan on the next page" + (plan.pages.length > 1 ? "s" : ""), W - M, y, { align: "right" });
+      }
+    }
+  }
+  if (!previewDrawn && plot.site_plan_path) {
     doc.setFont("NotoSans", "normal");
     doc.setFontSize(11);
     doc.setTextColor(...MUTED);
@@ -237,9 +214,47 @@ export async function createBrochure(plot, opts = {}, deps = {}) {
   doc.setTextColor(...MUTED);
   text("Details are indicative and subject to confirmation at the time of booking.", W - M, fy + 29, { align: "right" });
 
+  // Full-size plan pages (each in the orientation that suits the plan)
+  if (includeFullPlan && previewDrawn) {
+    const contactLine = contactName ? `Contact: ${contactName}${contactMobile ? " · " + contactMobile : ""}` : "";
+    plan.pages.forEach((img, i) => {
+      const landscape = img.w / img.h > 1.15;
+      doc.addPage("a4", landscape ? "l" : "p");
+      const PW = doc.internal.pageSize.getWidth();
+      const PH = doc.internal.pageSize.getHeight();
+      doc.setFillColor(...PINK);
+      doc.rect(0, 0, PW, 42, "F");
+      doc.setFont("NotoSans", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(255, 255, 255);
+      text("PinkCity Properties & Consultants", M, 26);
+      doc.setFont("NotoSans", "normal");
+      doc.setFontSize(10);
+      const more = plan.total > 1 ? `  ·  page ${i + 1} of ${plan.total}` : "";
+      text(`Site plan  ·  ${plot.scheme}  ·  Plot ${plot.plot_number}${more}`, PW - M, 26, { align: "right" });
+      const boxY = 58;
+      const boxW = PW - 2 * M;
+      const boxH = PH - boxY - 48;
+      const scale = Math.min(boxW / img.w, boxH / img.h);
+      const iw = img.w * scale;
+      const ih = img.h * scale;
+      doc.addImage(img.dataUrl, "JPEG", M + (boxW - iw) / 2, boxY + (boxH - ih) / 2, iw, ih);
+      doc.setFontSize(8.5);
+      doc.setTextColor(...MUTED);
+      if (contactLine) text(contactLine, M, PH - 22);
+      text("pinkcityproperties.com", PW - M, PH - 22, { align: "right" });
+    });
+    if (plan.total > plan.pages.length) {
+      // the plan has more pages than the brochure carries: say so on the last one
+      doc.setFontSize(8.5);
+      doc.setTextColor(...MUTED);
+      doc.text(`Showing the first ${plan.pages.length} of ${plan.total} plan pages. Ask for the full plan.`, doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 36, { align: "center" });
+    }
+  }
+
   const safe = (s) => String(s).replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const filename = `${safe(plot.scheme)}-Plot-${safe(plot.plot_number)}-Brochure.pdf`;
-  return { blob: doc.output("blob"), filename };
+  return { blob: doc.output("blob"), filename, planStatus };
 }
 
 // Native share sheet with the PDF attached (WhatsApp etc.); download as a fallback.

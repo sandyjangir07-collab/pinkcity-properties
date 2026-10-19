@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Menu, X, ExternalLink, Zap,
+  Menu, X, ExternalLink, Zap, ChevronLeft,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import JaliPattern from "./JaliPattern";
@@ -17,7 +17,17 @@ const EASE = [0.22, 1, 0.36, 1];
 export default function Layout() {
   const { isAdmin, signOut, profile } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // An installed app has no browser Back button, so every page except Home gets
+  // one. (The resale detail/edit pages already carry their own back link.)
+  const showBack = location.pathname !== "/" && !/^\/resale\/.+/.test(location.pathname);
+  function goBack() {
+    // Go back one step if there is an earlier page inside the app; otherwise Home.
+    if (window.history.state && window.history.state.idx > 0) navigate(-1);
+    else navigate("/");
+  }
 
   const current = LINKS.find((l) => (l.end ? location.pathname === l.to : location.pathname.startsWith(l.to)));
   const visibleLinks = LINKS.filter((l) => !l.adminOnly || isAdmin);
@@ -98,6 +108,19 @@ export default function Layout() {
             </button>
           </div>
         </div>
+
+        {showBack && (
+          <div className="flex items-center justify-between px-1 pt-1">
+            <button
+              onClick={goBack}
+              aria-label="Go back"
+              className="-ml-1 inline-flex min-h-[44px] items-center gap-0.5 rounded-full pr-4 text-[14.5px] font-semibold text-stone-700 transition-opacity active:opacity-60"
+            >
+              <ChevronLeft className="h-5 w-5" /> Back
+            </button>
+            {current?.label && <span className="truncate pl-3 text-[13px] font-medium text-ink/45 md:hidden">{current.label}</span>}
+          </div>
+        )}
       </header>
 
       <AnimatePresence>

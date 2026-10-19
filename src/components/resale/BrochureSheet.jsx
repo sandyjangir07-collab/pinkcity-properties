@@ -3,7 +3,6 @@ import { FileText } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
 import { createBrochure, shareBrochure } from "../../lib/brochure";
-import { isImagePath } from "../../lib/resale";
 import { Sheet, SheetHeader } from "../ui/Sheet";
 
 function Toggle({ checked, onChange, title, hint }) {
@@ -26,6 +25,7 @@ export default function BrochureSheet({ open, plot, onClose }) {
   const [reg, setReg] = useState(true);
   const [notes, setNotes] = useState(false);
   const [contact, setContact] = useState(true);
+  const [fullPlan, setFullPlan] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
@@ -34,6 +34,7 @@ export default function BrochureSheet({ open, plot, onClose }) {
       setReg(true);
       setNotes(false);
       setContact(true);
+      setFullPlan(true);
       setErr("");
     }
   }, [open]);
@@ -41,20 +42,22 @@ export default function BrochureSheet({ open, plot, onClose }) {
   if (!plot) return <Sheet open={false} onClose={onClose} />;
   const name = employee?.full_name || profile?.full_name || "";
   const mobile = employee?.mobile || "";
-  const hasPlanImage = plot.site_plan_path && isImagePath(plot.site_plan_path);
+  const hasPlan = !!plot.site_plan_path;
 
   async function make() {
     setBusy(true);
     setErr("");
     try {
-      const { blob, filename } = await createBrochure(plot, {
+      const { blob, filename, planStatus } = await createBrochure(plot, {
         includeRegistration: reg,
         includeNotes: notes,
+        includeFullPlan: fullPlan,
         contactName: contact ? name : "",
         contactMobile: contact ? mobile : "",
       });
       const r = await shareBrochure(blob, filename, `${plot.scheme} — Plot ${plot.plot_number}`);
-      if (r === "downloaded") showToast("✓ Brochure downloaded.");
+      if (planStatus === "failed") showToast("The brochure was created, but the site plan couldn't be added.");
+      else if (r === "downloaded") showToast("✓ Brochure downloaded.");
       if (r !== "cancelled") onClose();
     } catch (e) {
       setErr((e && e.message) || "Couldn't create the brochure. Please try again.");
@@ -69,13 +72,13 @@ export default function BrochureSheet({ open, plot, onClose }) {
       <div className="mb-3.5 flex items-start gap-3 rounded-2xl bg-stone-50 p-4 text-[13px] leading-relaxed text-ink/65">
         <FileText className="mt-0.5 h-5 w-5 shrink-0 text-stone-600" />
         <span>
-          A one-page PDF with the price, size, facts{hasPlanImage ? " and site plan" : ""}, ready to send on WhatsApp. It never includes owner details.
-          {plot.site_plan_path && !hasPlanImage ? " The site plan is a PDF, so the brochure will say it's available on request." : ""}
+          A branded PDF with the price, size and facts{hasPlan ? ", plus the site plan" : ""}, ready to send on WhatsApp. It never includes owner details.
         </span>
       </div>
       <div className="space-y-2.5">
         <Toggle checked={reg} onChange={setReg} title="Show registration amount" hint="Turn off if you'd rather discuss it in person" />
         <Toggle checked={notes} onChange={setNotes} title="Include property notes" hint="Off by default — notes are written for the team" />
+        {hasPlan && <Toggle checked={fullPlan} onChange={setFullPlan} title="Add the site plan at full size" hint="Puts the plan on its own page so every detail is easy to read" />}
         <Toggle checked={contact} onChange={setContact} title="Add my contact details" hint={name ? `${name}${mobile ? " · " + mobile : ""}` : "No name found on your profile"} />
       </div>
       {err && <p role="alert" className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-[13px] text-red-700">{err}</p>}
