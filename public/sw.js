@@ -1,4 +1,4 @@
-const CACHE_NAME = "pinkcity-crm-v25";
+const CACHE_NAME = "pinkcity-crm-v26";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();

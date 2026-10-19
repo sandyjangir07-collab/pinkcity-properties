@@ -239,7 +239,7 @@ export default function ResalePlotDetail() {
       )}
 
       {/* The two main actions */}
-      <div className="sticky bottom-4 z-10 mt-6 grid gap-2.5 rounded-[22px] border border-ink/[0.06] bg-surface/95 p-3 shadow-lift backdrop-blur sm:grid-cols-2">
+      <div className="sticky bottom-[calc(84px+env(safe-area-inset-bottom))] z-10 mt-6 md:bottom-4 grid gap-2.5 rounded-[22px] border border-ink/[0.06] bg-surface/95 p-3 shadow-lift backdrop-blur sm:grid-cols-2">
         <button
           onClick={() => setViewer(true)}
           disabled={!hasPlan}

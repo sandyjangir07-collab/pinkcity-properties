@@ -1,36 +1,38 @@
-import { useState } from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
-import {
-  Menu, X, ExternalLink, Zap, ChevronLeft,
-} from "lucide-react";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { ExternalLink, Zap, ChevronLeft } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import { TaskCountsProvider, useTaskCounts } from "../hooks/useTaskCounts";
 import JaliPattern from "./JaliPattern";
-import Magnetic from "./Magnetic";
 import NotificationBell from "./NotificationBell";
-import { NAV_LINKS as LINKS, NAV_ACCENT as ACCENT } from "../lib/navLinks";
+import BottomNav, { TABS } from "./BottomNav";
+import { NAV_LINKS as LINKS } from "../lib/navLinks";
+import { EXTRA_LABELS, activeTab } from "../lib/menuConfig";
 
 const PUBLIC_SITE_URL = "https://pinkcityproperties.com";
 
-const EASE = [0.22, 1, 0.36, 1];
+// The four tab pages. Everything else is a page you "go into", so it gets a Back button.
+const TAB_ROOTS = ["/", "/leads", "/tasks", "/menu"];
 
-export default function Layout() {
+function LayoutInner() {
   const { isAdmin, signOut, profile } = useAuth();
+  const { counts } = useTaskCounts();
   const location = useLocation();
   const navigate = useNavigate();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const path = location.pathname;
+  const taskCount = counts?.actionTotal || 0;
 
-  // An installed app has no browser Back button, so every page except Home gets
-  // one. (The resale detail/edit pages already carry their own back link.)
-  const showBack = location.pathname !== "/" && !/^\/resale\/.+/.test(location.pathname);
+  // An installed app has no browser Back button, so every page except the four
+  // tabs gets one. (The resale detail/edit pages already carry their own back link.)
+  const showBack = !TAB_ROOTS.includes(path) && !/^\/resale\/.+/.test(path);
   function goBack() {
     // Go back one step if there is an earlier page inside the app; otherwise Home.
     if (window.history.state && window.history.state.idx > 0) navigate(-1);
     else navigate("/");
   }
 
-  const current = LINKS.find((l) => (l.end ? location.pathname === l.to : location.pathname.startsWith(l.to)));
-  const visibleLinks = LINKS.filter((l) => !l.adminOnly || isAdmin);
+  const current = LINKS.find((l) => (l.end ? path === l.to : path.startsWith(l.to)));
+  const pageLabel = current?.label || EXTRA_LABELS[path];
+  const active = activeTab(path);
 
   return (
     <div className="relative min-h-screen bg-sand text-ink font-sans">
@@ -43,16 +45,6 @@ export default function Layout() {
 
       <header className="sticky top-0 z-40 bg-sand/80 backdrop-blur-md px-4 pt-4 pb-2">
         <div className="flex items-center gap-3 rounded-full border border-ink/[0.08] bg-surface px-3 py-2.5 shadow-soft">
-          <Magnetic strength={0.5}>
-            <button
-              onClick={() => setMenuOpen(true)}
-              className="w-10 h-10 rounded-full flex items-center justify-center text-ink/70 hover:bg-ink/[0.05] hover:text-stone-600 transition-colors shrink-0"
-              aria-label="Open menu"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-          </Magnetic>
-
           <a
             href={PUBLIC_SITE_URL}
             target="_blank"
@@ -73,22 +65,25 @@ export default function Layout() {
             {isAdmin ? "Admin" : "Team"}
           </span>
 
-          <div className="min-w-0 flex-1 hidden md:block">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={current?.label || "PinkCity"}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.2 }}
-                className="text-[13px] font-medium text-ink/50 truncate text-right pr-1"
-              >
-                {current?.label}
-              </motion.div>
-            </AnimatePresence>
-          </div>
+          {/* Larger screens: the same four tabs live in the header */}
+          <nav aria-label="Main" className="hidden min-w-0 flex-1 items-center justify-center gap-1 md:flex">
+            {TABS.map(({ id, to, label, Icon }) => {
+              const on = active === id;
+              return (
+                <Link
+                  key={id}
+                  to={to}
+                  aria-current={on ? "page" : undefined}
+                  className={`relative inline-flex min-h-[40px] items-center gap-2 rounded-full px-4 text-[13px] font-semibold transition-colors ${on ? "bg-stone-600 text-white" : "text-ink/60 hover:bg-ink/[0.05]"}`}
+                >
+                  <Icon className="h-4 w-4" /> {label}
+                  {id === "tasks" && taskCount > 0 && <span className="rounded-full bg-amber-500 px-1.5 text-[10px] font-bold leading-[16px] text-white">{taskCount > 99 ? "99+" : taskCount}</span>}
+                </Link>
+              );
+            })}
+          </nav>
 
-          <div className="flex items-center gap-2 shrink-0 ml-auto">
+          <div className="flex items-center gap-2 shrink-0 ml-auto md:ml-0">
             <NotificationBell />
             <a
               href={PUBLIC_SITE_URL}
@@ -100,10 +95,7 @@ export default function Layout() {
               <ExternalLink className="w-3 h-3" />
             </a>
             <span className="text-sm text-ink/50 hidden xl:block max-w-[140px] truncate">{profile?.full_name || profile?.email}</span>
-            <button
-              onClick={signOut}
-              className="text-xs font-semibold rounded-full px-3.5 py-2 bg-ink text-sand hover:bg-ink/85 transition-colors"
-            >
+            <button onClick={signOut} className="text-xs font-semibold rounded-full px-3.5 py-2 bg-ink text-sand hover:bg-ink/85 transition-colors">
               Sign out
             </button>
           </div>
@@ -118,90 +110,25 @@ export default function Layout() {
             >
               <ChevronLeft className="h-5 w-5" /> Back
             </button>
-            {current?.label && <span className="truncate pl-3 text-[13px] font-medium text-ink/45 md:hidden">{current.label}</span>}
+            {pageLabel && <span className="truncate pl-3 text-[13px] font-medium text-ink/45">{pageLabel}</span>}
           </div>
         )}
       </header>
 
-      <AnimatePresence>
-        {menuOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={(e) => e.target === e.currentTarget && setMenuOpen(false)}
-            className="fixed inset-0 z-50 bg-ink/50 backdrop-blur-sm flex items-start justify-center overflow-y-auto py-8 px-5"
-          >
-            <motion.div
-              initial={{ y: 24, opacity: 0, scale: 0.98 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ y: 16, opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.35, ease: EASE }}
-              className="relative w-full max-w-2xl bg-sand rounded-3xl p-6 overflow-hidden"
-            >
-              <div className="absolute inset-0 opacity-[0.04] text-stone-600 pointer-events-none">
-                <JaliPattern id="menu-jali" />
-              </div>
+      {/* room for the bottom tab bar on phones */}
+      <div className="pb-[calc(84px+env(safe-area-inset-bottom))] md:pb-0">
+        <Outlet />
+      </div>
 
-              <div className="relative flex items-center justify-between mb-5">
-                <div className="font-display text-[21px] text-ink">Menu</div>
-                <button onClick={() => setMenuOpen(false)} className="w-9 h-9 rounded-full flex items-center justify-center text-ink/50 hover:bg-ink/[0.05] hover:text-stone-600 transition-colors" aria-label="Close menu">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="relative grid grid-cols-3 gap-2">
-                {visibleLinks.map((l, i) => {
-                  const a = ACCENT[l.accent];
-                  return (
-                    <motion.div
-                      key={l.to}
-                      initial={{ opacity: 0, y: 12, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      transition={{ duration: 0.3, delay: i * 0.03, ease: EASE }}
-                      whileHover={{ y: -3 }}
-                      whileTap={{ scale: 0.97 }}
-                    >
-                      <NavLink
-                        to={l.to}
-                        end={l.end}
-                        onClick={() => setMenuOpen(false)}
-                        className={({ isActive }) =>
-                          `flex flex-col items-center gap-2 rounded-2xl border p-2.5 h-full text-center transition-all duration-300 ${
-                            isActive
-                              ? `${a.bg} ${a.ring} text-sand shadow-lift`
-                              : "bg-surface border-ink/[0.06] text-ink shadow-soft hover:border-ink/[0.14] hover:shadow-lift"
-                          }`
-                        }
-                      >
-                        {({ isActive }) => (
-                          <>
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${isActive ? "bg-white/15" : a.soft}`}>
-                              <l.Icon className={`w-[15px] h-[15px] ${isActive ? "text-sand" : a.text}`} />
-                            </span>
-                            <span className="text-[10.5px] font-semibold leading-tight">{l.label}</span>
-                          </>
-                        )}
-                      </NavLink>
-                    </motion.div>
-                  );
-                })}
-              </div>
-
-              <a
-                href={PUBLIC_SITE_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="relative sm:hidden mt-4 flex items-center justify-center gap-1.5 text-xs font-medium text-ink/60 py-3"
-              >
-                View Website <ExternalLink className="w-3 h-3" />
-              </a>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <Outlet />
+      <BottomNav pathname={path} taskCount={taskCount} />
     </div>
+  );
+}
+
+export default function Layout() {
+  return (
+    <TaskCountsProvider>
+      <LayoutInner />
+    </TaskCountsProvider>
   );
 }

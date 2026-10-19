@@ -112,7 +112,7 @@ export default function Leads() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto pb-28">
+    <div className="max-w-2xl mx-auto pb-44 md:pb-28">
       <section className="px-5 pt-8">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -241,7 +241,7 @@ export default function Leads() {
         </>
       )}
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-ink/[0.06] bg-sand/95 backdrop-blur px-5 py-4">
+      <div className="fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] z-30 border-t border-ink/[0.06] bg-sand/95 backdrop-blur px-5 py-3 md:bottom-0 md:py-4">
         <div className="mx-auto max-w-md flex items-center gap-3">
           <button
             onClick={() => setFormTarget("new")}

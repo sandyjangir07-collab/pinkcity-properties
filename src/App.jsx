@@ -19,6 +19,8 @@ import Plots from "./pages/Plots";
 import Approvals from "./pages/Approvals";
 import CommissionSlabs from "./pages/CommissionSlabs";
 import Sales from "./pages/Sales";
+import Tasks from "./pages/Tasks";
+import Menu from "./pages/Menu";
 import Commissions from "./pages/Commissions";
 import ResalePlots from "./pages/ResalePlots";
 import ResalePlotDetail from "./pages/ResalePlotDetail";
@@ -39,6 +41,8 @@ export default function App() {
               }
             >
               <Route path="/" element={<Home />} />
+              <Route path="/tasks" element={<Tasks />} />
+              <Route path="/menu" element={<Menu />} />
               <Route path="/team" element={<Directory />} />
               <Route path="/today" element={<Today />} />
               <Route path="/attendance" element={<Attendance />} />
