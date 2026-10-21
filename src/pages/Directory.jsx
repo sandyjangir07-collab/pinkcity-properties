@@ -59,13 +59,30 @@ export default function Directory() {
     load();
   }, []);
 
+  // The full reporting tree, to any depth. Everyone appears: top-level people at
+  // the root, and each person's subordinates nested under them (and theirs under
+  // them). Only approved reporting lines count; a loop can never hide anyone.
   const tree = useMemo(() => {
     if (!employees) return [];
-    const juniorIds = new Set(hierarchy.map((h) => h.junior_id));
-    const childrenOf = (empId) =>
-      hierarchy.filter((h) => h.senior_id === empId).map((h) => employees.find((e) => e.id === h.junior_id)).filter(Boolean);
-    const roots = employees.filter((e) => !juniorIds.has(e.id));
-    return roots.map((r) => ({ employee: r, children: childrenOf(r.id) }));
+    const byId = new Map(employees.map((e) => [e.id, e]));
+    const lines = hierarchy.filter((h) => byId.has(h.junior_id) && byId.has(h.senior_id) && h.junior_id !== h.senior_id);
+    const kids = new Map();
+    for (const h of lines) {
+      if (!kids.has(h.senior_id)) kids.set(h.senior_id, []);
+      kids.get(h.senior_id).push(byId.get(h.junior_id));
+    }
+    const juniorIds = new Set(lines.map((h) => h.junior_id));
+    const seen = new Set();
+    const build = (emp, path) => {
+      seen.add(emp.id);
+      const next = new Set(path).add(emp.id);
+      return { employee: emp, children: (kids.get(emp.id) || []).filter((c) => !next.has(c.id)).map((c) => build(c, next)) };
+    };
+    const roots = employees.filter((e) => !juniorIds.has(e.id)).map((r) => build(r, new Set()));
+    // Anyone still unplaced (e.g. people who report to each other in a loop) is shown once, one at a time
+    const left = [];
+    for (const e of employees) if (!seen.has(e.id)) left.push(build(e, new Set()));
+    return [...roots, ...left];
   }, [employees, hierarchy]);
 
   const searchTerm = search.trim().toLowerCase();
@@ -147,27 +164,14 @@ export default function Directory() {
                 <p className="text-sm">Add your first team member to get started.</p>
               </div>
             )}
-            {tree.map(({ employee, children }, i) => (
+            {tree.map((node, i) => (
               <motion.div
-                key={employee.id}
+                key={node.employee.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35, delay: i * 0.04, ease: EASE }}
-                className="space-y-2.5"
               >
-                <PersonRow employee={employee} verified={isFullyVerified(employee.id)} />
-                {children.length > 0 && (
-                  <div className="text-[10.5px] font-semibold tracking-[0.14em] uppercase text-ink/35 pl-4 pt-1">
-                    Reports to {employee.full_name}
-                  </div>
-                )}
-                {children.length > 0 && (
-                  <div className="ml-4 space-y-2 border-l border-ink/[0.08] pl-3.5">
-                    {children.map((c) => (
-                      <PersonRow key={c.id} employee={c} verified={isFullyVerified(c.id)} junior />
-                    ))}
-                  </div>
-                )}
+                <TreeNode node={node} depth={0} isFullyVerified={isFullyVerified} />
               </motion.div>
             ))}
           </>
@@ -195,7 +199,29 @@ export default function Directory() {
   );
 }
 
-function PersonRow({ employee, verified, junior }) {
+// One person, then their subordinates nested beneath (recursively).
+function TreeNode({ node, depth, isFullyVerified }) {
+  const { employee, children } = node;
+  return (
+    <div className="space-y-2.5">
+      <PersonRow employee={employee} verified={isFullyVerified(employee.id)} junior={depth > 0} subCount={children.length} />
+      {children.length > 0 && (
+        <>
+          <div className="pl-4 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-ink/35">
+            Subordinates of {employee.full_name} · {children.length}
+          </div>
+          <div className={`space-y-2.5 border-l border-ink/[0.08] ${depth >= 2 ? "ml-2 pl-2.5" : "ml-4 pl-3.5"}`}>
+            {children.map((c) => (
+              <TreeNode key={c.employee.id} node={c} depth={depth + 1} isFullyVerified={isFullyVerified} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function PersonRow({ employee, verified, junior, subCount = 0 }) {
   return (
     <Link
       to={`/employees/${employee.id}`}
@@ -209,7 +235,10 @@ function PersonRow({ employee, verified, junior }) {
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[14.5px] font-semibold text-ink">{employee.full_name}</span>
-        <span className="mt-0.5 block truncate text-[11.5px] text-ink/45">{employee.designation || "—"}</span>
+        <span className="mt-0.5 block truncate text-[11.5px] text-ink/45">
+          {employee.designation || "—"}
+          {subCount > 0 && <span className="text-ink/35"> · {subCount} subordinate{subCount === 1 ? "" : "s"}</span>}
+        </span>
       </span>
       <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10.5px] font-semibold ${verified ? "bg-emerald-50 text-emerald-700" : "bg-ink/[0.05] text-ink/45"}`}>
         {verified ? "Verified" : "Unverified"}

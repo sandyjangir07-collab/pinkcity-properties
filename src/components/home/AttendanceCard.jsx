@@ -59,8 +59,8 @@ export default function AttendanceCard() {
   const done = !!(attendance && attendance.check_out_at);
 
   return (
-    <div className="relative overflow-hidden rounded-[26px] border border-stone-700/20 bg-stone-600 p-5 shadow-lift">
-      <div aria-hidden className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-brass/40 blur-2xl" />
+    <div className="relative overflow-hidden rounded-[26px] border border-crimson-deep/30 bg-crimson p-5 shadow-lift">
+      <div aria-hidden className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-ochre/45 blur-2xl" />
       <div className="relative flex items-center gap-3">
         <div className="min-w-0">
           <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-sand/60">Attendance</div>
@@ -72,7 +72,7 @@ export default function AttendanceCard() {
         <button
           onClick={act}
           disabled={busy || done || attendance === undefined}
-          className="ml-auto shrink-0 rounded-full bg-white px-5 py-3 text-[13.5px] font-semibold text-stone-600 shadow-soft transition-transform active:scale-95 disabled:opacity-60"
+          className="ml-auto shrink-0 rounded-full bg-white px-5 py-3 text-[13.5px] font-semibold text-crimson shadow-soft transition-transform active:scale-95 disabled:opacity-60"
         >
           {busy ? "Getting location…" : done ? label : <span className="inline-flex items-center gap-1.5"><MapPin className="w-4 h-4" /> {label}</span>}
         </button>

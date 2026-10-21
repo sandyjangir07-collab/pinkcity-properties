@@ -9,6 +9,12 @@ export default {
           deep: "#EFE4D2",
         },
         surface: "#FEFCFA",
+        // Home theme, sampled from the approved design
+        cream: "#FBF6EE",
+        crimson: { DEFAULT: "#B01F4F", deep: "#8E1640" },
+        ochre: "#CD9A43",
+        forest: "#348F4F",
+        royal: "#1F74BF",
         stone: {
           50: "#FDF1F4",
           100: "#FAD9E1",

@@ -80,11 +80,11 @@ export default function NotificationBell() {
       {status === "subscribed" ? (
         <button
           onClick={() => setOpen((o) => !o)}
-          className="relative w-10 h-10 rounded-full flex items-center justify-center text-ink/60 hover:bg-ink/[0.05] hover:text-stone-600 transition-colors"
+          className="relative w-10 h-10 rounded-full border border-ink/10 bg-white flex items-center justify-center text-ink hover:bg-ink/[0.03] transition-colors"
           aria-label="Notifications"
         >
           <Bell className="w-[18px] h-[18px]" />
-          {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-stone-600" />}
+          {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-crimson" />}
         </button>
       ) : (
         <button
@@ -92,10 +92,10 @@ export default function NotificationBell() {
           disabled={enabling}
           aria-label="Enable notifications"
           title="Enable notifications"
-          className="relative w-10 h-10 rounded-full flex items-center justify-center text-brass hover:bg-brass/10 transition-colors disabled:opacity-50"
+          className="relative w-10 h-10 rounded-full border border-ink/10 bg-white flex items-center justify-center text-brass hover:bg-brass/10 transition-colors disabled:opacity-50"
         >
           <BellRing className={`w-[18px] h-[18px] ${enabling ? "animate-pulse" : ""}`} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brass" />
+          <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-crimson" />
         </button>
       )}
 

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Target, CalendarCheck, MapPinned, Building2, ChevronRight, BellRing, Receipt, Ruler } from "lucide-react";
+import { Phone, CalendarDays, MapPinned, Home as HouseIcon, ArrowUpRight, ChevronRight, BellRing, Receipt, Ruler } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useTaskCounts } from "../hooks/useTaskCounts";
 import { actionItems } from "../lib/taskItems";
@@ -9,30 +9,31 @@ import AttendanceCard from "../components/home/AttendanceCard";
 import MySalesCard from "../components/sales/MySalesCard";
 import { BrandedLoader } from "../components/ui/BrandedLoader";
 
-// The four shortcuts for daily sales work. Everything else lives in the Menu.
+// The four shortcuts for daily sales work, in the approved design's colours.
+// Everything else lives in the Menu (Plots & Tokens is under Property Inventory).
 const ACTIONS = [
-  { to: "/leads", label: "Leads", sub: "Pipeline & follow-ups", Icon: Target, grad: "from-stone-500 to-stone-700", chip: (c) => `${c.newLeads} new` },
-  { to: "/today", label: "Today", sub: "Follow-ups & visits", Icon: CalendarCheck, grad: "from-brass to-[#8f6a2c]", chip: (c) => { const n = c.followupsToday + c.overdue + c.visitsToday; return n ? `${n} due` : "All clear"; } },
-  { to: "/resale", label: "Resale Plots", sub: "Resale inventory", Icon: MapPinned, grad: "from-jali to-[#34505a]", chip: (c) => `${c.availableResale} available` },
-  { to: "/listings", label: "Listings", sub: "Properties & colonies", Icon: Building2, grad: "from-emerald-500 to-emerald-700", chip: (c) => `${c.activeListings} live` },
+  { to: "/leads", label: "Leads", sub: "Pipeline & follow-ups", Icon: Phone, bg: "bg-crimson", dark: false },
+  { to: "/today", label: "Today", sub: "Follow-ups & visits", Icon: CalendarDays, bg: "bg-ochre", dark: true },
+  { to: "/listings", label: "Listings", sub: "Properties & colonies", Icon: HouseIcon, bg: "bg-forest", dark: false },
+  { to: "/resale", label: "Resale Plots", sub: "Resale inventory", Icon: MapPinned, bg: "bg-royal", dark: false },
 ];
 
-function QuickAction({ a, counts }) {
+function QuickAction({ a }) {
   return (
     <Link
       to={a.to}
-      className={`group relative flex min-h-[148px] flex-col justify-between overflow-hidden rounded-[26px] bg-gradient-to-br ${a.grad} p-4 text-white shadow-lift transition-transform active:scale-[0.97]`}
+      className={`relative flex min-h-[148px] flex-col justify-between overflow-hidden rounded-[30px] p-4 shadow-[0_10px_22px_-12px_rgba(60,20,35,0.45)] transition-transform active:scale-[0.97] ${a.bg} ${a.dark ? "text-[#1C1312]" : "text-white"}`}
     >
-      <a.Icon aria-hidden className="pointer-events-none absolute -bottom-3 -right-3 h-24 w-24 opacity-[0.13]" />
-      <div className="relative flex items-start justify-between gap-2">
-        <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
+      <a.Icon aria-hidden strokeWidth={1.4} className={`pointer-events-none absolute -bottom-4 -right-5 h-[124px] w-[124px] ${a.dark ? "text-black/[0.11]" : "text-white/[0.14]"}`} />
+      <div className="relative flex items-start justify-between">
+        <span className={`flex h-11 w-11 items-center justify-center rounded-full ${a.dark ? "bg-black/[0.08]" : "bg-white/[0.15]"}`}>
           <a.Icon className="h-5 w-5" />
         </span>
-        {counts && <span className="rounded-full bg-white/25 px-2.5 py-1 text-[11.5px] font-bold">{a.chip(counts)}</span>}
+        <ArrowUpRight className="mr-1 mt-[13px] h-[18px] w-[18px] opacity-80" />
       </div>
       <div className="relative">
-        <div className="font-display text-[22px] font-semibold leading-tight">{a.label}</div>
-        <div className="mt-0.5 text-[12px] text-white/75">{a.sub}</div>
+        <div className="text-[22px] font-semibold leading-tight tracking-tight">{a.label}</div>
+        <div className={`mt-0.5 text-[13px] ${a.dark ? "text-[#44321D]" : "text-white/75"}`}>{a.sub}</div>
       </div>
     </Link>
   );
@@ -62,26 +63,33 @@ function Dashboard() {
 
   return (
     <div className="relative overflow-hidden">
-      <div aria-hidden className="pointer-events-none fixed -left-24 -top-16 h-72 w-72 rounded-full bg-stone-500/[0.12] blur-3xl" />
-      <div aria-hidden className="pointer-events-none fixed -right-20 top-52 h-64 w-64 rounded-full bg-brass/[0.16] blur-3xl" />
+      <div aria-hidden className="pointer-events-none fixed -left-24 -top-16 h-72 w-72 rounded-full bg-crimson/[0.10] blur-3xl" />
+      <div aria-hidden className="pointer-events-none fixed -right-20 top-52 h-64 w-64 rounded-full bg-ochre/[0.16] blur-3xl" />
 
       <div className="relative mx-auto max-w-2xl px-5 py-8">
-        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-600">
+        <div className="text-[12.5px] font-bold uppercase tracking-[0.2em] text-crimson">
           {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
         </div>
-        <h1 className="mt-2 font-display text-[34px] font-semibold leading-[1.02] tracking-tight text-ink">
+        <h1 className="mt-3 font-display text-[40px] font-semibold leading-[1.02] tracking-tight text-ink">
           {greeting}, {firstName}.
         </h1>
-        <p className="mt-2 text-[13.5px] text-ink/50">Your workspace for today.</p>
+        <p className="mt-3 max-w-[18rem] text-[16px] leading-relaxed text-ink/55">Your PinkCity workspace, all in one place.</p>
 
-        {/* Four daily shortcuts */}
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          {ACTIONS.map((a) => <QuickAction key={a.to} a={a} counts={counts} />)}
+        {/* Section label + the four daily shortcuts */}
+        <div className="mt-9 flex items-end gap-4">
+          <div>
+            <div className="text-[12px] font-bold uppercase tracking-[0.2em] text-ink/55">Sales &amp; Leads</div>
+            <div className="mt-1 text-[15px] text-ink/45">Pipeline, inventory and paperwork</div>
+          </div>
+          <span className="mb-2 h-px flex-1 bg-gradient-to-r from-ink/15 to-transparent" />
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          {ACTIONS.map((a) => <QuickAction key={a.to} a={a} />)}
         </div>
 
         {total > 0 && (
-          <Link to="/tasks" className="mt-4 flex items-center gap-3 rounded-[22px] border border-amber-200 bg-amber-50 p-4 transition-transform active:scale-[0.99]">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700"><BellRing className="h-5 w-5" /></span>
+          <Link to="/tasks" className="mt-4 flex items-center gap-3 rounded-[22px] border border-ochre/35 bg-ochre/10 p-4 transition-transform active:scale-[0.99]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-ochre/25 text-[#7A5714]"><BellRing className="h-5 w-5" /></span>
             <span className="min-w-0 flex-1">
               <span className="block text-[14px] font-semibold text-ink">{total} thing{total === 1 ? "" : "s"} need{total === 1 ? "s" : ""} your attention</span>
               <span className="block truncate text-[12px] text-ink/50">{summary}</span>
@@ -97,10 +105,10 @@ function Dashboard() {
         {/* Daily overview */}
         <div className="mt-7 text-[10px] font-bold uppercase tracking-[0.18em] text-ink/45">Today at a glance</div>
         <div className="mt-3 grid grid-cols-2 gap-3">
-          <Stat to="/today" value={counts?.followupsToday} label="Follow-ups today" tone="border-brass/25 bg-brass/10" Icon={CalendarCheck} />
-          <Stat to="/today" value={counts?.overdue} label="Overdue" tone="border-stone-200 bg-stone-50" Icon={BellRing} />
-          <Stat to="/schedule" value={counts?.visitsToday} label="Visits today" tone="border-teal-200 bg-teal-50/70" Icon={Ruler} />
-          <Stat to={isAdmin ? "/sales" : undefined} value={counts?.soldThisMonth} label="Plots sold this month" tone="border-emerald-200 bg-emerald-50/70" Icon={Receipt} />
+          <Stat to="/today" value={counts?.followupsToday} label="Follow-ups today" tone="border-ochre/35 bg-ochre/10" Icon={CalendarDays} />
+          <Stat to="/today" value={counts?.overdue} label="Overdue" tone="border-crimson/20 bg-crimson/[0.06]" Icon={BellRing} />
+          <Stat to="/schedule" value={counts?.visitsToday} label="Visits today" tone="border-royal/25 bg-royal/[0.07]" Icon={Ruler} />
+          <Stat to={isAdmin ? "/sales" : undefined} value={counts?.soldThisMonth} label="Plots sold this month" tone="border-forest/25 bg-forest/[0.07]" Icon={Receipt} />
         </div>
 
         <MySalesCard />
