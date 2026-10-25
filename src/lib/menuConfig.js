@@ -76,7 +76,7 @@ export const EXTRA_LABELS = { "/tasks": "Tasks", "/menu": "Menu" };
 
 // Which bottom tab a page belongs to (so the right tab stays lit inside sub-pages).
 export function activeTab(pathname) {
-  if (pathname === "/" || pathname.startsWith("/today") || pathname.startsWith("/resale") || pathname.startsWith("/listings")) return "home";
+  if (pathname === "/" || pathname.startsWith("/today") || pathname.startsWith("/resale") || pathname.startsWith("/sales")) return "home";
   if (pathname.startsWith("/leads")) return "leads";
   if (pathname.startsWith("/tasks") || pathname.startsWith("/schedule") || pathname.startsWith("/approvals")) return "tasks";
   return "menu";

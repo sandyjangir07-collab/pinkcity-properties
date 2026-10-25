@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Phone, CalendarDays, MapPinned, Home as HouseIcon, ArrowUpRight, ChevronRight, BellRing, Receipt, Ruler } from "lucide-react";
+import { Phone, CalendarDays, MapPinned, ArrowUpRight, ChevronRight, BellRing, Receipt, Ruler } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useTaskCounts } from "../hooks/useTaskCounts";
 import { actionItems } from "../lib/taskItems";
@@ -10,11 +10,11 @@ import MySalesCard from "../components/sales/MySalesCard";
 import { BrandedLoader } from "../components/ui/BrandedLoader";
 
 // The four shortcuts for daily sales work, in the approved design's colours.
-// Everything else lives in the Menu (Plots & Tokens is under Property Inventory).
+// Everything else lives in the Menu (Listings and Plots & Tokens are under Property Inventory).
 const ACTIONS = [
   { to: "/leads", label: "Leads", sub: "Pipeline & follow-ups", Icon: Phone, bg: "bg-crimson", dark: false },
   { to: "/today", label: "Today", sub: "Follow-ups & visits", Icon: CalendarDays, bg: "bg-ochre", dark: true },
-  { to: "/listings", label: "Listings", sub: "Properties & colonies", Icon: HouseIcon, bg: "bg-forest", dark: false },
+  { key: "sales", label: "Sales", Icon: Receipt, bg: "bg-forest", dark: false }, // target and subtitle depend on the role (see Dashboard)
   { to: "/resale", label: "Resale Plots", sub: "Resale inventory", Icon: MapPinned, bg: "bg-royal", dark: false },
 ];
 
@@ -52,7 +52,7 @@ function Stat({ to, value, label, tone, Icon }) {
 }
 
 function Dashboard() {
-  const { profile, isAdmin } = useAuth();
+  const { profile, isAdmin, employee } = useAuth();
   const { counts } = useTaskCounts();
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
@@ -84,7 +84,13 @@ function Dashboard() {
           <span className="mb-2 h-px flex-1 bg-gradient-to-r from-ink/15 to-transparent" />
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3">
-          {ACTIONS.map((a) => <QuickAction key={a.to} a={a} />)}
+          {ACTIONS.map((a) =>
+            a.key === "sales" ? (
+              <QuickAction key="sales" a={{ ...a, to: isAdmin ? "/sales" : `/employees/${employee?.id}`, sub: isAdmin ? "Every sale & payment" : "Your sales & commission" }} />
+            ) : (
+              <QuickAction key={a.to} a={a} />
+            )
+          )}
         </div>
 
         {total > 0 && (

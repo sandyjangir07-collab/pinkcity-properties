@@ -6,6 +6,7 @@ import { STATUS_TEXT, SOURCE_LABELS } from "../../lib/leadConstants";
 import { Sheet, SheetHeader, Field } from "../ui/Sheet";
 import { Button } from "../ui/button";
 import { Contact } from "lucide-react";
+import VoiceMic, { appendSpoken } from "./VoiceMic";
 
 const PROPERTY_TYPES = ["Plot", "House", "Apartment", "Commercial", "Farmhouse"];
 
@@ -158,7 +159,12 @@ export default function LeadFormModal({ target, onClose, onSaved }) {
             </select>
           </Field>
         </div>
-        <Field label="Notes"><textarea className="field-input min-h-[80px]" value={form.notes} onChange={(e) => set("notes", e.target.value)} /></Field>
+        <Field label="Notes">
+          <textarea className="field-input min-h-[80px]" value={form.notes} onChange={(e) => set("notes", e.target.value)} />
+          <div className="mt-2.5">
+            <VoiceMic onText={(chunk) => setForm((f) => ({ ...f, notes: appendSpoken(f.notes, chunk) }))} />
+          </div>
+        </Field>
         <Field label="Status">
           <div className="flex flex-wrap gap-2">
             {Object.keys(STATUS_TEXT).map((s) => {

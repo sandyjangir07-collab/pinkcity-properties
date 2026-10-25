@@ -1,12 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { sb } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
 import { STATUS_LABELS, STATUS_TEXT } from "../../lib/leadConstants";
 import { leadScore } from "../../lib/leadScore";
-import { Phone, MapPin, IndianRupee, CalendarDays, CalendarClock, Send, UserRound, Trash2, Sparkles, AlertTriangle, Mic } from "lucide-react";
+import { Phone, MapPin, IndianRupee, CalendarDays, CalendarClock, Send, UserRound, Trash2, Sparkles, AlertTriangle } from "lucide-react";
 import { Sheet } from "../ui/Sheet";
 import AiAssistPanel from "./AiAssistPanel";
+import VoiceMic, { appendSpoken } from "./VoiceMic";
 import CloseDealPanel from "./CloseDealPanel";
 
 const NOTE_TEMPLATES = [
@@ -55,37 +56,6 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
     await load();
     onChanged();
   }
-  const [listening, setListening] = useState(false);
-  const recognitionRef = useRef(null);
-  const voiceSupported = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-
-  function toggleVoice() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
-    if (listening) {
-      recognitionRef.current?.stop();
-      return;
-    }
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-IN";
-    recognition.continuous = true;
-    recognition.interimResults = false;
-    recognition.onresult = (e) => {
-      let transcript = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) transcript += e.results[i][0].transcript;
-      if (transcript.trim()) {
-        setNoteInput((prev) => (prev ? prev.trim() + " " + transcript.trim() : transcript.trim()));
-      }
-    };
-    recognition.onend = () => setListening(false);
-    recognition.onerror = () => setListening(false);
-    recognitionRef.current = recognition;
-    recognition.start();
-    setListening(true);
-  }
-
-  useEffect(() => () => recognitionRef.current?.stop(), []);
-
   async function load() {
     const { data: l } = await sb.from("leads").select("*").eq("id", leadId).maybeSingle();
     if (!l) return;
@@ -366,23 +336,12 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
             onChange={(e) => setNoteInput(e.target.value)}
             onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") addNote(); }}
           />
-          <div className="flex shrink-0 flex-col gap-2">
-            {voiceSupported && (
-              <button
-                type="button"
-                onClick={toggleVoice}
-                aria-label={listening ? "Stop recording" : "Record note by voice"}
-                className={`inline-flex h-[44px] w-[44px] items-center justify-center rounded-2xl transition-all active:scale-95 ${
-                  listening ? "bg-red-500 text-white animate-pulse" : "border border-stone-200 bg-stone-50 text-stone-600"
-                }`}
-              >
-                <Mic className="h-4 w-4" />
-              </button>
-            )}
-            <button onClick={addNote} aria-label="Add note" className="inline-flex h-[44px] w-[44px] items-center justify-center rounded-2xl bg-stone-600 text-sand shadow-lift active:scale-95 transition-transform">
-              <Send className="h-4 w-4" />
-            </button>
-          </div>
+          <button onClick={addNote} aria-label="Add note" className="inline-flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-2xl bg-stone-600 text-sand shadow-lift active:scale-95 transition-transform">
+            <Send className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="mt-2.5">
+          <VoiceMic onText={(chunk) => setNoteInput((prev) => appendSpoken(prev, chunk))} />
         </div>
 
         {timeline.length === 0 ? (

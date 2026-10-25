@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { X } from "lucide-react";
 import { sb } from "../../lib/supabase";
 import { initials } from "../../lib/utils";
 import { Card, SectionTitle } from "../ui/primitives";
@@ -10,6 +11,8 @@ export default function HierarchySection({ employee, isAdmin, canEdit, refreshKe
   const [rows, setRows] = useState([]);
   const [names, setNames] = useState({});
   const [requestMode, setRequestMode] = useState(null); // "senior" | "associate" | null
+  const [removeTarget, setRemoveTarget] = useState(null); // { rowId, name, kind }
+  const [removing, setRemoving] = useState(false);
   const showToast = useToast();
 
   async function load() {
@@ -50,6 +53,21 @@ export default function HierarchySection({ employee, isAdmin, canEdit, refreshKe
     load();
   }
 
+  // Admin only: take a reporting line away (the database enforces this too).
+  async function removeLink() {
+    if (!removeTarget) return;
+    setRemoving(true);
+    const { error } = await sb.rpc("remove_hierarchy_link", { p_id: removeTarget.rowId });
+    setRemoving(false);
+    if (error) {
+      showToast(error.message);
+      return;
+    }
+    setRemoveTarget(null);
+    showToast("✓ Removed. Both of them have been told.");
+    load();
+  }
+
   return (
     <Card>
       <SectionTitle
@@ -65,8 +83,21 @@ export default function HierarchySection({ employee, isAdmin, canEdit, refreshKe
         Hierarchy
       </SectionTitle>
 
-      <PersonList title="Senior" items={seniors.map((r) => names[r.senior_id])} />
-      <PersonList title="Associates" items={associates.map((r) => names[r.junior_id])} />
+      <PersonList
+        title="Senior"
+        items={seniors.map((r) => ({ person: names[r.senior_id], rowId: r.id }))}
+        canRemove={isAdmin}
+        onRemove={(it) => setRemoveTarget({ rowId: it.rowId, name: it.person.full_name, kind: "senior" })}
+      />
+      <PersonList
+        title="Associates"
+        items={associates.map((r) => ({ person: names[r.junior_id], rowId: r.id }))}
+        canRemove={isAdmin}
+        onRemove={(it) => setRemoveTarget({ rowId: it.rowId, name: it.person.full_name, kind: "associate" })}
+      />
+      {!isAdmin && (seniors.length > 0 || associates.length > 0) && (
+        <p className="text-[11.5px] text-ink/35">To remove someone from this list, ask the admin.</p>
+      )}
 
       {pending.length > 0 && isAdmin && (
         <>
@@ -94,6 +125,31 @@ export default function HierarchySection({ employee, isAdmin, canEdit, refreshKe
         </>
       )}
 
+      <Sheet open={!!removeTarget} onClose={() => !removing && setRemoveTarget(null)}>
+        {removeTarget && (
+          <>
+            <SheetHeader
+              title={removeTarget.kind === "senior" ? `Remove ${removeTarget.name} as senior?` : `Remove ${removeTarget.name} from the associates?`}
+              sub={
+                removeTarget.kind === "senior"
+                  ? `${employee.full_name} will no longer report to ${removeTarget.name}. You can add a different senior afterwards.`
+                  : `${removeTarget.name} will no longer be listed under ${employee.full_name} and will move back to the top of the Team page, unless they report to someone else.`
+              }
+            />
+            <button
+              onClick={removeLink}
+              disabled={removing}
+              className="min-h-[50px] w-full rounded-full border border-red-200 bg-red-50 text-[14.5px] font-semibold text-red-600 disabled:opacity-50"
+            >
+              {removing ? "Removing…" : "Yes, remove"}
+            </button>
+            <button onClick={() => setRemoveTarget(null)} disabled={removing} className="mt-3 min-h-[50px] w-full rounded-full border border-ink/10 text-[14px] font-medium text-ink/60">
+              Cancel
+            </button>
+          </>
+        )}
+      </Sheet>
+
       <RequestLinkModal
         mode={requestMode}
         onClose={() => setRequestMode(null)}
@@ -108,23 +164,35 @@ export default function HierarchySection({ employee, isAdmin, canEdit, refreshKe
   );
 }
 
-function PersonList({ title, items }) {
-  const valid = items.filter(Boolean);
+function PersonList({ title, items, canRemove, onRemove }) {
+  const valid = items.filter((it) => it.person);
   return (
     <div className="mb-3">
       <div className="text-[10px] font-semibold tracking-wide uppercase text-ink/35 mb-2 mt-3">{title}</div>
       {valid.length === 0 && <div className="text-sm text-ink/35">None</div>}
       <div className="space-y-1">
-        {valid.map((p) => (
-          <Link key={p.id} to={`/employees/${p.id}`} className="flex items-center gap-3 -mx-2 px-2 py-2 rounded-xl hover:bg-ink/[0.03]">
-            <div className="w-9 h-9 rounded-2xl bg-stone-50 text-stone-600 flex items-center justify-center text-xs font-medium overflow-hidden shrink-0">
-              {p.photo_url ? <img src={p.photo_url} alt="" className="w-full h-full object-cover" /> : initials(p.full_name)}
-            </div>
-            <div>
-              <div className="text-sm font-medium text-ink">{p.full_name}</div>
-              <div className="text-xs text-ink/40">{p.designation || "—"}</div>
-            </div>
-          </Link>
+        {valid.map(({ person: p, rowId }) => (
+          <div key={rowId} className="-mx-2 flex items-center gap-1 rounded-xl px-2 hover:bg-ink/[0.03]">
+            <Link to={`/employees/${p.id}`} className="flex min-w-0 flex-1 items-center gap-3 py-2">
+              <div className="w-9 h-9 rounded-2xl bg-stone-50 text-stone-600 flex items-center justify-center text-xs font-medium overflow-hidden shrink-0">
+                {p.photo_url ? <img src={p.photo_url} alt="" className="w-full h-full object-cover" /> : initials(p.full_name)}
+              </div>
+              <div className="min-w-0">
+                <div className="truncate text-sm font-medium text-ink">{p.full_name}</div>
+                <div className="truncate text-xs text-ink/40">{p.designation || "—"}</div>
+              </div>
+            </Link>
+            {canRemove && (
+              <button
+                onClick={() => onRemove({ person: p, rowId })}
+                aria-label={`Remove ${p.full_name}`}
+                title="Remove"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink/35 transition-colors hover:bg-red-50 hover:text-red-600 active:scale-95"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         ))}
       </div>
     </div>
