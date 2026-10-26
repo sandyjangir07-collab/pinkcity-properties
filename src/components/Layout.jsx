@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { ExternalLink, Zap, ChevronLeft, LayoutGrid, LogOut } from "lucide-react";
+import { ExternalLink, Zap, ChevronLeft, LogOut } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { TaskCountsProvider, useTaskCounts } from "../hooks/useTaskCounts";
 import JaliPattern from "./JaliPattern";
@@ -44,20 +44,12 @@ function LayoutInner() {
       <div className="fixed bottom-0 -left-24 w-[340px] h-[340px] rounded-full bg-gradient-to-tr from-jali/[0.08] to-transparent blur-3xl pointer-events-none -z-10" />
 
       <header className={`sticky top-0 z-40 ${path === "/" ? "bg-cream/80" : "bg-sand/80"} backdrop-blur-md px-4 pt-4 pb-2`}>
-        <div className="flex items-center gap-1.5 rounded-full border border-ink/[0.06] bg-white px-2.5 py-2 shadow-soft">
-          <Link
-            to="/menu"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-ink/10 bg-white text-crimson transition-transform active:scale-90"
-            aria-label="Open menu"
-          >
-            <LayoutGrid className="h-[18px] w-[18px]" />
-          </Link>
-
+        <div className="flex items-center gap-3 rounded-full border border-ink/[0.06] bg-white px-3 py-2.5 shadow-soft">
           <a
             href={PUBLIC_SITE_URL}
             target="_blank"
             rel="noreferrer"
-            className="flex h-11 w-10 shrink-0 items-center justify-center rounded-full bg-crimson p-1.5 shadow-[0_3px_10px_-3px_rgba(176,31,79,0.55)] transition-transform active:scale-90"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-crimson p-1.5 shadow-[0_3px_10px_-3px_rgba(176,31,79,0.55)] transition-transform active:scale-90"
             aria-label="Go to website"
             title="Go to website"
           >
@@ -91,7 +83,7 @@ function LayoutInner() {
             })}
           </nav>
 
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 md:ml-0">
+          <div className="ml-auto flex shrink-0 items-center gap-2 md:ml-0">
             <NotificationBell />
             <a
               href={PUBLIC_SITE_URL}
