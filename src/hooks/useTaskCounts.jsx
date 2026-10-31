@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { sb } from "../lib/supabase";
 import { useAuth } from "./useAuth";
-import { todayStr } from "../lib/attendance";
+import { todayStr } from "../lib/dates";
 
 // Live numbers for Home, the Tasks tab and its badge. Fetched once for the whole
 // app and refreshed when the app comes back to the screen (or every 5 minutes).

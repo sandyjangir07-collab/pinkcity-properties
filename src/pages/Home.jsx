@@ -5,7 +5,6 @@ import { useTaskCounts } from "../hooks/useTaskCounts";
 import { actionItems } from "../lib/taskItems";
 import NotRegistered from "./NotRegistered";
 import PendingApprovalNotice from "./PendingApprovalNotice";
-import AttendanceCard from "../components/home/AttendanceCard";
 import MySalesCard from "../components/sales/MySalesCard";
 import { BrandedLoader } from "../components/ui/BrandedLoader";
 
@@ -103,10 +102,6 @@ function Dashboard() {
             <ChevronRight className="h-4 w-4 shrink-0 text-ink/30" />
           </Link>
         )}
-
-        <div className="mt-7">
-          <AttendanceCard />
-        </div>
 
         {/* Daily overview */}
         <div className="mt-7 text-[10px] font-bold uppercase tracking-[0.18em] text-ink/45">Today at a glance</div>

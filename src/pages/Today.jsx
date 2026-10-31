@@ -4,7 +4,7 @@ import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useTaskCounts } from "../hooks/useTaskCounts";
 import { timeAgo } from "../lib/leadConstants";
-import { todayStr } from "../lib/attendance";
+import { todayStr } from "../lib/dates";
 import { Card, SectionTitle, Pill } from "../components/ui/primitives";
 import LeadFormModal from "../components/leads/LeadFormModal";
 import LeadDetailModal from "../components/leads/LeadDetailModal";

@@ -1,5 +1,5 @@
 import { STATUS_LABELS, waNumberFor, timeAgo } from "../../lib/leadConstants";
-import { todayStr } from "../../lib/attendance";
+import { todayStr } from "../../lib/dates";
 import { Phone, MessageCircle } from "lucide-react";
 import { Pill } from "../ui/primitives";
 

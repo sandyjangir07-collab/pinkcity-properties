@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import { ToastProvider } from "./hooks/useToast";
 import { RequireAuth, RequireAdmin } from "./components/RouteGuards";
@@ -7,7 +7,6 @@ import Login from "./pages/Login";
 import Home from "./pages/Home";
 import Directory from "./pages/Directory";
 import Today from "./pages/Today";
-import Attendance from "./pages/Attendance";
 import Schedule from "./pages/Schedule";
 import Quotation from "./pages/Quotation";
 import Performance from "./pages/Performance";
@@ -45,7 +44,6 @@ export default function App() {
               <Route path="/menu" element={<Menu />} />
               <Route path="/team" element={<Directory />} />
               <Route path="/today" element={<Today />} />
-              <Route path="/attendance" element={<Attendance />} />
               <Route path="/schedule" element={<Schedule />} />
               <Route path="/quotation" element={<Quotation />} />
               <Route
@@ -118,6 +116,8 @@ export default function App() {
                   </RequireAdmin>
                 }
               />
+              {/* Old or mistyped addresses (e.g. a saved /attendance shortcut) land on Home, not a blank page */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>
         </BrowserRouter>

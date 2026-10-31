@@ -5,7 +5,7 @@ import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useTaskCounts } from "../hooks/useTaskCounts";
 import { actionItems, TONE_CLASSES } from "../lib/taskItems";
-import { todayStr } from "../lib/attendance";
+import { todayStr } from "../lib/dates";
 import { timeAgo } from "../lib/leadConstants";
 import { Pill } from "../components/ui/primitives";
 import { FollowupCard } from "../components/home/TaskCards";

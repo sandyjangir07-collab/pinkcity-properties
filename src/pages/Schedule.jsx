@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
-import { todayStr } from "../lib/attendance";
+import { todayStr } from "../lib/dates";
 import { waNumberFor } from "../lib/leadConstants";
 import { Button } from "../components/ui/button";
 import { Phone, MessageCircle } from "lucide-react";

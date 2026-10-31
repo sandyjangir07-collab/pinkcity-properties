@@ -4,7 +4,7 @@ import { NAV_LINKS } from "./navLinks";
 // daily shortcuts; everything else is reached from here (or the bottom tabs).
 
 export const MENU_CATEGORIES = [
-  { id: "daily", title: "Daily Work", caption: "Your day, visits and attendance", paths: ["/today", "/schedule", "/attendance"] },
+  { id: "daily", title: "Daily Work", caption: "Your day, follow-ups and site visits", paths: ["/today", "/schedule"] },
   { id: "sales", title: "Sales & Leads", caption: "Pipeline, quotes and closed deals", paths: ["/leads", "/quotation", "/sales"] },
   { id: "inventory", title: "Property Inventory", caption: "Listings, plots, tokens and resale", paths: ["/listings", "/plots", "/resale"] },
   { id: "money", title: "Money", caption: "Commissions and payouts", paths: ["/commissions", "/commission-slabs"] },
@@ -14,7 +14,6 @@ export const MENU_CATEGORIES = [
 export const MODULE_INFO = {
   "/today": { desc: "Follow-ups and visits due today", keywords: "follow up visits daily due overdue calls" },
   "/schedule": { desc: "Site visits and calls on the calendar", keywords: "site visit calendar appointments calls upcoming" },
-  "/attendance": { desc: "Check in and out, attendance records", keywords: "check in check out present hours office" },
   "/leads": { desc: "Lead pipeline, follow-ups and conversion", keywords: "pipeline enquiries clients follow-up site visit duplicate" },
   "/quotation": { desc: "Price quotes you can share as a PDF", keywords: "quote price cost pdf charges" },
   "/sales": { desc: "Every sale, plot and payment received", keywords: "sold deals ledger payments received plots" },
@@ -36,7 +35,6 @@ export const MODULE_TONE = {
   "/schedule": { bg: "bg-teal-100", text: "text-teal-600" },
   "/quotation": { bg: "bg-amber-100", text: "text-amber-700" },
   "/team": { bg: "bg-stone-100", text: "text-stone-600" },
-  "/attendance": { bg: "bg-stone-100", text: "text-stone-600" },
   "/sales": { bg: "bg-rose-100", text: "text-rose-600" },
   "/resale": { bg: "bg-teal-100", text: "text-teal-700" },
   "/commissions": { bg: "bg-orange-100", text: "text-orange-700" },

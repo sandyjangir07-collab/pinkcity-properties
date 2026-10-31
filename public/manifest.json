@@ -1,7 +1,7 @@
 {
   "name": "PinkCity Team CRM",
   "short_name": "PinkCity CRM",
-  "description": "PinkCity Properties internal CRM — leads, listings, attendance, and team management.",
+  "description": "PinkCity Properties internal CRM — leads, listings, sales, and team management.",
   "start_url": "/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
@@ -24,7 +24,7 @@
     { "src": "/icon-512-maskable-v3.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Today", "short_name": "Today", "description": "Check in and see today's follow-ups", "url": "/today" },
+    { "name": "Today", "short_name": "Today", "description": "See today's follow-ups and visits", "url": "/today" },
     { "name": "Leads", "short_name": "Leads", "description": "View your leads pipeline", "url": "/leads" }
   ]
 }
