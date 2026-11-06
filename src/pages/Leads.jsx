@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Phone, MessageCircle, Search, Sparkles, Flame, TrendingUp, Plus, Trash2 } from "lucide-react";
+import { Phone, MessageCircle, Search, Sparkles, Flame, TrendingUp, Plus, Trash2, Share2 } from "lucide-react";
 import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
@@ -59,7 +59,7 @@ export default function Leads() {
 
   async function load() {
     let q = sb.from("leads").select("*").is("deleted_at", null).order("created_at", { ascending: false });
-    if (!isAdmin) q = q.eq("created_by", user.id);
+    if (!isAdmin) q = q.or(`created_by.eq.${user.id},assigned_to.eq.${user.id}`);
     const { data } = await q;
     setLeads(data || []);
   }
@@ -95,6 +95,7 @@ export default function Leads() {
   }, [scored]);
 
   const term = search.trim().toLowerCase();
+  const sharedCount = scored.filter((l) => l.assigned_to).length;
   const visible = scored.filter((l) => {
     const matchesQ =
       !term ||
@@ -102,7 +103,7 @@ export default function Leads() {
       (l.phone || "").toLowerCase().includes(term) ||
       (l.preferred_location || "").toLowerCase().includes(term) ||
       ("pc" + l.lead_number).includes(term.replace(/\s/g, ""));
-    return matchesQ && (filter === "All" || l.status === filter);
+    return matchesQ && (filter === "All" || (filter === "Shared" ? !!l.assigned_to : l.status === filter));
   });
 
   const hot = scored.filter((l) => l._score >= 70).length;
@@ -202,9 +203,9 @@ export default function Leads() {
 
       <section className="mt-4">
         <div className="flex gap-2 overflow-x-auto no-scrollbar px-5 pb-1">
-          {["All", ...Object.keys(STATUS_TEXT)].map((s) => {
+          {["All", ...(sharedCount > 0 || filter === "Shared" ? ["Shared"] : []), ...Object.keys(STATUS_TEXT)].map((s) => {
             const active = filter === s;
-            const tone = s === "All" ? null : STATUS_TONE[s];
+            const tone = s === "All" || s === "Shared" ? null : STATUS_TONE[s];
             return (
               <button
                 key={s}
@@ -213,8 +214,8 @@ export default function Leads() {
                   active ? (tone ? `${tone.solid} shadow-soft` : "bg-stone-600 text-sand shadow-lift") : "border border-ink/10 bg-white text-ink/50 shadow-soft"
                 }`}
               >
-                {s === "All" ? "All" : STATUS_TEXT[s]}
-                {s !== "All" && <span className="ml-1.5 opacity-70">{counts[s] || 0}</span>}
+                {s === "All" ? "All" : s === "Shared" ? "Shared" : STATUS_TEXT[s]}
+                {s !== "All" && <span className="ml-1.5 opacity-70">{s === "Shared" ? sharedCount : counts[s] || 0}</span>}
               </button>
             );
           })}
@@ -233,7 +234,7 @@ export default function Leads() {
         ) : (
           <div className="space-y-3.5">
             {visible.map((l, i) => (
-              <LeadCard key={l.id} lead={l} index={i} onOpen={() => setDetailLeadId(l.id)} />
+              <LeadCard key={l.id} lead={l} index={i} userId={user.id} onOpen={() => setDetailLeadId(l.id)} />
             ))}
           </div>
         )}
@@ -284,7 +285,7 @@ export default function Leads() {
   );
 }
 
-function LeadCard({ lead: l, index, onOpen }) {
+function LeadCard({ lead: l, index, userId, onOpen }) {
   const initials = (l.name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   const stale = isStaleLead(l);
   const waNum = waNumberFor(l.phone);
@@ -320,6 +321,12 @@ function LeadCard({ lead: l, index, onOpen }) {
               {SOURCE_LABELS[l.source] || l.source}
             </span>
             {stale && <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[9.5px] font-bold uppercase tracking-[0.1em] text-amber-700">Stale</span>}
+            {l.assigned_to && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-ochre/15 px-2.5 py-1 text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#7A5714]">
+                <Share2 className="h-2.5 w-2.5" />
+                {l.assigned_to === userId ? `From ${(l.created_by_name || "owner").split(" ")[0]}` : `With ${(l.assigned_to_name || "colleague").split(" ")[0]}`}
+              </span>
+            )}
             {l.possible_duplicate_of && <span className="rounded-full bg-rose-100 px-2.5 py-1 text-[9.5px] font-bold uppercase tracking-[0.1em] text-rose-700">Possible dup</span>}
           </span>
           <span className="mt-2 block text-[11px] text-ink/35">

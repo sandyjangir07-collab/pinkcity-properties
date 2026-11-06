@@ -97,8 +97,6 @@ export default function LeadFormModal({ target, onClose, onSaved }) {
       // Closing a lead goes through the Stage buttons (asks for township/plot) — never from this form.
       status: status === "closed" && originalStatus !== "closed" ? (originalStatus || "new") : status,
       updated_at: new Date().toISOString(),
-      created_by: user.id,
-      created_by_name: submitterName,
     };
     try {
       if (isEdit) {
@@ -107,7 +105,10 @@ export default function LeadFormModal({ target, onClose, onSaved }) {
         showToast("✓ Lead updated!");
         onSaved({ isNew: false });
       } else {
+        // Only a brand-new lead is stamped with its owner. Editing never changes who owns it.
         payload.created_at = new Date().toISOString();
+        payload.created_by = user.id;
+        payload.created_by_name = submitterName;
         const { data, error } = await sb.from("leads").insert(payload).select().single();
         if (error) throw error;
         showToast("✓ Lead added!");

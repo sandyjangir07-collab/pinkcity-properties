@@ -4,11 +4,12 @@ import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
 import { STATUS_LABELS, STATUS_TEXT } from "../../lib/leadConstants";
 import { leadScore } from "../../lib/leadScore";
-import { Phone, MapPin, IndianRupee, CalendarDays, CalendarClock, Send, UserRound, Trash2, Sparkles, AlertTriangle } from "lucide-react";
+import { Phone, MapPin, IndianRupee, CalendarDays, CalendarClock, Send, UserRound, Trash2, Sparkles, AlertTriangle, Share2, Pencil } from "lucide-react";
 import { Sheet } from "../ui/Sheet";
 import AiAssistPanel from "./AiAssistPanel";
 import VoiceMic, { appendSpoken } from "./VoiceMic";
 import CloseDealPanel from "./CloseDealPanel";
+import TransferLeadSheet from "./TransferLeadSheet";
 
 const NOTE_TEMPLATES = [
   "Called - no answer",
@@ -30,7 +31,7 @@ const STATUS_TONE = {
 };
 
 export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, onOpenLead, onScheduleVisit, onScheduleCall, onDeleted }) {
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   const showToast = useToast();
   const [lead, setLead] = useState(null);
   const [visit, setVisit] = useState(null);
@@ -39,6 +40,9 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
   const [noteInput, setNoteInput] = useState("");
   const [dupLead, setDupLead] = useState(null);
   const [closingFlow, setClosingFlow] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [confirmHandBack, setConfirmHandBack] = useState(false);
+  const [editingNote, setEditingNote] = useState(null); // { id, text }
 
   async function handleDealClosed(unit, townshipTitle) {
     const submitterName = profile?.full_name || profile?.email || user.email;
@@ -139,6 +143,25 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
     await loadTimeline(lead);
   }
 
+  async function handBack() {
+    if (!confirmHandBack) return setConfirmHandBack(true);
+    const { error } = await sb.rpc("end_lead_transfer", { p_lead_id: leadId });
+    setConfirmHandBack(false);
+    if (error) return showToast(error.message);
+    showToast("✓ Handed back to the owner.");
+    onChanged();
+    onClose();
+  }
+
+  async function saveNoteEdit() {
+    if (!editingNote || !editingNote.text.trim()) return;
+    const { error } = await sb.from("lead_notes").update({ note: editingNote.text.trim() }).eq("id", editingNote.id);
+    if (error) return showToast(error.message);
+    setEditingNote(null);
+    showToast("✓ Note updated.");
+    load();
+  }
+
   async function dismissDuplicate() {
     await sb.from("leads").update({ possible_duplicate_of: null }).eq("id", leadId);
     setDupLead(null);
@@ -169,6 +192,7 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
   ].filter(Boolean).join(" ") || "No specific preferences recorded yet.";
 
   return (
+    <>
     <Sheet open={!!leadId} onClose={onClose} maxWidth="max-w-md">
       <div className="flex items-start gap-3.5 mb-5">
         <span className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-stone-50 font-display text-lg font-semibold text-stone-600">
@@ -181,6 +205,46 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
           </p>
         </div>
       </div>
+
+      {lead && (() => {
+        const isOwner = lead.created_by === user.id;
+        const isAssignee = lead.assigned_to === user.id;
+        const canTransfer = isOwner || isAdmin;
+        if (isAssignee) {
+          return (
+            <div className="mb-3.5 rounded-[22px] border border-ochre/35 bg-ochre/10 p-4">
+              <div className="flex items-start gap-3">
+                <Share2 className="mt-0.5 h-[16px] w-[16px] shrink-0 text-[#7A5714]" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-semibold leading-snug text-ink">Shared with you by {lead.created_by_name || "the owner"}</p>
+                  <p className="mt-0.5 text-[12.5px] leading-relaxed text-ink/60">{lead.created_by_name || "They"} stays the primary owner. You can both see all the notes, add notes and update this lead.</p>
+                  <button onClick={handBack} className={`mt-2.5 min-h-[40px] rounded-full border px-3.5 text-[12px] font-semibold ${confirmHandBack ? "border-red-300 bg-red-500 text-white" : "border-ink/10 bg-white text-ink/65"}`}>
+                    {confirmHandBack ? "Tap again to hand it back" : "Hand back to owner"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        }
+        if (lead.assigned_to) {
+          return (
+            <div className="mb-3.5 flex items-center gap-3 rounded-[22px] border border-ochre/35 bg-ochre/10 p-4">
+              <Share2 className="h-[16px] w-[16px] shrink-0 text-[#7A5714]" />
+              <p className="min-w-0 flex-1 text-[12.5px] leading-relaxed text-ink/65">
+                Owner <b className="font-semibold text-ink">{lead.created_by_name || "—"}</b> · shared with <b className="font-semibold text-ink">{lead.assigned_to_name}</b>
+              </p>
+              {canTransfer && (
+                <button onClick={() => setTransferOpen(true)} className="min-h-[40px] shrink-0 rounded-full border border-ink/10 bg-white px-3.5 text-[12px] font-semibold text-ink/70">Change</button>
+              )}
+            </div>
+          );
+        }
+        return canTransfer ? (
+          <button onClick={() => setTransferOpen(true)} className="mb-3.5 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[22px] border border-dashed border-ochre/50 bg-ochre/[0.06] text-[13.5px] font-semibold text-[#7A5714] active:scale-[0.99]">
+            <Share2 className="h-4 w-4" /> Transfer to another associate
+          </button>
+        ) : null;
+      })()}
 
       {dupLead && (
         <div className="mb-3.5 rounded-[22px] border border-rose-200 bg-rose-50 p-4">
@@ -358,10 +422,25 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
                   </span>
                   <span className="min-w-0 flex-1 rounded-2xl border border-ink/[0.06] bg-white p-3.5 shadow-soft">
                     {n.status_change && <span className="block text-xs font-semibold text-stone-600 mb-0.5">Status → {n.status_change}</span>}
-                    <span className="block text-sm text-ink leading-relaxed">{n.note}</span>
+                    {editingNote && editingNote.id === n.id ? (
+                      <span className="block space-y-2">
+                        <textarea className="field-input min-h-[72px]" value={editingNote.text} onChange={(e) => setEditingNote({ ...editingNote, text: e.target.value })} />
+                        <span className="flex gap-2">
+                          <button onClick={saveNoteEdit} className="min-h-[40px] rounded-full bg-crimson px-4 text-[12.5px] font-semibold text-white">Save</button>
+                          <button onClick={() => setEditingNote(null)} className="min-h-[40px] rounded-full border border-ink/10 px-4 text-[12.5px] font-medium text-ink/60">Cancel</button>
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="block text-sm text-ink leading-relaxed">{n.note}</span>
+                    )}
                     <span className="mt-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-ink/35">
                       <UserRound className="h-3 w-3" />
                       {n.created_by_name} · {d}
+                      {n.id && n.created_by === user.id && !n.status_change && !/^(Shared with|Sharing with) /.test(n.note || "") && !(editingNote && editingNote.id === n.id) && (
+                        <button onClick={() => setEditingNote({ id: n.id, text: n.note })} className="ml-auto inline-flex min-h-[32px] items-center gap-1 rounded-full px-2 text-[10px] font-semibold uppercase tracking-wide text-stone-600 normal-case">
+                          <Pencil className="h-3 w-3" /> Edit
+                        </button>
+                      )}
                     </span>
                   </span>
                 </li>
@@ -378,6 +457,8 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
         </button>
       </div>
     </Sheet>
+    <TransferLeadSheet open={transferOpen} lead={lead} onClose={() => setTransferOpen(false)} onDone={() => { setTransferOpen(false); load(); onChanged(); }} />
+    </>
   );
 }
 
