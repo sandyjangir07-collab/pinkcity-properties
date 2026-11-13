@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { TaskCountsProvider, useTaskCounts } from "../hooks/useTaskCounts";
 import JaliPattern from "./JaliPattern";
 import NotificationBell from "./NotificationBell";
+import { NotificationOpenerProvider } from "./NotificationOpener";
 import BottomNav, { TABS } from "./BottomNav";
 import { NAV_LINKS as LINKS } from "../lib/navLinks";
 import { EXTRA_LABELS, activeTab } from "../lib/menuConfig";
@@ -132,7 +133,9 @@ function LayoutInner() {
 export default function Layout() {
   return (
     <TaskCountsProvider>
-      <LayoutInner />
+      <NotificationOpenerProvider>
+        <LayoutInner />
+      </NotificationOpenerProvider>
     </TaskCountsProvider>
   );
 }

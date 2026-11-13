@@ -1,4 +1,4 @@
-const CACHE_NAME = "pinkcity-crm-v32";
+const CACHE_NAME = "pinkcity-crm-v33";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -58,7 +58,9 @@ self.addEventListener("notificationclick", (event) => {
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
       for (const client of clients) {
         if ("focus" in client) {
-          client.navigate(targetUrl);
+          // App already open: hand the link to it (it routes without a reload, which is
+          // what iOS home-screen apps need), then bring it to the front.
+          client.postMessage({ type: "open-url", url: targetUrl });
           return client.focus();
         }
       }

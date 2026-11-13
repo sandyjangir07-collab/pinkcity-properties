@@ -1,25 +1,18 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bell, BellRing, Check } from "lucide-react";
 import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
+import { useOpenNotification } from "./NotificationOpener";
 import { enablePush, getPushSubscriptionStatus, pushSupported } from "../lib/pushNotifications";
 
 const EASE = [0.22, 1, 0.36, 1];
 
-function linkFor(n, employeeId) {
-  if (n.type?.startsWith("hierarchy")) return `/employees/${employeeId}`;
-  if (n.type === "commission_changed") return `/employees/${employeeId}`;
-  if (n.type === "document_approved") return `/employees/${employeeId}`;
-  if (n.type === "profile_approved") return `/employees/${employeeId}`;
-  return null;
-}
-
 export default function NotificationBell() {
   const { user, employee } = useAuth();
   const showToast = useToast();
+  const openNotification = useOpenNotification();
   const [status, setStatus] = useState("checking");
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState(null);
@@ -57,11 +50,6 @@ export default function NotificationBell() {
     } finally {
       setEnabling(false);
     }
-  }
-
-  async function markRead(id) {
-    await sb.from("employee_notifications").update({ is_read: true }).eq("id", id);
-    setNotifications((list) => list.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
   }
 
   async function markAllRead() {
@@ -125,17 +113,16 @@ export default function NotificationBell() {
               ) : (
                 <div className="py-1.5">
                   {notifications.map((n) => {
-                    const to = linkFor(n, employee?.id);
-                    const Wrapper = to ? Link : "div";
                     return (
-                      <Wrapper
+                      <button
+                        type="button"
                         key={n.id}
-                        to={to || undefined}
                         onClick={() => {
-                          if (!n.is_read) markRead(n.id);
                           setOpen(false);
+                          setNotifications((list) => list.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)));
+                          openNotification(n);
                         }}
-                        className={`block px-5 py-3 border-b border-ink/[0.04] last:border-0 transition-colors hover:bg-stone-50/60 ${to ? "cursor-pointer" : ""}`}
+                        className="block w-full text-left px-5 py-3 border-b border-ink/[0.04] last:border-0 transition-colors hover:bg-stone-50/60 active:bg-stone-100 cursor-pointer"
                       >
                         <div className="flex items-start gap-2.5">
                           {!n.is_read && <span className="w-1.5 h-1.5 rounded-full bg-stone-600 mt-1.5 shrink-0" />}
@@ -147,7 +134,7 @@ export default function NotificationBell() {
                             </div>
                           </div>
                         </div>
-                      </Wrapper>
+                      </button>
                     );
                   })}
                 </div>
