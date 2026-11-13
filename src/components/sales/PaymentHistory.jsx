@@ -7,6 +7,11 @@ export default function PaymentHistory({ sale }) {
   const anyPayments = sale.plots.some((p) => (p.payments || []).length > 0);
   return (
     <div className="mt-3 space-y-3 rounded-xl border border-violet-100 bg-violet-50/50 p-3">
+      {sale.closed && (
+        <div className="rounded-lg bg-emerald-100/70 px-3 py-2 text-[12px] font-semibold text-emerald-800">
+          ✓ Payment complete — sale closed{sale.closedAt ? ` on ${formatDate(sale.closedAt)}` : ""}.
+        </div>
+      )}
       {!anyPayments && <div className="text-[12px] text-ink/45">No payments recorded yet.</div>}
       {sale.plots.map((p, i) => (
         <div key={p.rowId || i}>

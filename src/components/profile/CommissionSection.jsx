@@ -21,7 +21,7 @@ export default function CommissionSection({ employee, refreshKey }) {
   async function load() {
     const { data } = await sb
       .from("token_submissions")
-      .select("id,sale_group_id,is_manual,buyer_name,buyer_phone,associate_name,sale_amount,commission_amount,reviewed_at,listing_id,manual_township,manual_plot_no,manual_plot_area,colony_units(unit_number,unit_size)")
+      .select("id,sale_group_id,is_manual,buyer_name,buyer_phone,associate_name,sale_amount,commission_amount,reviewed_at,closed_at,closed_by_name,listing_id,manual_township,manual_plot_no,manual_plot_area,colony_units(unit_number,unit_size)")
       .eq("associate_employee_id", employee.id)
       .eq("status", "approved")
       .order("reviewed_at", { ascending: false });
@@ -82,7 +82,10 @@ export default function CommissionSection({ employee, refreshKey }) {
               <div key={d.key} className="py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="truncate text-[14px] font-semibold text-ink">{d.buyer_name || "—"}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-[14px] font-semibold text-ink">{d.buyer_name || "—"}</span>
+                    {d.closed && <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Closed</span>}
+                  </div>
                   {d.plots.map((p, i) => (
                     <div key={i} className="mt-0.5 text-[12px] text-ink/50">{plotLabel(p)}</div>
                   ))}

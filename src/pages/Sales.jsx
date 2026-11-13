@@ -121,6 +121,11 @@ function ReceivedButton({ s, onPay, compact }) {
   );
 }
 
+function ClosedBadge({ s }) {
+  if (!s.closed) return null;
+  return <span className="ml-2 shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 align-middle text-[10px] font-bold text-emerald-700">✓ Closed</span>;
+}
+
 function PhoneCell({ s, editingKey, setEditingKey, phoneDraft, setPhoneDraft, savePhone }) {
   if (s.buyer_phone) {
     return (
@@ -168,6 +173,7 @@ export default function Sales() {
   const [sales, setSales] = useState(null);
   const [month, setMonth] = useState("all");
   const [assoc, setAssoc] = useState("all");
+  const [status, setStatus] = useState("all");
   const [q, setQ] = useState("");
   const [editingKey, setEditingKey] = useState(null);
   const [phoneDraft, setPhoneDraft] = useState("");
@@ -181,7 +187,7 @@ export default function Sales() {
   async function load() {
     const { data, error } = await sb
       .from("token_submissions")
-      .select("id,sale_group_id,unit_id,associate_employee_id,buyer_name,buyer_phone,associate_name,sale_amount,commission_amount,reviewed_at,listing_id,is_manual,manual_township,manual_plot_no,manual_plot_area,colony_units(unit_number,unit_size)")
+      .select("id,sale_group_id,unit_id,associate_employee_id,buyer_name,buyer_phone,associate_name,sale_amount,commission_amount,reviewed_at,closed_at,closed_by_name,listing_id,is_manual,manual_township,manual_plot_no,manual_plot_area,colony_units(unit_number,unit_size)")
       .eq("status", "approved")
       .order("reviewed_at", { ascending: false })
       .range(0, 4999);
@@ -232,11 +238,13 @@ export default function Sales() {
     return (sales || []).filter((s) => {
       if (month !== "all" && (!s.reviewed_at || monthKey(s.reviewed_at) !== month)) return false;
       if (assoc !== "all" && s.associate_name !== assoc) return false;
+      if (status === "open" && s.closed) return false;
+      if (status === "closed" && !s.closed) return false;
       if (!needle) return true;
       const haystack = [s.buyer_name, s.buyer_phone, s.associate_name, ...s.plots.flatMap((p) => [p.plotNo, p.township])];
       return haystack.filter(Boolean).some((v) => String(v).toLowerCase().includes(needle));
     });
-  }, [sales, month, assoc, q]);
+  }, [sales, month, assoc, status, q]);
 
   // Group the (already newest-first) sales by month, with subtotals.
   const groups = useMemo(() => {
@@ -261,7 +269,8 @@ export default function Sales() {
   const totalGaj = filtered.reduce((sum, s) => sum + s.totalGaj, 0);
   const totalCommission = filtered.reduce((sum, s) => sum + s.commission, 0);
   const totalReceived = filtered.reduce((sum, s) => sum + s.received, 0);
-  const filtersActive = month !== "all" || assoc !== "all" || q.trim() !== "";
+  const filtersActive = month !== "all" || assoc !== "all" || status !== "all" || q.trim() !== "";
+  const closedCount = (sales || []).filter((s) => s.closed).length;
 
   async function savePhone(sale) {
     const phone = phoneDraft.trim();
@@ -335,7 +344,7 @@ export default function Sales() {
       </div>
 
       {/* Filters */}
-      <div className="mt-5 grid grid-cols-2 gap-2.5 lg:grid-cols-[1fr_200px_200px]">
+      <div className="mt-5 grid grid-cols-2 gap-2.5 lg:grid-cols-[1fr_170px_170px_170px]">
         <div className="relative col-span-2 lg:col-span-1">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/30" />
           <input className="field-input !pl-10" placeholder="Search client, associate, plot…" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -351,6 +360,11 @@ export default function Sales() {
           {associates.map((a) => (
             <option key={a} value={a}>{a}</option>
           ))}
+        </select>
+        <select className="field-input col-span-2 lg:col-span-1" value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Sale status">
+          <option value="all">All sales</option>
+          <option value="open">Open ({(sales || []).length - closedCount})</option>
+          <option value="closed">Closed ({closedCount})</option>
         </select>
       </div>
 
@@ -372,7 +386,7 @@ export default function Sales() {
         <div className="mt-5 rounded-2xl border border-ink/[0.06] bg-surface p-10 text-center text-[13px] text-ink/40">
           {sales.length === 0 ? "No approved sales yet. Approved tokens and sales you add will appear here." : "No sales match this filter."}
           {filtersActive && sales.length > 0 && (
-            <button onClick={() => { setMonth("all"); setAssoc("all"); setQ(""); }} className="mt-3 block w-full text-[12px] font-semibold text-stone-600">Clear filters</button>
+            <button onClick={() => { setMonth("all"); setAssoc("all"); setStatus("all"); setQ(""); }} className="mt-3 block w-full text-[12px] font-semibold text-stone-600">Clear filters</button>
           )}
         </div>
       )}
@@ -401,7 +415,7 @@ export default function Sales() {
                     <div className={`hidden items-center gap-4 px-4 py-3 lg:grid ${COLS}`}>
                       <DateBadge iso={s.reviewed_at} />
                       <div className="min-w-0">
-                        <div className="truncate text-[14px] font-semibold text-ink">{s.buyer_name || "—"}</div>
+                        <div className="flex items-center"><span className="truncate text-[14px] font-semibold text-ink">{s.buyer_name || "—"}</span><ClosedBadge s={s} /></div>
                         <PhoneCell s={s} {...phoneProps} />
                       </div>
                       <PlotChips plots={s.plots} />
@@ -423,7 +437,7 @@ export default function Sales() {
                       <div className="flex items-start gap-3">
                         <DateBadge iso={s.reviewed_at} />
                         <div className="min-w-0 flex-1">
-                          <div className="truncate text-[14.5px] font-semibold text-ink">{s.buyer_name || "—"}</div>
+                          <div className="flex items-center"><span className="truncate text-[14.5px] font-semibold text-ink">{s.buyer_name || "—"}</span><ClosedBadge s={s} /></div>
                           <PhoneCell s={s} {...phoneProps} />
                         </div>
                         <Actions s={s} onEdit={setEditSale} onDelete={askDelete} onPay={(x) => setPayKey(x.key)} />

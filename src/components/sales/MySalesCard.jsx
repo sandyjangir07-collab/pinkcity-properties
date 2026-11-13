@@ -23,7 +23,7 @@ export default function MySalesCard() {
     (async () => {
       const { data } = await sb
         .from("token_submissions")
-        .select("id,sale_group_id,unit_id,buyer_name,associate_name,associate_employee_id,sale_amount,commission_amount,reviewed_at,listing_id,is_manual,manual_township,manual_plot_no,manual_plot_area,colony_units(unit_number,unit_size)")
+        .select("id,sale_group_id,unit_id,buyer_name,associate_name,associate_employee_id,sale_amount,commission_amount,reviewed_at,closed_at,closed_by_name,listing_id,is_manual,manual_township,manual_plot_no,manual_plot_area,colony_units(unit_number,unit_size)")
         .eq("associate_employee_id", employee.id)
         .eq("status", "approved")
         .order("reviewed_at", { ascending: false });
@@ -107,7 +107,10 @@ export default function MySalesCard() {
           <div key={s.key} className="rounded-2xl border border-ink/[0.06] bg-surface p-4 shadow-soft">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <div className="truncate text-[14.5px] font-semibold text-ink">{s.buyer_name || "—"}</div>
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-[14.5px] font-semibold text-ink">{s.buyer_name || "—"}</span>
+                  {s.closed && <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Closed</span>}
+                </div>
                 {s.plots.map((p, i) => (
                   <div key={i} className="mt-0.5 text-[12px] text-ink/50">{plotLabel(p)}</div>
                 ))}

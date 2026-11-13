@@ -39,6 +39,9 @@ export function groupSales(rows) {
         associate_id: d.associate_employee_id,
         reviewed_at: d.reviewed_at,
         is_manual: d.is_manual,
+        closedAt: null,
+        closedBy: null,
+        closed: true,
         sale_amount: null,
         commission: 0,
         totalGaj: 0,
@@ -47,6 +50,12 @@ export function groupSales(rows) {
       map.set(key, g);
     }
     g.ids.push(d.id);
+    // A sale is closed only when every one of its plots is.
+    if (!d.closed_at) g.closed = false;
+    else if (!g.closedAt || d.closed_at > g.closedAt) {
+      g.closedAt = d.closed_at;
+      g.closedBy = d.closed_by_name || null;
+    }
     if (d.sale_amount != null) g.sale_amount = (g.sale_amount || 0) + Number(d.sale_amount);
     g.commission += Number(d.commission_amount) || 0;
     if (d.buyer_phone && !g.buyer_phone) g.buyer_phone = d.buyer_phone;
@@ -64,7 +73,7 @@ export function groupSales(rows) {
       manualPlotArea: d.manual_plot_area,
     });
   }
-  return [...map.values()];
+  return [...map.values()].map((g) => (g.closed ? g : { ...g, closedAt: null, closedBy: null }));
 }
 
 export function plotLabel(p) {
