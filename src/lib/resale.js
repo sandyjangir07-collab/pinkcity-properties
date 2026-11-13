@@ -158,13 +158,16 @@ export const COMPANY_NAME = "PinkCity Properties & Consultants";
 export const COMPANY_PHONE = "+919358830405";
 export const COMPANY_PHONE_SHOWN = "+91 93588 30405";
 
-// /p/KD-96?a=<associate share code>. The code tells the page whose number to show.
-export function publicPlotUrl(code, ref, origin = typeof window !== "undefined" ? window.location.origin : "") {
+// Public plots live on the main website: pinkcityproperties.com/resale/KD-96?a=<associate share code>.
+// The code tells the page whose name and number to show. (The CRM's own /p pages still work for
+// links that were already shared.)
+export const PUBLIC_SITE = "https://pinkcityproperties.com";
+export function publicPlotUrl(code, ref, origin = PUBLIC_SITE) {
   if (!code) return "";
-  return `${origin}/p/${encodeURIComponent(code)}${ref ? `?a=${encodeURIComponent(ref)}` : ""}`;
+  return `${origin}/resale/${encodeURIComponent(code)}${ref ? `?a=${encodeURIComponent(ref)}` : ""}`;
 }
-export function publicCatalogueUrl(ref, origin = typeof window !== "undefined" ? window.location.origin : "") {
-  return `${origin}/p${ref ? `?a=${encodeURIComponent(ref)}` : ""}`;
+export function publicCatalogueUrl(ref, origin = PUBLIC_SITE) {
+  return `${origin}/resale${ref ? `?a=${encodeURIComponent(ref)}` : ""}`;
 }
 export function waLink(phone, text) {
   const digits = String(phone || "").replace(/\D/g, "");
