@@ -4,6 +4,9 @@ import { AlertTriangle, CalendarDays, CalendarClock, Banknote, Key, CheckCircle,
 import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useTaskCounts } from "../hooks/useTaskCounts";
+import { useToast } from "../hooks/useToast";
+import { leadAvailable } from "../lib/leadOpen";
+import LeadModals from "../components/leads/LeadModals";
 import { actionItems, TONE_CLASSES } from "../lib/taskItems";
 import { todayStr } from "../lib/dates";
 import { timeAgo } from "../lib/leadConstants";
@@ -59,6 +62,8 @@ function ActionRow({ item }) {
 export default function Tasks() {
   const { user, profile, isAdmin } = useAuth();
   const { counts, refresh } = useTaskCounts();
+  const showToast = useToast();
+  const [openLeadId, setOpenLeadId] = useState(null);
   const navigate = useNavigate();
   const [followups, setFollowups] = useState(null);
   const [visits, setVisits] = useState(null);
@@ -98,6 +103,12 @@ export default function Tasks() {
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
+
+  // Tap a visit -> its lead (details + all notes); a visit with no lead still goes to the Schedule.
+  async function openVisitLead(v) {
+    if (await leadAvailable(v.lead_id)) setOpenLeadId(v.lead_id);
+    else showToast("This lead is no longer available.");
+  }
 
   const items = actionItems(counts, isAdmin);
   const today = todayStr();
@@ -167,8 +178,9 @@ export default function Tasks() {
             visits.map((v) => {
               const d = new Date(v.visit_date + "T00:00:00");
               const isToday = v.visit_date === today;
-              return (
-                <Link key={v.id} to="/schedule" className="flex items-center gap-3.5 rounded-2xl border border-ink/[0.06] bg-surface p-3.5 shadow-soft">
+              const cls = "flex w-full items-center gap-3.5 rounded-2xl border border-ink/[0.06] bg-surface p-3.5 text-left shadow-soft";
+              const inner = (
+                <>
                   <span className={`flex h-12 w-11 shrink-0 flex-col items-center justify-center rounded-xl ${isToday ? "bg-teal-100 text-teal-800" : "bg-stone-50 text-stone-700"}`}>
                     <span className="font-display text-[18px] font-semibold leading-none">{d.getDate()}</span>
                     <span className="mt-0.5 text-[9px] font-bold uppercase tracking-wider">{d.toLocaleDateString("en-IN", { month: "short" })}</span>
@@ -176,9 +188,16 @@ export default function Tasks() {
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[14px] font-semibold text-ink">{v.client_name}</span>
                     <span className="block truncate text-[12px] text-ink/45">{v.listing_title || "Site visit"}{v.visit_time ? ` · ${v.visit_time}` : ""}</span>
+                    {v.lead_id && <span className="mt-0.5 block text-[11px] font-semibold text-stone-600">View lead &amp; notes</span>}
                   </span>
                   {isToday && <span className="shrink-0 rounded-full bg-teal-100 px-2.5 py-1 text-[10px] font-bold text-teal-800">Today</span>}
-                </Link>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-ink/25" />
+                </>
+              );
+              return v.lead_id ? (
+                <button key={v.id} type="button" onClick={() => openVisitLead(v)} aria-label={`Open lead: ${v.client_name}`} className={`${cls} transition-transform active:scale-[0.99]`}>{inner}</button>
+              ) : (
+                <Link key={v.id} to="/schedule" className={cls}>{inner}</Link>
               );
             })
           )}
@@ -199,6 +218,7 @@ export default function Tasks() {
         </div>
       </div>
 
+      <LeadModals leadId={openLeadId} onClose={() => setOpenLeadId(null)} onChanged={() => { loadLists(); refresh(); }} />
       <ReviewTokenModal unitId={reviewUnitId} onClose={() => setReviewUnitId(null)} profile={profile} onDecided={() => { setReviewUnitId(null); loadTokens(); refresh(); }} />
     </div>
   );

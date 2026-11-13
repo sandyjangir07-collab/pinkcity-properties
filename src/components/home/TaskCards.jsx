@@ -30,15 +30,26 @@ export function FollowupCard({ lead: l, onOpen }) {
   );
 }
 
-export function VisitCard({ visit: v }) {
+export function VisitCard({ visit: v, onOpen }) {
   const initials = (v.client_name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   const waNum = waNumberFor(v.client_phone);
+  const openable = !!(v.lead_id && onOpen); // a visit that belongs to a lead opens that lead
   return (
     <div className="bg-stone-50/60 rounded-2xl p-3.5 flex gap-3">
-      <div className="w-9 h-9 rounded-2xl bg-white text-stone-600 flex items-center justify-center text-xs font-medium shrink-0">{initials}</div>
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-ink">{v.client_name}</div>
-        <div className="text-xs text-ink/45">{v.listing_title || ""}{v.visit_time ? ` · ${v.visit_time}` : ""}</div>
+      <div
+        role={openable ? "button" : undefined}
+        tabIndex={openable ? 0 : undefined}
+        aria-label={openable ? `Open lead: ${v.client_name}` : undefined}
+        onClick={openable ? onOpen : undefined}
+        onKeyDown={openable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } } : undefined}
+        className={`flex min-w-0 flex-1 gap-3 ${openable ? "cursor-pointer transition-opacity active:opacity-70" : ""}`}
+      >
+        <div className="w-9 h-9 rounded-2xl bg-white text-stone-600 flex items-center justify-center text-xs font-medium shrink-0">{initials}</div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-medium text-ink">{v.client_name}</div>
+          <div className="text-xs text-ink/45">{v.listing_title || ""}{v.visit_time ? ` · ${v.visit_time}` : ""}</div>
+          {openable && <div className="mt-1 text-[11px] font-semibold text-stone-600">View lead &amp; notes</div>}
+        </div>
       </div>
       <div className="flex gap-1.5 items-start">
         <a href={`tel:${v.client_phone}`} className="w-8 h-8 rounded-full bg-white flex items-center justify-center active:scale-90 transition-transform" title="Call"><Phone className="w-3.5 h-3.5 text-ink/60" /></a>

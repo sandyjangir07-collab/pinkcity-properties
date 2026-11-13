@@ -3,6 +3,8 @@ import { Key, Search } from "lucide-react";
 import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useTaskCounts } from "../hooks/useTaskCounts";
+import { useToast } from "../hooks/useToast";
+import { leadAvailable } from "../lib/leadOpen";
 import { timeAgo } from "../lib/leadConstants";
 import { todayStr } from "../lib/dates";
 import { Card, SectionTitle, Pill } from "../components/ui/primitives";
@@ -20,6 +22,7 @@ import { BrandedLoader } from "../components/ui/BrandedLoader";
 export default function Today() {
   const { user, profile, isAdmin } = useAuth();
   const { refresh: refreshCounts } = useTaskCounts();
+  const showToast = useToast();
   const [followups, setFollowups] = useState(null);
   const [visits, setVisits] = useState([]);
   const [tokens, setTokens] = useState([]);
@@ -63,6 +66,12 @@ export default function Today() {
     loadTokens();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
+
+  // Tap a visit -> its lead, with all the details and notes.
+  async function openVisitLead(v) {
+    if (await leadAvailable(v.lead_id)) setDetailLeadId(v.lead_id);
+    else showToast("This lead is no longer available.");
+  }
 
   function refreshAll() {
     loadFollowupsAndVisits();
@@ -126,7 +135,7 @@ export default function Today() {
           {visits.length === 0 ? (
             <div className="text-sm text-ink/40">No visits scheduled for today.</div>
           ) : (
-            <div className="space-y-2">{visits.map((v) => <VisitCard key={v.id} visit={v} />)}</div>
+            <div className="space-y-2">{visits.map((v) => <VisitCard key={v.id} visit={v} onOpen={() => openVisitLead(v)} />)}</div>
           )}
         </Card>
       </div>

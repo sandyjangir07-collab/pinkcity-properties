@@ -6,9 +6,11 @@ import { useToast } from "../hooks/useToast";
 import { todayStr } from "../lib/dates";
 import { waNumberFor } from "../lib/leadConstants";
 import { Button } from "../components/ui/button";
-import { Phone, MessageCircle } from "lucide-react";
+import { Phone, MessageCircle, ChevronRight } from "lucide-react";
 import { Pill } from "../components/ui/primitives";
 import ScheduleVisitModal from "../components/leads/ScheduleVisitModal";
+import LeadModals from "../components/leads/LeadModals";
+import { leadAvailable } from "../lib/leadOpen";
 import { BrandedLoader } from "../components/ui/BrandedLoader";
 
 const STATUS_TONE = { done: "green", cancelled: "red", no_show: "red" };
@@ -21,6 +23,14 @@ export default function Schedule() {
   const [filter, setFilter] = useState("upcoming");
   const [visits, setVisits] = useState(null);
   const [visitTarget, setVisitTarget] = useState(null);
+  const [openLeadId, setOpenLeadId] = useState(null);
+
+  // Tap a visit -> its lead: all the details and every note.
+  async function openLead(v) {
+    if (!v.lead_id) return;
+    if (await leadAvailable(v.lead_id)) setOpenLeadId(v.lead_id);
+    else showToast("This lead is no longer available.");
+  }
 
   async function load() {
     const today = todayStr();
@@ -84,7 +94,7 @@ export default function Schedule() {
               </div>
               <div className="space-y-2.5">
                 {todayVisits.map((v) => (
-                  <SchedCard key={v.id} visit={v} isToday onDone={markDone} onCancel={cancel} />
+                  <SchedCard key={v.id} visit={v} isToday onDone={markDone} onCancel={cancel} onOpen={() => openLead(v)} />
                 ))}
               </div>
             </div>
@@ -96,18 +106,19 @@ export default function Schedule() {
             </div>
           ) : (
             <div className="space-y-2.5">
-              {rest.map((v) => <SchedCard key={v.id} visit={v} onDone={markDone} onCancel={cancel} />)}
+              {rest.map((v) => <SchedCard key={v.id} visit={v} onDone={markDone} onCancel={cancel} onOpen={() => openLead(v)} />)}
             </div>
           )}
         </>
       )}
 
       <ScheduleVisitModal target={visitTarget} onClose={() => setVisitTarget(null)} onSaved={() => { setVisitTarget(null); load(); }} />
+      <LeadModals leadId={openLeadId} onClose={() => setOpenLeadId(null)} onChanged={load} />
     </div>
   );
 }
 
-function SchedCard({ visit: v, isToday, onDone, onCancel }) {
+function SchedCard({ visit: v, isToday, onDone, onCancel, onOpen }) {
   const d = new Date(v.visit_date + "T00:00:00");
   const day = d.getDate();
   const mon = d.toLocaleDateString("en-IN", { month: "short" }).toUpperCase();
@@ -120,6 +131,15 @@ function SchedCard({ visit: v, isToday, onDone, onCancel }) {
       transition={{ duration: 0.3, ease: EASE }}
       className="bg-white rounded-3xl p-4 flex gap-3.5 items-center"
     >
+      {/* The date and the details open the lead (when the visit belongs to one); the buttons on the right keep their own jobs. */}
+      <div
+        role={v.lead_id ? "button" : undefined}
+        tabIndex={v.lead_id ? 0 : undefined}
+        aria-label={v.lead_id ? `Open lead: ${v.client_name}` : undefined}
+        onClick={v.lead_id ? onOpen : undefined}
+        onKeyDown={v.lead_id ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } } : undefined}
+        className={`flex min-w-0 flex-1 items-center gap-3.5 ${v.lead_id ? "cursor-pointer transition-opacity active:opacity-70" : ""}`}
+      >
       <div className={`text-center shrink-0 rounded-2xl px-3 py-2 min-w-[56px] ${isToday ? "bg-stone-600 text-sand" : "bg-stone-50 text-ink"}`}>
         <div className="font-display text-[21px] leading-none">{day}</div>
         <div className="text-[10px] font-semibold mt-1">{mon}</div>
@@ -132,6 +152,9 @@ function SchedCard({ visit: v, isToday, onDone, onCancel }) {
           {v.status !== "scheduled" && <Pill tone={STATUS_TONE[v.status] || "neutral"}>{STATUS_LABEL[v.status]}</Pill>}
           {v.notes && <span className="text-xs text-ink/40">{v.notes}</span>}
         </div>
+        {v.lead_id && <div className="mt-1.5 text-[11px] font-semibold text-stone-600">View lead &amp; notes</div>}
+      </div>
+      {v.lead_id && <ChevronRight className="h-4 w-4 shrink-0 text-ink/25" />}
       </div>
       <div className="flex flex-col gap-1.5 items-end shrink-0">
         {v.client_phone && (
