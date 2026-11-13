@@ -24,6 +24,8 @@ import Commissions from "./pages/Commissions";
 import ResalePlots from "./pages/ResalePlots";
 import ResalePlotDetail from "./pages/ResalePlotDetail";
 import ResalePlotForm from "./pages/ResalePlotForm";
+import PublicResale from "./pages/public/PublicResale";
+import PublicPlot from "./pages/public/PublicPlot";
 
 export default function App() {
   return (
@@ -32,6 +34,9 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
+            {/* Public, no login: the resale catalogue and one plot per short link */}
+            <Route path="/p" element={<PublicResale />} />
+            <Route path="/p/:code" element={<PublicPlot />} />
             <Route
               element={
                 <RequireAuth>

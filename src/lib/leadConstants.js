@@ -32,6 +32,7 @@ export const SOURCE_LABELS = {
   manual: "Manual",
   referral: "Referral",
   loan_calculator: "Loan Offer",
+  resale_public: "Resale Page",
 };
 
 export function timeAgo(dateStr) {

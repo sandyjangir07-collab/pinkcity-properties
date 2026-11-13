@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, MapPin, FileText, Share2, Pencil, Lock, Phone, Archive, Download } from "lucide-react";
+import { ArrowLeft, MapPin, FileText, Share2, Pencil, Lock, Phone, Archive, Download, Globe, Star, Check, Clock } from "lucide-react";
 import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
@@ -10,8 +10,9 @@ import { Sheet, SheetHeader } from "../components/ui/Sheet";
 import SitePlanViewer from "../components/resale/SitePlanViewer";
 import RequestSheet from "../components/resale/RequestSheet";
 import BrochureSheet from "../components/resale/BrochureSheet";
+import ShareSheet from "../components/resale/ShareSheet";
 import {
-  BUCKET_PLANS, BUCKET_OWNER_DOCS, RESALE_STATUS, formatGaj, isImagePath, shareText, shareOrCopy, signedUrl, friendlyError,
+  BUCKET_PLANS, BUCKET_OWNER_DOCS, RESALE_STATUS, formatGaj, isImagePath, signedUrl, friendlyError, isStale, confirmLabel, publicPlotUrl,
 } from "../lib/resale";
 
 function Tile({ label, value }) {
@@ -36,6 +37,7 @@ export default function ResalePlotDetail() {
   const [viewer, setViewer] = useState(false);
   const [reqOpen, setReqOpen] = useState(false);
   const [brochureOpen, setBrochureOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
 
   async function load() {
@@ -62,10 +64,11 @@ export default function ResalePlotDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isAdmin]);
 
-  async function share() {
-    const r = await shareOrCopy(shareText(plot), `${plot.scheme} — Plot ${plot.plot_number}`);
-    if (r === "copied") showToast("✓ Details copied. Paste them in WhatsApp.");
-    if (r === "failed") showToast("Couldn't share. Please try again.");
+  async function patchPlot(changes, okMsg) {
+    const { error } = await sb.from("resale_plots").update(changes).eq("id", plot.id);
+    if (error) return showToast(friendlyError(error));
+    setPlot((p) => ({ ...p, ...changes, ...(changes.status ? { last_confirmed_at: new Date().toISOString() } : {}) }));
+    if (okMsg) showToast(okMsg);
   }
 
   async function setStatus(status) {
@@ -178,6 +181,9 @@ export default function ResalePlotDetail() {
         <span className={`rounded-full px-3.5 py-1 text-[12.5px] font-bold ${st.cls}`}>{st.label}</span>
       </div>
       <div className="mt-1 text-right text-[11px] text-ink/35">Updated {formatDate(plot.updated_at)}</div>
+      <div className={`mt-1 flex items-center justify-end gap-1.5 text-[12px] ${isStale(plot) ? "font-semibold text-amber-700" : "text-ink/40"}`}>
+        <Clock className="h-3.5 w-3.5" /> {confirmLabel(plot)}{isStale(plot) ? " · please check" : ""}
+      </div>
 
       {!isAdmin && (
         <button onClick={() => setReqOpen(true)} className="mt-3 min-h-[44px] text-[13.5px] font-semibold text-stone-600 underline-offset-2 hover:underline">
@@ -189,6 +195,31 @@ export default function ResalePlotDetail() {
       {isAdmin && (
         <>
           <div className="mt-5 rounded-[22px] border border-ink/[0.06] bg-surface p-4">
+            <div className="text-[13px] font-semibold text-ink">Advertising</div>
+            <div className="mt-3 space-y-2.5">
+              <label className="flex min-h-[52px] cursor-pointer items-start gap-3 rounded-2xl border border-ink/10 bg-white px-4 py-3">
+                <input type="checkbox" className="mt-1 h-4 w-4 accent-stone-600" checked={!!plot.is_public} onChange={(e) => patchPlot({ is_public: e.target.checked }, e.target.checked ? "✓ Now on the public page." : "✓ Hidden from the public page.")} />
+                <span>
+                  <span className="flex items-center gap-1.5 text-[14px] font-semibold text-ink"><Globe className="h-4 w-4 text-sky-600" /> Show on the public page</span>
+                  <span className="block text-[12px] text-ink/45">
+                    {plot.is_public ? `Live at ${publicPlotUrl(plot.public_code).replace(/^https?:\/\//, "")}. Owner details never appear.` : "Anyone with the link can see the details and site plan. Owner details never appear."}
+                  </span>
+                </span>
+              </label>
+              <label className="flex min-h-[52px] cursor-pointer items-start gap-3 rounded-2xl border border-ink/10 bg-white px-4 py-3">
+                <input type="checkbox" className="mt-1 h-4 w-4 accent-stone-600" checked={!!plot.featured} onChange={(e) => patchPlot({ featured: e.target.checked }, e.target.checked ? "✓ Added to Plot of the week." : "✓ Removed from Plot of the week.")} />
+                <span>
+                  <span className="flex items-center gap-1.5 text-[14px] font-semibold text-ink"><Star className="h-4 w-4 text-amber-500" /> Plot of the week</span>
+                  <span className="block text-[12px] text-ink/45">Shown first in the app and at the top of the public page.</span>
+                </span>
+              </label>
+              <button onClick={() => patchPlot({ last_confirmed_at: new Date().toISOString() }, "✓ Marked as still available.")} className={`flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full border text-[13.5px] font-semibold ${isStale(plot) ? "border-amber-300 bg-amber-50 text-amber-800" : "border-ink/10 bg-white text-ink/70"}`}>
+                <Check className="h-4 w-4" /> Still available ✓
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-[22px] border border-ink/[0.06] bg-surface p-4">
             <div className="text-[13px] font-semibold text-ink">Change availability</div>
             <div className="mt-3 flex flex-wrap gap-2">
               {Object.entries(RESALE_STATUS).map(([k, v]) => (
@@ -247,8 +278,8 @@ export default function ResalePlotDetail() {
         >
           {hasPlan ? "View Site Plan" : "No Site Plan Yet"}
         </button>
-        <button onClick={share} className="flex min-h-[50px] items-center justify-center gap-2 rounded-full border border-stone-100 bg-white text-[14.5px] font-semibold text-stone-700">
-          <Share2 className="h-4 w-4" /> Share Property Details
+        <button onClick={() => setShareOpen(true)} className="flex min-h-[50px] items-center justify-center gap-2 rounded-full border border-stone-100 bg-white text-[14.5px] font-semibold text-stone-700">
+          <Share2 className="h-4 w-4" /> Share this plot
         </button>
         <button onClick={() => setBrochureOpen(true)} className="flex min-h-[50px] items-center justify-center gap-2 rounded-full border border-stone-100 bg-stone-50 text-[14.5px] font-semibold text-stone-700 sm:col-span-2">
           <FileText className="h-4 w-4" /> Customer Brochure (PDF)
@@ -258,6 +289,14 @@ export default function ResalePlotDetail() {
       <SitePlanViewer open={viewer} plot={plot} canDownload={canDownload} onClose={() => setViewer(false)} />
       <RequestSheet open={reqOpen} plot={plot} onClose={() => setReqOpen(false)} />
       <BrochureSheet open={brochureOpen} plot={plot} onClose={() => setBrochureOpen(false)} />
+      <ShareSheet
+        open={shareOpen}
+        plot={plot}
+        isAdmin={isAdmin}
+        onClose={() => setShareOpen(false)}
+        onBrochure={() => setBrochureOpen(true)}
+        onMakePublic={() => patchPlot({ is_public: true }, "✓ Now on the public page.")}
+      />
 
       <Sheet open={archiveOpen} onClose={() => setArchiveOpen(false)}>
         <SheetHeader title={plot.archived ? "Restore this listing?" : "Archive this listing?"} sub={plot.archived ? "It will show in the inventory again." : "It disappears from the team's inventory. You can restore it later."} />

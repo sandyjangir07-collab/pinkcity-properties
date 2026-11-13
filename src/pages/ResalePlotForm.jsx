@@ -7,7 +7,7 @@ import { formatINR, compressImageFile, fileToUploadableBuffer } from "../lib/uti
 import { BrandedLoader } from "../components/ui/BrandedLoader";
 import { BUCKET_PLANS, BUCKET_OWNER_DOCS, RESALE_STATUS, FACINGS, fileExt, friendlyError } from "../lib/resale";
 
-const EMPTY = { location: "", scheme: "", plot_number: "", area: "", facing: "", dimensions: "", rate: "", registration: "", notes: "", status: "available", allowDownload: true };
+const EMPTY = { location: "", scheme: "", plot_number: "", area: "", facing: "", dimensions: "", rate: "", registration: "", notes: "", status: "available", allowDownload: true, isPublic: false, featured: false };
 
 async function uploadFile(bucket, path, file, maxDim) {
   let f = file;
@@ -70,7 +70,7 @@ export default function ResalePlotForm() {
         location: p.location || "", scheme: p.scheme || "", plot_number: p.plot_number || "", area: String(p.area_gaj ?? ""),
         facing: p.facing || "", dimensions: p.dimensions || "", rate: String(p.rate_per_gaj ?? ""),
         registration: p.registration_amount != null ? String(p.registration_amount) : "", notes: p.notes || "",
-        status: p.status, allowDownload: p.plan_download_allowed,
+        status: p.status, allowDownload: p.plan_download_allowed, isPublic: !!p.is_public, featured: !!p.featured,
       });
       setPlanPath(p.site_plan_path || null);
       const [{ data: o }, { data: d }] = await Promise.all([
@@ -110,6 +110,7 @@ export default function ResalePlotForm() {
         facing: f.facing || null, dimensions: f.dimensions.trim() || null, rate_per_gaj: rate,
         registration_amount: f.registration === "" ? null : Number(f.registration),
         notes: f.notes.trim() || null, status: f.status, plan_download_allowed: f.allowDownload,
+        is_public: f.isPublic, featured: f.featured,
       };
       if (editing) {
         const { error } = await sb.from("resale_plots").update(row).eq("id", id);
@@ -235,6 +236,20 @@ export default function ResalePlotForm() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Advertising */}
+      <div className="mt-5 rounded-[22px] border border-ink/[0.06] bg-surface p-5 shadow-soft">
+        <div className="mb-1 text-[15px] font-semibold text-ink">Advertising</div>
+        <p className="mb-3.5 text-[12.5px] text-ink/45">Public plots appear on the public catalogue and can be shared as a link. Owner details are never shown.</p>
+        <label className="mb-2.5 flex min-h-[48px] cursor-pointer items-center gap-3 rounded-2xl border border-ink/10 bg-white px-4 py-3 text-[14px] font-semibold text-ink">
+          <input type="checkbox" className="h-4 w-4 accent-stone-600" checked={f.isPublic} onChange={(e) => set("isPublic", e.target.checked)} />
+          Show on the public page
+        </label>
+        <label className="flex min-h-[48px] cursor-pointer items-center gap-3 rounded-2xl border border-ink/10 bg-white px-4 py-3 text-[14px] font-semibold text-ink">
+          <input type="checkbox" className="h-4 w-4 accent-stone-600" checked={f.featured} onChange={(e) => set("featured", e.target.checked)} />
+          Plot of the week
+        </label>
       </div>
 
       {/* Confidential owner information */}

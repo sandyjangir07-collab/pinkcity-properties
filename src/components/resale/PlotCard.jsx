@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import { MapPin, Share2, FileText, Map as MapIcon } from "lucide-react";
+import { MapPin, Share2, FileText, Map as MapIcon, Star, Globe, Clock } from "lucide-react";
 import { formatINR } from "../../lib/utils";
-import { RESALE_STATUS, formatGaj, isImagePath } from "../../lib/resale";
+import { RESALE_STATUS, formatGaj, isImagePath, isStale, confirmLabel } from "../../lib/resale";
 
 function Fact({ label, value }) {
   return (
@@ -12,11 +12,29 @@ function Fact({ label, value }) {
   );
 }
 
+export function PlotBadges({ p, showPublic }) {
+  const stale = isStale(p);
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {p.featured && <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10.5px] font-bold text-amber-800"><Star className="h-3 w-3 fill-current" /> Plot of the week</span>}
+      {showPublic && p.is_public && <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[10.5px] font-bold text-sky-800"><Globe className="h-3 w-3" /> Public</span>}
+      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${stale ? "bg-amber-100 text-amber-800" : "text-ink/40"}`}>
+        <Clock className="h-3 w-3" /> {confirmLabel(p)}{stale ? " · check it" : ""}
+      </span>
+    </div>
+  );
+}
+
 // One listing, readable in five seconds: where, how big, what it costs, is it free.
-export default function PlotCard({ plot: p, thumb, onShare }) {
+export default function PlotCard({ plot: p, thumb, onShare, isAdmin, selectMode, selected, onToggle }) {
   const st = RESALE_STATUS[p.status] || RESALE_STATUS.available;
   return (
-    <div className={`rounded-[22px] border border-ink/[0.06] bg-surface p-4 shadow-soft ${p.archived ? "opacity-60" : ""}`}>
+    <div className={`relative rounded-[22px] border bg-surface p-4 shadow-soft ${selected ? "border-stone-600 ring-2 ring-stone-600/30" : "border-ink/[0.06]"} ${p.archived ? "opacity-60" : ""}`}>
+      {selectMode && (
+        <label className="absolute -left-1.5 -top-1.5 z-10 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-white shadow-soft">
+          <input type="checkbox" aria-label={`Select plot ${p.plot_number}`} className="h-5 w-5 accent-stone-600" checked={!!selected} onChange={() => onToggle(p.id)} />
+        </label>
+      )}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="truncate font-display text-[17px] font-semibold text-ink">{p.scheme}</div>
@@ -32,7 +50,9 @@ export default function PlotCard({ plot: p, thumb, onShare }) {
         </span>
       </div>
 
-      <div className="mt-3.5 flex gap-3.5">
+      <div className="mt-2"><PlotBadges p={p} showPublic={isAdmin} /></div>
+
+      <div className="mt-3 flex gap-3.5">
         <Link
           to={`/resale/${p.id}`}
           aria-label="Open site plan and details"

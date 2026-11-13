@@ -48,7 +48,8 @@ export const isImagePath = (p) => /\.(png|jpe?g|webp)$/i.test(p || "");
 export const fileExt = (name) => (String(name || "").split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "");
 
 // What an associate shares with a customer — property facts only, never owner details.
-export function shareText(p) {
+export function shareText(p, opts = {}) {
+  const { link, contactName, contactPhone } = opts;
   return [
     "PinkCity Properties & Consultants",
     `${p.scheme} — Plot ${p.plot_number}`,
@@ -61,6 +62,9 @@ export function shareText(p) {
     `Total demand: ${formatINR(p.total_demand)}`,
     p.registration_amount != null ? `Registration: ${formatINR(p.registration_amount)}` : null,
     `Status: ${RESALE_STATUS[p.status]?.label || p.status}`,
+    link ? "" : null,
+    link ? `View details & site plan: ${link}` : null,
+    contactName ? `Contact: ${contactName}${contactPhone ? ` · ${contactPhone}` : ""}` : null,
   ]
     .filter((l) => l !== null)
     .join("\n");
@@ -101,4 +105,69 @@ export async function signedUrls(bucket, paths, seconds = 3600) {
 export function friendlyError(e) {
   if (e && e.code === "23505") return "A plot with this scheme and plot number already exists.";
   return (e && e.message) || "Something went wrong. Please try again.";
+}
+
+// ---------- Freshness ----------
+// A plot nobody has re-confirmed for this long gets flagged, so old listings don't mislead clients.
+export const STALE_DAYS = 30;
+const DAY = 24 * 60 * 60 * 1000;
+
+export function daysSinceConfirmed(p, now = Date.now()) {
+  const t = new Date(p.last_confirmed_at || p.updated_at || p.created_at).getTime();
+  if (Number.isNaN(t)) return 0;
+  return Math.max(0, Math.floor((now - t) / DAY));
+}
+export function confirmLabel(p, now) {
+  const d = daysSinceConfirmed(p, now);
+  if (d === 0) return "Confirmed today";
+  if (d === 1) return "Confirmed yesterday";
+  return `Confirmed ${d} days ago`;
+}
+// Only plots that can still be sold are worth flagging.
+export function isStale(p, now) {
+  return !p.archived && (p.status === "available" || p.status === "reserved") && daysSinceConfirmed(p, now) >= STALE_DAYS;
+}
+
+// ---------- Sorting ----------
+export const SORTS = [
+  { id: "newest", label: "Newest first" },
+  { id: "price_low", label: "Price: low to high" },
+  { id: "price_high", label: "Price: high to low" },
+  { id: "size_big", label: "Size: biggest first" },
+  { id: "stale_first", label: "Needs confirming first" },
+];
+export function sortPlots(list, sort) {
+  const by = {
+    newest: (a, b) => String(b.created_at).localeCompare(String(a.created_at)),
+    price_low: (a, b) => (Number(a.total_demand) || 0) - (Number(b.total_demand) || 0),
+    price_high: (a, b) => (Number(b.total_demand) || 0) - (Number(a.total_demand) || 0),
+    size_big: (a, b) => (Number(b.area_gaj) || 0) - (Number(a.area_gaj) || 0),
+    stale_first: (a, b) => String(a.last_confirmed_at || "").localeCompare(String(b.last_confirmed_at || "")),
+  }[sort] || (() => 0);
+  return list.slice().sort(by);
+}
+
+export function chunk(arr, n) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
+  return out;
+}
+
+// ---------- Public links ----------
+export const COMPANY_NAME = "PinkCity Properties & Consultants";
+export const COMPANY_PHONE = "+919358830405";
+export const COMPANY_PHONE_SHOWN = "+91 93588 30405";
+
+// /p/KD-96?a=<associate share code>. The code tells the page whose number to show.
+export function publicPlotUrl(code, ref, origin = typeof window !== "undefined" ? window.location.origin : "") {
+  if (!code) return "";
+  return `${origin}/p/${encodeURIComponent(code)}${ref ? `?a=${encodeURIComponent(ref)}` : ""}`;
+}
+export function publicCatalogueUrl(ref, origin = typeof window !== "undefined" ? window.location.origin : "") {
+  return `${origin}/p${ref ? `?a=${encodeURIComponent(ref)}` : ""}`;
+}
+export function waLink(phone, text) {
+  const digits = String(phone || "").replace(/\D/g, "");
+  const full = digits.length === 10 ? `91${digits}` : digits;
+  return `https://wa.me/${full}?text=${encodeURIComponent(text || "")}`;
 }

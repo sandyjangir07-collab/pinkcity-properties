@@ -18,12 +18,11 @@ export default function TransferLeadSheet({ open, lead, onClose, onDone }) {
     if (!open || !lead) return;
     setTarget("");
     setNote("");
-    sb.from("employees")
-      .select("id,user_id,full_name,designation")
-      .eq("profile_status", "approved")
-      .not("user_id", "is", null)
-      .order("full_name")
-      .then(({ data }) => setPeople((data || []).filter((p) => p.user_id !== lead.created_by)));
+    // Names only. Associates can't read the employees table directly (phone numbers,
+    // documents), so this goes through a small lookup that returns just who can be picked.
+    sb.rpc("lead_transfer_candidates").then(({ data }) =>
+      setPeople((data || []).filter((p) => p.user_id !== lead.created_by))
+    );
   }, [open, lead?.id]);
 
   if (!lead) return <Sheet open={false} onClose={onClose} />;

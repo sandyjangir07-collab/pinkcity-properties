@@ -4,7 +4,7 @@
 // Returns { path } to go to a page, or { leadId } to open that lead's full screen.
 export function notificationTarget(n, employeeId) {
   const type = n?.type || "";
-  if (type === "lead_shared" || type === "lead_share_ended") {
+  if (type === "lead_shared" || type === "lead_share_ended" || type === "lead_enquiry") {
     return n.related_id ? { leadId: n.related_id } : { path: "/leads" };
   }
   // Admin recorded a payout → the associate confirms it on Home.
