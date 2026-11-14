@@ -163,6 +163,14 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
     load();
   }
 
+  async function showToTeam() {
+    const { error } = await sb.from("leads").update({ admin_only: false }).eq("id", leadId);
+    if (error) return showToast(error.message);
+    showToast("✓ Visible to the owner again.");
+    await load();
+    onChanged();
+  }
+
   async function dismissDuplicate() {
     await sb.from("leads").update({ possible_duplicate_of: null }).eq("id", leadId);
     setDupLead(null);
@@ -285,6 +293,15 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
           </button>
         ) : null;
       })()}
+
+      {lead.admin_only && isAdmin && (
+        <div className="mb-3.5 flex items-center gap-3 rounded-[22px] border border-ink/10 bg-ink/[0.04] p-4">
+          <p className="min-w-0 flex-1 text-[12.5px] leading-relaxed text-ink/65">
+            <b className="font-semibold text-ink">Admin only.</b> You restored this lead, so {lead.created_by_name || "the owner"} can't see it.
+          </p>
+          <button onClick={showToTeam} className="min-h-[40px] shrink-0 rounded-full border border-ink/10 bg-white px-3.5 text-[12px] font-semibold text-ink/70 active:scale-95 transition-transform">Show to them</button>
+        </div>
+      )}
 
       {dupLead && (
         <div className="mb-3.5 rounded-[22px] border border-rose-200 bg-rose-50 p-4">

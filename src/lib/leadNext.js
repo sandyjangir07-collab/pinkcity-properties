@@ -98,13 +98,16 @@ export function needsFollowUp(action) {
   return !!action && ["reengage", "followup", "closeout", "overdue_visit"].includes(action.key);
 }
 
-// The "Call next" queue: most urgent first, skipping snoozed leads.
-export function buildQueue(leads, visits, snoozed, now = Date.now(), limit = 4) {
-  return leads
+// The "Call next" queue. Leads whose site visit is done always come first (they are the ones
+// that need following up), then the most urgent of the rest. Snoozed leads are skipped.
+export function buildQueue(leads, visits, snoozed, now = Date.now(), limit = 4, visitDoneCap = 12) {
+  const ranked = leads
     .map((l) => ({ lead: l, action: nextAction(l, visits[l.id], now) }))
     .filter((x) => x.action && x.action.urgency >= 50 && !(snoozed[x.lead.id] > now))
-    .sort((a, b) => b.action.urgency - a.action.urgency || (b.lead._score || 0) - (a.lead._score || 0))
-    .slice(0, limit);
+    .sort((a, b) => b.action.urgency - a.action.urgency || (b.lead._score || 0) - (a.lead._score || 0));
+  const visited = ranked.filter((x) => x.lead.status === "visit_done").slice(0, visitDoneCap);
+  const others = ranked.filter((x) => x.lead.status !== "visit_done").slice(0, Math.max(0, limit - visited.length));
+  return [...visited, ...others];
 }
 
 // "Later" brings a lead back at 9 AM the next morning.

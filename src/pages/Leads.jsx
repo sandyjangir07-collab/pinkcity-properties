@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion, useAnimationControls } from "framer-motion";
 import { Phone, MessageCircle, Search, Plus, Trash2, Clock, ChevronDown, CheckCheck } from "lucide-react";
 import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
@@ -20,12 +20,14 @@ const EASE = [0.22, 1, 0.36, 1];
 const TAG_TONE = {
   hot: "bg-[#FCEBF0] text-[#8E1640]",
   dup: "bg-rose-100 text-rose-700",
+  admin: "bg-ink text-cream",
   shared: "bg-[#F1EADB] text-[#6B4E12]",
   stale: "bg-[#FBEFD3] text-[#6B4E12]",
   source: "bg-[#E6EEF8] text-[#234A7C]",
 };
 
 function leadTag(l, hot) {
+  if (l.admin_only) return { text: "Admin only", tone: TAG_TONE.admin };
   if (hot) return { text: "Hot", tone: TAG_TONE.hot };
   if (l.possible_duplicate_of) return { text: "Possible dup", tone: TAG_TONE.dup };
   if (l.assigned_to) return { text: "Shared", tone: TAG_TONE.shared };
@@ -74,6 +76,9 @@ export default function Leads() {
   const [deletedLeads, setDeletedLeads] = useState(null);
   const [snoozed, setSnoozed] = useState(() => readSnooze(user?.id));
   const [heroIdx, setHeroIdx] = useState(0);
+  const slideDir = useRef(0); // -1 = came from the right (swiped left), 1 = from the left
+  const justDragged = useRef(false);
+  const heroControls = useAnimationControls();
 
   const [formTarget, setFormTarget] = useState(null);
   const [detailLeadId, setDetailLeadId] = useState(null);
@@ -105,8 +110,10 @@ export default function Leads() {
   }
 
   async function restoreLead(id) {
-    await sb.from("leads").update({ deleted_at: null, deleted_by: null, deleted_by_name: null }).eq("id", id);
-    showToast("✓ Lead restored!");
+    // Restored leads stay visible to the admin only; the team member who deleted it does not get it back.
+    const { error } = await sb.from("leads").update({ deleted_at: null, deleted_by: null, deleted_by_name: null, admin_only: true }).eq("id", id);
+    if (error) return showToast(error.message);
+    showToast("✓ Lead restored. Only you (admin) can see it.");
     loadDeleted();
     refresh();
   }
@@ -156,7 +163,27 @@ export default function Leads() {
   });
 
   const queue = useMemo(() => buildQueue(scored, visits, snoozed), [scored, visits, snoozed]);
-  const hero = queue[Math.min(heroIdx, Math.max(queue.length - 1, 0))];
+  const safeIdx = Math.min(heroIdx, Math.max(queue.length - 1, 0));
+  const hero = queue[safeIdx];
+
+  const heroId = hero ? hero.lead.id : null;
+  useEffect(() => {
+    if (!heroId) return;
+    heroControls.start({ opacity: [0, 1], x: [slideDir.current * 48, 0], transition: { duration: 0.28, ease: EASE } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [heroId]);
+
+  function goTo(i) {
+    if (i < 0 || i >= queue.length || i === safeIdx) return;
+    slideDir.current = i > safeIdx ? 1 : -1;
+    setHeroIdx(i);
+  }
+  function onHeroDragEnd(_, info) {
+    // The click that ends a swipe can arrive before this handler, so "dragging" is set in onDragStart.
+    setTimeout(() => (justDragged.current = false), 150);
+    if (info.offset.x < -60 || info.velocity.x < -450) goTo(safeIdx + 1);
+    else if (info.offset.x > 60 || info.velocity.x > 450) goTo(safeIdx - 1);
+  }
 
   function refresh() {
     setRefreshKey((k) => k + 1);
@@ -170,7 +197,7 @@ export default function Leads() {
       /* private mode: still hides it for this visit */
     }
     setSnoozed(next);
-    setHeroIdx(0);
+    slideDir.current = 1; // the next lead slides in from the right
     showToast(`We'll bring ${lead.name} back tomorrow morning.`);
   }
 
@@ -258,32 +285,37 @@ export default function Leads() {
             <section className="mt-5 px-5">
               {hero ? (
                 <motion.div
-                  key={hero.lead.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, ease: EASE }}
-                  className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-crimson to-crimson-deep p-[18px] text-cream shadow-[0_24px_40px_-22px_rgba(142,22,64,0.65)]"
+                  animate={heroControls}
+                  drag={queue.length > 1 ? "x" : false}
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.35}
+                  onDragStart={() => (justDragged.current = true)}
+                  onDragEnd={onHeroDragEnd}
+                  onClickCapture={(e) => { if (justDragged.current) { e.preventDefault(); e.stopPropagation(); } }}
+                  className="relative cursor-grab select-none overflow-hidden rounded-[28px] bg-gradient-to-br from-crimson to-crimson-deep p-[18px] text-cream shadow-[0_24px_40px_-22px_rgba(142,22,64,0.65)]"
                 >
                   <span aria-hidden className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-[radial-gradient(circle,rgba(217,184,118,0.38),rgba(217,184,118,0)_70%)]" />
                   <div className="relative flex items-center justify-between">
                     <div className="flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[#F2D9A6]">
                       <span className="h-1.5 w-1.5 rounded-full bg-[#F2D9A6]" />
-                      {hero.action.kind === "call" ? "Call next" : "Do next"}
+                      {hero.lead.status === "visit_done" ? "Follow up · visit done" : hero.action.kind === "call" ? "Call next" : "Do next"}
                     </div>
-                    {queue.length > 1 && (
+                    {queue.length > 1 && (queue.length <= 6 ? (
                       <div className="flex items-center gap-1.5">
                         {queue.map((q, i) => (
                           <button
                             key={q.lead.id}
-                            onClick={() => setHeroIdx(i)}
+                            onClick={() => goTo(i)}
                             aria-label={`Show ${i + 1} of ${queue.length}`}
                             className="flex h-6 items-center"
                           >
-                            <span className={`h-1 rounded-full transition-all ${i === Math.min(heroIdx, queue.length - 1) ? "w-[18px] bg-cream" : "w-1.5 bg-cream/40"}`} />
+                            <span className={`h-1 rounded-full transition-all ${i === safeIdx ? "w-[18px] bg-cream" : "w-1.5 bg-cream/40"}`} />
                           </button>
                         ))}
                       </div>
-                    )}
+                    ) : (
+                      <div className="text-[11px] font-semibold tabular-nums text-cream/80">{safeIdx + 1} / {queue.length}</div>
+                    ))}
                   </div>
                   <button onClick={() => setDetailLeadId(hero.lead.id)} className="relative mt-3 block w-full text-left">
                     <span className="flex items-baseline gap-2">
