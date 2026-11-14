@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { sb } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
-import { STATUS_LABELS, STATUS_TEXT } from "../../lib/leadConstants";
+import { STATUS_LABELS, STATUS_TEXT, SOURCE_LABELS, waNumberFor } from "../../lib/leadConstants";
+import { JOURNEY, journeyStep, nextAction } from "../../lib/leadNext";
 import { leadScore } from "../../lib/leadScore";
-import { Phone, MapPin, IndianRupee, CalendarDays, CalendarClock, Send, UserRound, Trash2, Sparkles, AlertTriangle, Share2, Pencil } from "lucide-react";
+import { Phone, MessageCircle, CalendarDays, CalendarClock, Send, UserRound, Trash2, AlertTriangle, Share2, Pencil, Lightbulb } from "lucide-react";
 import { Sheet } from "../ui/Sheet";
 import AiAssistPanel from "./AiAssistPanel";
 import VoiceMic, { appendSpoken } from "./VoiceMic";
@@ -183,27 +184,66 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
 
   const hasLoanInfo = lead.occupation || lead.company_name || lead.monthly_salary || lead.loan_amount_required;
   const score = leadScore(lead);
-  const tone = STATUS_TONE[lead.status] || STATUS_TONE.new;
+  const step = journeyStep(lead.status);
+  const suggestion = nextAction(lead, visit && visit.status === "scheduled" ? visit : null);
+  const canTransferTop = lead.created_by === user.id || isAdmin;
+  function openVisitScheduler() {
+    const booked = visit && visit.status === "scheduled" ? visit : null;
+    onScheduleVisit({ leadId, name: lead.name, phone: lead.phone, editId: booked ? booked.id : null, existing: booked });
+  }
+  function scrollToStage() {
+    document.getElementById("lead-stage")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
   // A real synthesis of what they're actually looking for, from real fields — not invented copy.
   const interestLine = [
-    lead.property_type && `Looking for a ${lead.property_type.toLowerCase()}`,
+    `${lead.property_type || "Property"}`,
     lead.preferred_location && `in ${lead.preferred_location}`,
-    lead.budget && `around ₹${lead.budget}`,
-  ].filter(Boolean).join(" ") || "No specific preferences recorded yet.";
+    lead.budget && `around ₹${String(lead.budget).replace(/^₹/, "")}`,
+  ].filter(Boolean).join(" ");
 
   return (
     <>
     <Sheet open={!!leadId} onClose={onClose} maxWidth="max-w-md">
-      <div className="flex items-start gap-3.5 mb-5">
-        <span className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-stone-50 font-display text-lg font-semibold text-stone-600">
-          {(lead.name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
-        </span>
+      <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="font-display text-[21px] font-semibold leading-tight text-ink truncate">{lead.name}</h1>
-          <p className="mt-1 text-xs font-medium text-ink/45">
-            PC{lead.lead_number} · {lead.created_by_name || "—"} · Added {new Date(lead.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8A6620]">
+            PC{lead.lead_number} · {SOURCE_LABELS[lead.source] || (lead.source === "manual" ? "Manual entry" : "Lead")}
+          </div>
+          <h1 className="mt-1.5 font-display text-[32px] font-medium leading-[1.04] tracking-tight text-ink break-words">{lead.name}</h1>
+          <p className="mt-2 text-[13px] text-ink/60">
+            {[lead.budget && `₹${String(lead.budget).replace(/^₹/, "")}`, lead.preferred_location, lead.phone].filter(Boolean).join(" · ")}
           </p>
         </div>
+        <div className="relative mt-1 h-[58px] w-[58px] shrink-0" role="img" aria-label={`Lead score ${score}`}>
+          <svg viewBox="0 0 58 58" className="h-full w-full -rotate-90">
+            <circle cx="29" cy="29" r="25" fill="none" stroke="#EADFCB" strokeWidth="5" />
+            <circle cx="29" cy="29" r="25" fill="none" stroke="#B01F4F" strokeWidth="5" strokeLinecap="round" strokeDasharray={`${(score / 100) * 157.1} 157.1`} />
+          </svg>
+          <span className="absolute inset-0 flex items-center justify-center font-display text-[17px] font-semibold text-ink">{score}</span>
+        </div>
+      </div>
+
+      <div className="mt-5 mb-5 flex items-start justify-between gap-3 px-1">
+        {[
+          { key: "call", label: "Call", Icon: Phone, href: `tel:${lead.phone}`, primary: true, attrs: { "data-lead-id": lead.id, "data-lead-name": lead.name || "" } },
+          { key: "wa", label: "WhatsApp", Icon: MessageCircle, href: `https://wa.me/${waNumberFor(lead.phone)}`, external: true },
+          { key: "visit", label: "Visit", Icon: CalendarDays, onClick: openVisitScheduler },
+          ...(canTransferTop ? [{ key: "share", label: "Share", Icon: Share2, onClick: () => setTransferOpen(true) }] : []),
+        ].map((b) => {
+          const cls = `flex h-[54px] w-[54px] items-center justify-center rounded-full transition-transform active:scale-90 ${b.primary ? "bg-crimson text-white shadow-[0_12px_22px_-10px_rgba(176,31,79,0.7)]" : "border border-[#E0D3BE] bg-[#FEFCFA] text-ink"}`;
+          return (
+            <div key={b.key} className="flex flex-1 flex-col items-center gap-1.5">
+              {b.href ? (
+                <a href={b.href} {...(b.external ? { target: "_blank", rel: "noreferrer" } : {})} {...(b.attrs || {})} aria-label={`${b.label} ${lead.name}`} className={cls}>
+                  <b.Icon className="h-[19px] w-[19px]" />
+                </a>
+              ) : (
+                <button onClick={b.onClick} aria-label={b.label} className={cls}><b.Icon className="h-[19px] w-[19px]" /></button>
+              )}
+              <span className="text-[11px] font-medium text-ink/60">{b.label}</span>
+            </div>
+          );
+        })}
       </div>
 
       {lead && (() => {
@@ -275,42 +315,47 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
         </div>
       )}
 
-      {/* Score card */}
-      <div className="rounded-[26px] border border-ink/[0.06] bg-white p-5 shadow-soft">
-        <div className="grid grid-cols-[1fr_auto] items-center gap-3">
-          <div>
-            <div className="text-[9.5px] font-bold uppercase tracking-[0.18em] text-ink/40">Lead score</div>
-            <div className="mt-1 font-display text-3xl font-semibold leading-none text-ink">
-              {score}<span className="text-sm text-ink/40">/100</span>
+      {/* Journey */}
+      <div className="rounded-[26px] border border-[#EADFCB] bg-[#FEFCFA] p-5">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-[18px] font-medium text-ink">Journey</h2>
+          <span className="text-xs font-semibold text-crimson">{step ? `${step} of 5 · ${JOURNEY[step - 1]}` : "Lost"}</span>
+        </div>
+        <div className="mt-3.5 grid grid-cols-5 gap-1">
+          {JOURNEY.map((j, i) => <span key={j} className={`h-[5px] rounded-full ${i < step ? "bg-crimson" : "bg-[#E7DCC8]"}`} />)}
+        </div>
+        <div className="mt-2 grid grid-cols-5 gap-1 text-[10.5px] font-medium text-ink/45">
+          {JOURNEY.map((j, i) => <span key={j} className={`text-center ${i === step - 1 ? "font-semibold text-ink" : ""}`}>{j}</span>)}
+        </div>
+        {suggestion && (
+          <div className="mt-4 flex items-center gap-3 rounded-[18px] bg-[#F7F0E1] p-3.5">
+            <Lightbulb className="h-[18px] w-[18px] shrink-0 text-[#8A6620]" />
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8A6620]">Suggested next step</div>
+              <div className="mt-0.5 text-[13px] font-medium leading-snug text-ink">{suggestion.reason}</div>
             </div>
+            {suggestion.kind === "call" ? (
+              <a href={`tel:${lead.phone}`} data-lead-id={lead.id} data-lead-name={lead.name || ""} className="shrink-0 rounded-full bg-crimson px-3.5 py-2.5 text-xs font-semibold text-white active:scale-95 transition-transform">{suggestion.label}</a>
+            ) : (
+              <button onClick={suggestion.kind === "visit" ? openVisitScheduler : scrollToStage} className="shrink-0 rounded-full bg-crimson px-3.5 py-2.5 text-xs font-semibold text-white active:scale-95 transition-transform">{suggestion.label}</button>
+            )}
           </div>
-          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] ${tone}`}>
-            <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
-            {STATUS_TEXT[lead.status] || lead.status}
-          </span>
-        </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-ink/[0.06]">
-          <div className="h-full rounded-full bg-stone-600 transition-[width] duration-500" style={{ width: `${score}%` }} />
-        </div>
-        <div className="mt-5 grid grid-cols-3 gap-2.5">
-          {[
-            { Icon: Phone, label: "Mobile", v: lead.phone || "—", tint: "bg-emerald-50 text-emerald-600" },
-            { Icon: IndianRupee, label: "Budget", v: lead.budget || "—", tint: "bg-brass/10 text-brass" },
-            { Icon: MapPin, label: "Locality", v: lead.preferred_location || "—", tint: "bg-jali-50 text-jali" },
-          ].map((s) => (
-            <div key={s.label} className="rounded-[18px] border border-ink/[0.06] bg-stone-50/50 p-3">
-              <span className={`inline-flex h-7 w-7 items-center justify-center rounded-lg ${s.tint}`}><s.Icon className="h-3.5 w-3.5" /></span>
-              <div className="mt-2 truncate text-xs font-semibold text-ink">{s.v}</div>
-              <div className="mt-0.5 text-[8.5px] font-bold uppercase tracking-[0.1em] text-ink/40">{s.label}</div>
-            </div>
-          ))}
-        </div>
+        )}
       </div>
 
-      {/* Interest callout */}
-      <div className="mt-3.5 flex items-start gap-3 rounded-[22px] border border-stone-200 bg-stone-50 p-4">
-        <Sparkles className="mt-0.5 h-[16px] w-[16px] shrink-0 text-stone-600" />
-        <p className="text-[13px] font-medium leading-relaxed text-stone-700">{interestLine}</p>
+      {/* Owner + what they want */}
+      <div className="mt-3.5 grid grid-cols-2 gap-3">
+        <div className="rounded-[22px] border border-[#EADFCB] bg-[#FEFCFA] p-4">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ink/40">Owner</div>
+          <div className="mt-1.5 truncate text-sm font-semibold text-ink">{lead.created_by_name || "—"}</div>
+          <div className="mt-0.5 truncate text-[11.5px] text-ink/50">
+            {lead.assigned_to ? `Shared with ${lead.assigned_to_name || "colleague"}` : `Added ${new Date(lead.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`}
+          </div>
+        </div>
+        <div className="rounded-[22px] border border-[#EADFCB] bg-[#FEFCFA] p-4">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ink/40">Looking for</div>
+          <div className="mt-1.5 text-[13px] font-medium leading-snug text-ink">{interestLine}</div>
+        </div>
       </div>
 
       <AiAssistPanel leadId={leadId} />
@@ -344,7 +389,7 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
       </div>
 
       {/* Stage */}
-      <div className="mt-6">
+      <div className="mt-6" id="lead-stage">
         <h2 className="font-display text-[19px] font-medium text-ink">Stage</h2>
         <div className="mt-3 flex flex-wrap gap-2">
           {Object.keys(STATUS_TEXT).map((s) => (

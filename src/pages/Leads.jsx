@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Phone, MessageCircle, Search, Sparkles, Flame, TrendingUp, Plus, Trash2, Share2 } from "lucide-react";
+import { Phone, MessageCircle, Search, Plus, Trash2, Clock, ChevronDown, CheckCheck } from "lucide-react";
 import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
-import { STATUS_TEXT, SOURCE_LABELS, STATUS_DOT, isStaleLead, timeAgo, waNumberFor } from "../lib/leadConstants";
+import { STATUS_TEXT, SOURCE_LABELS, isStaleLead, timeAgo, waNumberFor } from "../lib/leadConstants";
 import { leadScore } from "../lib/leadScore";
+import { JOURNEY, journeyStep, isOpenLead, isHot, nextAction, needsFollowUp, buildQueue, tomorrowMorning, visitLabel } from "../lib/leadNext";
 import LeadFormModal from "../components/leads/LeadFormModal";
 import LeadDetailModal from "../components/leads/LeadDetailModal";
 import ScheduleVisitModal from "../components/leads/ScheduleVisitModal";
@@ -13,44 +14,66 @@ import ScheduleCallModal from "../components/leads/ScheduleCallModal";
 import CallOutcomeWatcher from "../components/leads/CallOutcomeWatcher";
 import { BrandedLoader } from "../components/ui/BrandedLoader";
 
-const CRM_ADMIN_EMAIL = "sandyjangir07@gmail.com";
 const EASE = [0.22, 1, 0.36, 1];
 
-// Status → tone (border/background family), matching each stage to a distinct color
-const STATUS_TONE = {
-  new: { solid: "bg-blue-100 text-blue-700", dot: "bg-blue-500" },
-  contacted: { solid: "bg-amber-100 text-amber-700", dot: "bg-amber-500" },
-  visit_scheduled: { solid: "bg-orange-100 text-orange-700", dot: "bg-orange-500" },
-  visit_done: { solid: "bg-purple-100 text-purple-700", dot: "bg-purple-500" },
-  negotiating: { solid: "bg-red-100 text-red-700", dot: "bg-red-500" },
-  closed: { solid: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" },
-  lost: { solid: "bg-ink/[0.08] text-ink/50", dot: "bg-ink/40" },
+// Small label shown on each lead row. Only one is shown; the most important wins.
+const TAG_TONE = {
+  hot: "bg-[#FCEBF0] text-[#8E1640]",
+  dup: "bg-rose-100 text-rose-700",
+  shared: "bg-[#F1EADB] text-[#6B4E12]",
+  stale: "bg-[#FBEFD3] text-[#6B4E12]",
+  source: "bg-[#E6EEF8] text-[#234A7C]",
 };
 
-function ScoreRing({ score }) {
+function leadTag(l, hot) {
+  if (hot) return { text: "Hot", tone: TAG_TONE.hot };
+  if (l.possible_duplicate_of) return { text: "Possible dup", tone: TAG_TONE.dup };
+  if (l.assigned_to) return { text: "Shared", tone: TAG_TONE.shared };
+  if (isStaleLead(l)) return { text: "Stale", tone: TAG_TONE.stale };
+  return { text: SOURCE_LABELS[l.source] || (l.source === "manual" ? "Manual" : "Lead"), tone: TAG_TONE.source };
+}
+
+function initialsOf(name) {
+  return (name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+}
+
+function JourneyBar({ status }) {
+  const step = journeyStep(status);
   return (
-    <span
-      className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-      style={{ background: `conic-gradient(#C43868 ${score * 3.6}deg, rgba(34,26,23,0.08) 0deg)` }}
-      aria-label={`Lead score ${score}`}
-    >
-      <span className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-full bg-white font-display text-[10.5px] font-semibold text-ink">
-        {score}
-      </span>
-    </span>
+    <div className="grid grid-cols-5 gap-1" role="img" aria-label={step ? `Stage ${step} of 5, ${JOURNEY[step - 1]}` : "Lost"}>
+      {JOURNEY.map((s, i) => (
+        <span key={s} className={`h-1 rounded-full ${i < step ? "bg-crimson" : "bg-[#E7DCC8]"}`} />
+      ))}
+    </div>
   );
 }
 
+function snoozeKey(userId) {
+  return `pc_leads_snooze_${userId}`;
+}
+function readSnooze(userId) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(snoozeKey(userId)) || "{}");
+    const now = Date.now();
+    return Object.fromEntries(Object.entries(raw).filter(([, until]) => until > now));
+  } catch {
+    return {};
+  }
+}
+
 export default function Leads() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const showToast = useToast();
-  const isAdmin = user?.email === CRM_ADMIN_EMAIL;
   const [leads, setLeads] = useState(null);
+  const [visits, setVisits] = useState({});
   const [filter, setFilter] = useState("All");
+  const [showStages, setShowStages] = useState(false);
   const [search, setSearch] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletedLeads, setDeletedLeads] = useState(null);
+  const [snoozed, setSnoozed] = useState(() => readSnooze(user?.id));
+  const [heroIdx, setHeroIdx] = useState(0);
 
   const [formTarget, setFormTarget] = useState(null);
   const [detailLeadId, setDetailLeadId] = useState(null);
@@ -62,6 +85,18 @@ export default function Leads() {
     if (!isAdmin) q = q.or(`created_by.eq.${user.id},assigned_to.eq.${user.id}`);
     const { data } = await q;
     setLeads(data || []);
+    // Booked visits, so "Confirm visit" and the visit date can be shown. Failing just hides them.
+    const { data: v } = await sb
+      .from("scheduled_visits")
+      .select("lead_id,visit_date,visit_time,status")
+      .eq("status", "scheduled")
+      .not("lead_id", "is", null)
+      .order("visit_date", { ascending: true });
+    const map = {};
+    (v || []).forEach((row) => {
+      if (!map[row.lead_id]) map[row.lead_id] = row; // soonest first
+    });
+    setVisits(map);
   }
 
   async function loadDeleted() {
@@ -87,6 +122,11 @@ export default function Leads() {
   }, [showDeleted]);
 
   const scored = useMemo(() => (leads || []).map((l) => ({ ...l, _score: leadScore(l) })), [leads]);
+  const actions = useMemo(() => {
+    const m = {};
+    scored.forEach((l) => (m[l.id] = nextAction(l, visits[l.id])));
+    return m;
+  }, [scored, visits]);
 
   const counts = useMemo(() => {
     const c = {};
@@ -94,8 +134,12 @@ export default function Leads() {
     return c;
   }, [scored]);
 
-  const term = search.trim().toLowerCase();
+  const openCount = scored.filter(isOpenLead).length;
+  const hotCount = scored.filter((l) => isHot(l, l._score)).length;
+  const followCount = scored.filter((l) => needsFollowUp(actions[l.id])).length;
   const sharedCount = scored.filter((l) => l.assigned_to).length;
+
+  const term = search.trim().toLowerCase();
   const visible = scored.filter((l) => {
     const matchesQ =
       !term ||
@@ -103,22 +147,56 @@ export default function Leads() {
       (l.phone || "").toLowerCase().includes(term) ||
       (l.preferred_location || "").toLowerCase().includes(term) ||
       ("pc" + l.lead_number).includes(term.replace(/\s/g, ""));
-    return matchesQ && (filter === "All" || (filter === "Shared" ? !!l.assigned_to : l.status === filter));
+    if (!matchesQ) return false;
+    if (filter === "All") return true;
+    if (filter === "Hot") return isHot(l, l._score);
+    if (filter === "FollowUp") return needsFollowUp(actions[l.id]);
+    if (filter === "Shared") return !!l.assigned_to;
+    return l.status === filter;
   });
 
-  const hot = scored.filter((l) => l._score >= 70).length;
+  const queue = useMemo(() => buildQueue(scored, visits, snoozed), [scored, visits, snoozed]);
+  const hero = queue[Math.min(heroIdx, Math.max(queue.length - 1, 0))];
 
   function refresh() {
     setRefreshKey((k) => k + 1);
   }
+
+  function snoozeLead(lead) {
+    const next = { ...readSnooze(user.id), [lead.id]: tomorrowMorning() };
+    try {
+      localStorage.setItem(snoozeKey(user.id), JSON.stringify(next));
+    } catch {
+      /* private mode: still hides it for this visit */
+    }
+    setSnoozed(next);
+    setHeroIdx(0);
+    showToast(`We'll bring ${lead.name} back tomorrow morning.`);
+  }
+
+  function openVisit(l) {
+    setVisitTarget({ leadId: l.id, name: l.name, phone: l.phone, editId: null, existing: null });
+  }
+
+  const filters = [
+    { id: "All", label: "All", n: scored.length },
+    { id: "Hot", label: "Hot", n: hotCount },
+    { id: "FollowUp", label: "Follow up", n: followCount },
+    ...(sharedCount > 0 || filter === "Shared" ? [{ id: "Shared", label: "Shared", n: sharedCount }] : []),
+    { id: "new", label: "New", n: counts.new || 0 },
+  ];
+  const stageFilterActive = Object.keys(STATUS_TEXT).includes(filter) && filter !== "new";
+  const today = new Date().toLocaleDateString("en-IN", { weekday: "long" });
 
   return (
     <div className="max-w-2xl mx-auto pb-44 md:pb-28">
       <section className="px-5 pt-8">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-600">Sales CRM</div>
-            <h1 className="mt-2 font-display text-[32px] font-semibold leading-[1.03] tracking-tight text-ink">Leads Pipeline</h1>
+            <div className="text-[12.5px] font-medium text-ink/55">
+              {today} · {openCount} open · {hotCount} hot
+            </div>
+            <h1 className="mt-1.5 font-display text-[30px] font-medium leading-[1.05] tracking-tight text-ink">What needs you now</h1>
           </div>
           {isAdmin && (
             <button
@@ -132,9 +210,11 @@ export default function Leads() {
             </button>
           )}
         </div>
-        <p className="mt-2.5 text-[13.5px] leading-relaxed text-ink/50">
-          {showDeleted ? "Deleted by your team — restore any of these if they were removed by mistake." : "Every enquiry, its next action and who owns it — at a glance."}
-        </p>
+        {showDeleted && (
+          <p className="mt-2.5 text-[13.5px] leading-relaxed text-ink/50">
+            Deleted by your team — restore any of these if they were removed by mistake.
+          </p>
+        )}
       </section>
 
       {showDeleted ? (
@@ -174,81 +254,189 @@ export default function Leads() {
         </section>
       ) : (
         <>
+          {leads !== null && !term && (
+            <section className="mt-5 px-5">
+              {hero ? (
+                <motion.div
+                  key={hero.lead.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, ease: EASE }}
+                  className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-crimson to-crimson-deep p-[18px] text-cream shadow-[0_24px_40px_-22px_rgba(142,22,64,0.65)]"
+                >
+                  <span aria-hidden className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-[radial-gradient(circle,rgba(217,184,118,0.38),rgba(217,184,118,0)_70%)]" />
+                  <div className="relative flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[#F2D9A6]">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#F2D9A6]" />
+                      {hero.action.kind === "call" ? "Call next" : "Do next"}
+                    </div>
+                    {queue.length > 1 && (
+                      <div className="flex items-center gap-1.5">
+                        {queue.map((q, i) => (
+                          <button
+                            key={q.lead.id}
+                            onClick={() => setHeroIdx(i)}
+                            aria-label={`Show ${i + 1} of ${queue.length}`}
+                            className="flex h-6 items-center"
+                          >
+                            <span className={`h-1 rounded-full transition-all ${i === Math.min(heroIdx, queue.length - 1) ? "w-[18px] bg-cream" : "w-1.5 bg-cream/40"}`} />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <button onClick={() => setDetailLeadId(hero.lead.id)} className="relative mt-3 block w-full text-left">
+                    <span className="flex items-baseline gap-2">
+                      <span className="truncate font-display text-[27px] font-medium leading-[1.1]">{hero.lead.name}</span>
+                      <span className="shrink-0 text-xs font-semibold text-[#F2D9A6]">PC{hero.lead.lead_number}</span>
+                    </span>
+                    <span className="mt-1 block truncate text-[13px] text-[#F6DCE4]">
+                      {[hero.lead.budget && `₹${String(hero.lead.budget).replace(/^₹/, "")}`, hero.lead.preferred_location, `Score ${hero.lead._score}`].filter(Boolean).join(" · ")}
+                    </span>
+                  </button>
+                  <div className="relative mt-3 inline-flex max-w-full items-center gap-2 rounded-xl bg-cream/[0.14] px-3 py-1.5 text-xs">
+                    <Clock className="h-3.5 w-3.5 shrink-0" />
+                    <span className="min-w-0">{hero.action.reason}</span>
+                  </div>
+                  <div className="relative mt-4 flex gap-2">
+                    {hero.action.kind === "call" ? (
+                      <a
+                        href={`tel:${hero.lead.phone}`}
+                        data-lead-id={hero.lead.id}
+                        data-lead-name={hero.lead.name || ""}
+                        className="flex h-[46px] flex-1 items-center justify-center gap-2 rounded-full bg-cream text-sm font-semibold text-crimson-deep active:scale-[0.98] transition-transform"
+                      >
+                        <Phone className="h-4 w-4" /> {hero.action.label}
+                      </a>
+                    ) : (
+                      <button
+                        onClick={() => (hero.action.kind === "visit" ? openVisit(hero.lead) : setDetailLeadId(hero.lead.id))}
+                        className="flex h-[46px] flex-1 items-center justify-center gap-2 rounded-full bg-cream text-sm font-semibold text-crimson-deep active:scale-[0.98] transition-transform"
+                      >
+                        {hero.action.label}
+                      </button>
+                    )}
+                    <a
+                      href={`https://wa.me/${waNumberFor(hero.lead.phone)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`WhatsApp ${hero.lead.name}`}
+                      className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full border border-cream/45 bg-cream/[0.12]"
+                    >
+                      <MessageCircle className="h-[18px] w-[18px]" />
+                    </a>
+                    <button
+                      onClick={() => snoozeLead(hero.lead)}
+                      className="h-[46px] shrink-0 rounded-full border border-cream/45 px-4 text-[13px] font-medium"
+                    >
+                      Later
+                    </button>
+                  </div>
+                </motion.div>
+              ) : scored.length > 0 && openCount > 0 ? (
+                <div className="flex items-center gap-3.5 rounded-[28px] border border-ink/[0.06] bg-white p-5 shadow-soft">
+                  <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600"><CheckCheck className="h-5 w-5" /></span>
+                  <div>
+                    <p className="font-display text-[18px] font-medium text-ink">You're all caught up</p>
+                    <p className="mt-0.5 text-[12.5px] text-ink/55">Nothing urgent right now. Snoozed leads return tomorrow morning.</p>
+                  </div>
+                </div>
+              ) : null}
+            </section>
+          )}
 
-      <section className="mt-6 grid grid-cols-3 gap-3 px-5">
-        {[
-          { n: String(scored.length), label: "Open leads", Icon: Sparkles, wrap: "bg-stone-50 border-stone-200", num: "text-stone-600", lbl: "text-stone-600/70" },
-          { n: String(hot), label: "Hot", Icon: Flame, wrap: "bg-brass/10 border-brass/30", num: "text-ink", lbl: "text-ink/50" },
-          { n: String(counts.closed || 0), label: "Closed", Icon: TrendingUp, wrap: "bg-emerald-50 border-emerald-200", num: "text-emerald-700", lbl: "text-emerald-700/75" },
-        ].map((s) => (
-          <div key={s.label} className={`rounded-[24px] border p-4 ${s.wrap}`}>
-            <s.Icon className={`h-[18px] w-[18px] opacity-70 ${s.num}`} />
-            <div className={`mt-3 font-display text-[22px] font-semibold leading-none ${s.num}`}>{s.n}</div>
-            <div className={`mt-1.5 text-[9px] font-bold uppercase tracking-[0.1em] ${s.lbl}`}>{s.label}</div>
-          </div>
-        ))}
-      </section>
+          <section className="mt-5 px-5">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search name, phone, locality…"
+                className="w-full rounded-2xl border border-[#EADFCB] bg-[#FEFCFA] py-3.5 pl-11 pr-4 text-sm font-medium text-ink outline-none transition-all placeholder:text-ink/40 focus:border-stone-400 focus:ring-4 focus:ring-stone-500/10"
+              />
+            </div>
+          </section>
 
-      <section className="mt-6 px-5">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name, phone, locality…"
-            className="w-full rounded-2xl border border-ink/10 bg-white py-4 pl-11 pr-4 text-sm font-medium text-ink shadow-soft outline-none transition-all placeholder:text-ink/35 focus:border-stone-400 focus:ring-4 focus:ring-stone-500/10"
-          />
-        </div>
-      </section>
-
-      <section className="mt-4">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar px-5 pb-1">
-          {["All", ...(sharedCount > 0 || filter === "Shared" ? ["Shared"] : []), ...Object.keys(STATUS_TEXT)].map((s) => {
-            const active = filter === s;
-            const tone = s === "All" || s === "Shared" ? null : STATUS_TONE[s];
-            return (
+          <section className="mt-3">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar px-5 pb-1">
+              {filters.map((f) => {
+                const active = filter === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => setFilter(f.id)}
+                    className={`shrink-0 rounded-full px-4 py-2.5 text-xs font-semibold transition-all active:scale-95 ${
+                      active ? "bg-ink text-cream" : "border border-[#E0D3BE] bg-[#FEFCFA] text-ink/75"
+                    }`}
+                  >
+                    {f.label} <span className="ml-0.5 opacity-60">{f.n}</span>
+                  </button>
+                );
+              })}
               <button
-                key={s}
-                onClick={() => setFilter(s)}
-                className={`shrink-0 rounded-full px-4 py-2.5 text-xs font-semibold transition-all active:scale-95 ${
-                  active ? (tone ? `${tone.solid} shadow-soft` : "bg-stone-600 text-sand shadow-lift") : "border border-ink/10 bg-white text-ink/50 shadow-soft"
+                onClick={() => setShowStages((s) => !s)}
+                aria-expanded={showStages}
+                className={`inline-flex shrink-0 items-center gap-1 rounded-full px-3.5 py-2.5 text-xs font-semibold transition-all active:scale-95 ${
+                  stageFilterActive ? "bg-ink text-cream" : "border border-[#E0D3BE] bg-[#FEFCFA] text-ink/75"
                 }`}
               >
-                {s === "All" ? "All" : s === "Shared" ? "Shared" : STATUS_TEXT[s]}
-                {s !== "All" && <span className="ml-1.5 opacity-70">{s === "Shared" ? sharedCount : counts[s] || 0}</span>}
+                {stageFilterActive ? STATUS_TEXT[filter] : "Stage"}
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showStages ? "rotate-180" : ""}`} />
               </button>
-            );
-          })}
-        </div>
-      </section>
+            </div>
+            {showStages && (
+              <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar px-5 pb-1">
+                {Object.keys(STATUS_TEXT).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setFilter(s)}
+                    className={`shrink-0 rounded-full px-3.5 py-2 text-[11.5px] font-semibold transition-all active:scale-95 ${
+                      filter === s ? "bg-crimson text-white" : "border border-[#E0D3BE] bg-white text-ink/60"
+                    }`}
+                  >
+                    {STATUS_TEXT[s]} <span className="ml-0.5 opacity-60">{counts[s] || 0}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
 
-      <section className="mt-5 px-5">
-        {leads === null ? (
-          <div className="flex justify-center py-16"><BrandedLoader size={28} /></div>
-        ) : visible.length === 0 ? (
-          <div className="rounded-[28px] border border-dashed border-ink/15 bg-white/60 p-9 text-center">
-            <img src="/logo.png" alt="" className="w-12 h-12 object-contain mx-auto mb-3 opacity-25" />
-            <p className="font-display text-[19px] text-ink">No leads here</p>
-            <p className="mt-1.5 text-xs text-ink/45">Try another stage or clear your search.</p>
-          </div>
-        ) : (
-          <div className="space-y-3.5">
-            {visible.map((l, i) => (
-              <LeadCard key={l.id} lead={l} index={i} userId={user.id} onOpen={() => setDetailLeadId(l.id)} />
-            ))}
-          </div>
-        )}
-      </section>
+          <section className="mt-4 px-5">
+            {leads === null ? (
+              <div className="flex justify-center py-16"><BrandedLoader size={28} /></div>
+            ) : visible.length === 0 ? (
+              <div className="rounded-[28px] border border-dashed border-ink/15 bg-white/60 p-9 text-center">
+                <img src="/logo.png" alt="" className="w-12 h-12 object-contain mx-auto mb-3 opacity-25" />
+                <p className="font-display text-[19px] text-ink">No leads here</p>
+                <p className="mt-1.5 text-xs text-ink/45">Try another filter or clear your search.</p>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {visible.map((l, i) => (
+                  <LeadCard
+                    key={l.id}
+                    lead={l}
+                    index={i}
+                    userId={user.id}
+                    action={actions[l.id]}
+                    visit={visits[l.id]}
+                    onOpen={() => setDetailLeadId(l.id)}
+                    onVisit={() => openVisit(l)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
         </>
       )}
 
-      <div className="fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] z-30 border-t border-ink/[0.06] bg-sand/95 backdrop-blur px-5 py-3 md:bottom-0 md:py-4">
-        <div className="mx-auto max-w-md flex items-center gap-3">
+      <div className="fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] z-30 bg-gradient-to-t from-sand from-55% to-transparent px-5 pb-4 pt-8 pointer-events-none md:bottom-0">
+        <div className="mx-auto flex max-w-md justify-center">
           <button
             onClick={() => setFormTarget("new")}
-            className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-stone-600 py-4 text-sm font-semibold text-sand shadow-lift transition-transform active:scale-[0.98]"
+            className="pointer-events-auto flex h-[52px] items-center justify-center gap-2.5 rounded-full bg-ink px-8 text-sm font-semibold text-cream shadow-[0_14px_28px_-12px_rgba(34,26,23,0.55)] transition-transform active:scale-[0.97]"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-[17px] w-[17px]" />
             Add lead
           </button>
         </div>
@@ -285,11 +473,23 @@ export default function Leads() {
   );
 }
 
-function LeadCard({ lead: l, index, userId, onOpen }) {
-  const initials = (l.name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-  const stale = isStaleLead(l);
+function LeadCard({ lead: l, index, userId, action, visit, onOpen, onVisit }) {
+  const hot = isHot(l, l._score);
+  const tag = leadTag(l, hot);
   const waNum = waNumberFor(l.phone);
-  const tone = STATUS_TONE[l.status] || STATUS_TONE.new;
+  const step = journeyStep(l.status);
+  const withLine = l.assigned_to
+    ? l.assigned_to === userId
+      ? `from ${(l.created_by_name || "owner").split(" ")[0]}`
+      : `with ${(l.assigned_to_name || "colleague").split(" ")[0]}`
+    : "";
+  const sub = [l.budget && `₹${String(l.budget).replace(/^₹/, "")}`, l.preferred_location, withLine].filter(Boolean).join(" · ");
+  const stageText =
+    l.status === "lost"
+      ? "Lost"
+      : l.status === "visit_scheduled" && visit
+      ? `${step} of 5 · Visit ${visitLabel(visit)}`
+      : `${step} of 5 · ${STATUS_TEXT[l.status] || l.status}${l.status === "contacted" || l.status === "new" ? ` ${timeAgo(l.updated_at || l.created_at).toLowerCase()}` : ""}`;
 
   return (
     <motion.div
@@ -297,53 +497,65 @@ function LeadCard({ lead: l, index, userId, onOpen }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: (index % 10) * 0.03, ease: EASE }}
       onClick={onOpen}
-      className="group relative overflow-hidden rounded-[26px] border border-ink/[0.06] bg-white p-4 shadow-soft transition-all cursor-pointer hover:-translate-y-0.5 hover:shadow-lift active:scale-[0.985]"
+      className="cursor-pointer rounded-[22px] border border-[#EADFCB] bg-[#FEFCFA] px-4 py-3.5 transition-all hover:-translate-y-0.5 hover:shadow-soft active:scale-[0.985]"
     >
-      <span aria-hidden className={`absolute inset-y-0 left-0 w-[5px] ${tone.dot}`} />
-      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3.5 pl-1.5">
-        <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-stone-50 font-display text-sm font-semibold text-stone-600 ring-2 ring-stone-500/10">
-          {initials}
-        </span>
-        <span className="min-w-0">
-          <span className="flex min-w-0 items-baseline gap-1.5">
-            <span className="truncate text-[15px] font-semibold text-ink">{l.name}</span>
-            <span className="shrink-0 text-[11px] font-bold tracking-wide text-stone-600">PC{l.lead_number}</span>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex min-w-0 items-baseline gap-1.5">
+            <span className="truncate text-[15.5px] font-semibold text-ink">{l.name}</span>
+            <span className="shrink-0 text-[11px] font-semibold text-[#8A6620]">PC{l.lead_number}</span>
+          </div>
+          <div className="mt-0.5 truncate text-xs text-ink/55">{sub || l.phone}</div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className={`rounded-[10px] px-2.5 py-[3px] text-[10.5px] font-semibold uppercase tracking-[0.06em] ${tag.tone}`}>{tag.text}</span>
+          <span
+            className={`inline-flex h-[38px] w-[38px] items-center justify-center rounded-full text-[13px] font-semibold ${hot ? "bg-[#FCEBF0] text-crimson" : "bg-[#F1EADB] text-ink"}`}
+            aria-label={`Lead score ${l._score}`}
+          >
+            {l._score}
           </span>
-          <span className="mt-0.5 block truncate text-[11.5px] font-medium text-ink/45">
-            {l.phone}{l.budget ? ` · ${l.budget}` : ""}{l.preferred_location ? ` · ${l.preferred_location}` : ""}
-          </span>
-          <span className="mt-2 flex flex-wrap items-center gap-1.5">
-            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9.5px] font-bold uppercase tracking-[0.1em] ${tone.solid}`}>
-              <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
-              {STATUS_TEXT[l.status] || l.status}
-            </span>
-            <span className="rounded-full bg-ink/[0.05] px-2.5 py-1 text-[9.5px] font-bold uppercase tracking-[0.1em] text-ink/50">
-              {SOURCE_LABELS[l.source] || l.source}
-            </span>
-            {stale && <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[9.5px] font-bold uppercase tracking-[0.1em] text-amber-700">Stale</span>}
-            {l.assigned_to && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-ochre/15 px-2.5 py-1 text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#7A5714]">
-                <Share2 className="h-2.5 w-2.5" />
-                {l.assigned_to === userId ? `From ${(l.created_by_name || "owner").split(" ")[0]}` : `With ${(l.assigned_to_name || "colleague").split(" ")[0]}`}
-              </span>
-            )}
-            {l.possible_duplicate_of && <span className="rounded-full bg-rose-100 px-2.5 py-1 text-[9.5px] font-bold uppercase tracking-[0.1em] text-rose-700">Possible dup</span>}
-          </span>
-          <span className="mt-2 block text-[11px] text-ink/35">
-            Last contacted: <span className="font-semibold text-ink/60">{timeAgo(l.updated_at || l.created_at)}</span>
-          </span>
-        </span>
-        <span className="flex shrink-0 flex-col items-end gap-2">
-          <ScoreRing score={l._score} />
-          <span className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
-            <a href={`tel:${l.phone}`} data-lead-id={l.id} data-lead-name={l.name || ""} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50 text-emerald-600" title="Call">
-              <Phone className="h-[15px] w-[15px]" />
-            </a>
-            <a href={`https://wa.me/${waNum}`} target="_blank" rel="noreferrer" className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-jali-50 text-jali" title="WhatsApp">
-              <MessageCircle className="h-[15px] w-[15px]" />
-            </a>
-          </span>
-        </span>
+        </div>
+      </div>
+
+      <div className="mt-3"><JourneyBar status={l.status} /></div>
+
+      <div className="mt-2 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+        <span className="min-w-0 flex-1 truncate text-[11px] text-ink/55">{stageText}</span>
+        <a
+          href={`tel:${l.phone}`}
+          data-lead-id={l.id}
+          data-lead-name={l.name || ""}
+          aria-label={`Call ${l.name}`}
+          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600"
+        >
+          <Phone className="h-3.5 w-3.5" />
+        </a>
+        <a
+          href={`https://wa.me/${waNum}`}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`WhatsApp ${l.name}`}
+          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-jali-50 text-jali"
+        >
+          <MessageCircle className="h-3.5 w-3.5" />
+        </a>
+        {action && action.kind === "call" && (
+          <a
+            href={`tel:${l.phone}`}
+            data-lead-id={l.id}
+            data-lead-name={l.name || ""}
+            className="shrink-0 pl-1 text-xs font-semibold text-crimson"
+          >
+            {action.label} →
+          </a>
+        )}
+        {action && action.kind === "visit" && (
+          <button onClick={onVisit} className="shrink-0 pl-1 text-xs font-semibold text-crimson">{action.label} →</button>
+        )}
+        {action && action.kind === "open" && (
+          <button onClick={onOpen} className="shrink-0 pl-1 text-xs font-semibold text-crimson">{action.label} →</button>
+        )}
       </div>
     </motion.div>
   );
