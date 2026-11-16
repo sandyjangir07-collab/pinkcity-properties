@@ -163,14 +163,6 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
     load();
   }
 
-  async function showToTeam() {
-    const { error } = await sb.from("leads").update({ admin_only: false }).eq("id", leadId);
-    if (error) return showToast(error.message);
-    showToast("✓ Visible to the owner again.");
-    await load();
-    onChanged();
-  }
-
   async function dismissDuplicate() {
     await sb.from("leads").update({ possible_duplicate_of: null }).eq("id", leadId);
     setDupLead(null);
@@ -294,12 +286,15 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
         ) : null;
       })()}
 
-      {lead.admin_only && isAdmin && (
-        <div className="mb-3.5 flex items-center gap-3 rounded-[22px] border border-ink/10 bg-ink/[0.04] p-4">
-          <p className="min-w-0 flex-1 text-[12.5px] leading-relaxed text-ink/65">
-            <b className="font-semibold text-ink">Admin only.</b> You restored this lead, so {lead.created_by_name || "the owner"} can't see it.
+      {lead.previous_owner_name && isAdmin && (
+        <div className="mb-3.5 rounded-[22px] border border-ink/10 bg-ink/[0.04] p-4">
+          <p className="text-[12.5px] leading-relaxed text-ink/65">
+            <b className="font-semibold text-ink">Restored lead.</b> It was added by <b className="font-semibold text-ink">{lead.previous_owner_name}</b>
+            {lead.previously_deleted_by_name
+              ? lead.previously_deleted_by_name === lead.previous_owner_name ? ", who deleted it" : `, and deleted by ${lead.previously_deleted_by_name}`
+              : ""}
+            . You are the owner now and the team can't see it. Use Share to give someone access.
           </p>
-          <button onClick={showToTeam} className="min-h-[40px] shrink-0 rounded-full border border-ink/10 bg-white px-3.5 text-[12px] font-semibold text-ink/70 active:scale-95 transition-transform">Show to them</button>
         </div>
       )}
 

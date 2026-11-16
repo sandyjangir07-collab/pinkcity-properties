@@ -27,7 +27,7 @@ const TAG_TONE = {
 };
 
 function leadTag(l, hot) {
-  if (l.admin_only) return { text: "Admin only", tone: TAG_TONE.admin };
+  if (l.previous_owner_name) return { text: "Restored", tone: TAG_TONE.admin };
   if (hot) return { text: "Hot", tone: TAG_TONE.hot };
   if (l.possible_duplicate_of) return { text: "Possible dup", tone: TAG_TONE.dup };
   if (l.assigned_to) return { text: "Shared", tone: TAG_TONE.shared };
@@ -70,10 +70,13 @@ export default function Leads() {
   const [visits, setVisits] = useState({});
   const [filter, setFilter] = useState("All");
   const [showStages, setShowStages] = useState(false);
+  const [owner, setOwner] = useState("all"); // admin only: show the leads one team member added
   const [search, setSearch] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletedLeads, setDeletedLeads] = useState(null);
+  const [confirmAll, setConfirmAll] = useState(false);
+  const [restoringAll, setRestoringAll] = useState(false);
   const [snoozed, setSnoozed] = useState(() => readSnooze(user?.id));
   const [heroIdx, setHeroIdx] = useState(0);
   const slideDir = useRef(0); // -1 = came from the right (swiped left), 1 = from the left
@@ -111,9 +114,24 @@ export default function Leads() {
 
   async function restoreLead(id) {
     // Restored leads stay visible to the admin only; the team member who deleted it does not get it back.
-    const { error } = await sb.from("leads").update({ deleted_at: null, deleted_by: null, deleted_by_name: null, admin_only: true }).eq("id", id);
+    const { error } = await sb.from("leads").update({ deleted_at: null, deleted_by: null, deleted_by_name: null }).eq("id", id);
     if (error) return showToast(error.message);
-    showToast("✓ Lead restored. Only you (admin) can see it.");
+    showToast("✓ Lead restored. It is yours now and only you can see it.");
+    loadDeleted();
+    refresh();
+  }
+
+  async function restoreAll() {
+    setRestoringAll(true);
+    const { data, error } = await sb
+      .from("leads")
+      .update({ deleted_at: null, deleted_by: null, deleted_by_name: null })
+      .not("deleted_at", "is", null)
+      .select("id");
+    setRestoringAll(false);
+    setConfirmAll(false);
+    if (error) return showToast(error.message);
+    showToast(`✓ Restored ${data?.length || 0} leads. They are yours now and only you can see them.`);
     loadDeleted();
     refresh();
   }
@@ -128,7 +146,24 @@ export default function Leads() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showDeleted]);
 
-  const scored = useMemo(() => (leads || []).map((l) => ({ ...l, _score: leadScore(l) })), [leads]);
+  const allScored = useMemo(() => (leads || []).map((l) => ({ ...l, _score: leadScore(l) })), [leads]);
+  // Who added the leads (admin filter), most leads first. Leads without an owner are grouped as "Website / unassigned".
+  const owners = useMemo(() => {
+    if (!isAdmin) return [];
+    const m = new Map();
+    allScored.forEach((l) => {
+      const key = l.created_by || "none";
+      const cur = m.get(key) || { id: key, name: l.created_by ? l.created_by_name || "Unnamed" : "Website / unassigned", n: 0 };
+      cur.n += 1;
+      m.set(key, cur);
+    });
+    return [...m.values()].sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
+  }, [allScored, isAdmin]);
+  const ownerValid = owner === "all" || owners.some((o) => o.id === owner);
+  const scored = useMemo(
+    () => (isAdmin && owner !== "all" && ownerValid ? allScored.filter((l) => (l.created_by || "none") === owner) : allScored),
+    [allScored, owner, ownerValid, isAdmin]
+  );
   const actions = useMemo(() => {
     const m = {};
     scored.forEach((l) => (m[l.id] = nextAction(l, visits[l.id])));
@@ -255,6 +290,21 @@ export default function Leads() {
             </div>
           ) : (
             <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3 rounded-[22px] border border-ink/10 bg-white p-3.5 shadow-soft">
+                <p className="min-w-0 text-[13px] text-ink/60">
+                  <b className="font-semibold text-ink">{deletedLeads.length}</b> deleted {deletedLeads.length === 1 ? "lead" : "leads"}. Restored leads become yours, with the previous owner noted.
+                </p>
+                {confirmAll ? (
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button onClick={() => setConfirmAll(false)} disabled={restoringAll} className="min-h-[40px] rounded-full border border-ink/10 px-3.5 text-xs font-semibold text-ink/60">Cancel</button>
+                    <button onClick={restoreAll} disabled={restoringAll} className="min-h-[40px] rounded-full bg-crimson px-4 text-xs font-semibold text-white active:scale-95 transition-transform disabled:opacity-60">
+                      {restoringAll ? "Restoring…" : `Yes, restore ${deletedLeads.length}`}
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirmAll(true)} className="min-h-[40px] shrink-0 rounded-full bg-ink px-4 text-xs font-semibold text-cream active:scale-95 transition-transform">Restore all</button>
+                )}
+              </div>
               {deletedLeads.map((l) => (
                 <div key={l.id} className="rounded-[22px] border border-red-100 bg-red-50/40 p-4">
                   <div className="flex items-center justify-between gap-3">
@@ -389,6 +439,27 @@ export default function Leads() {
             </div>
           </section>
 
+          {isAdmin && owners.length > 1 && (
+            <section className="mt-3 px-5">
+              <label className="relative block">
+                <span className="sr-only">Show leads added by</span>
+                <select
+                  value={ownerValid ? owner : "all"}
+                  onChange={(e) => { setOwner(e.target.value); setHeroIdx(0); }}
+                  className={`w-full appearance-none rounded-2xl border py-3 pl-4 pr-10 text-sm font-semibold outline-none transition-all focus:ring-4 focus:ring-stone-500/10 ${
+                    owner !== "all" && ownerValid ? "border-ink bg-ink text-cream" : "border-[#EADFCB] bg-[#FEFCFA] text-ink"
+                  }`}
+                >
+                  <option value="all">Added by: Everyone ({allScored.length})</option>
+                  {owners.map((o) => (
+                    <option key={o.id} value={o.id}>Added by: {o.name} ({o.n})</option>
+                  ))}
+                </select>
+                <ChevronDown className={`pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 ${owner !== "all" && ownerValid ? "text-cream" : "text-ink/45"}`} />
+              </label>
+            </section>
+          )}
+
           <section className="mt-3">
             <div className="flex gap-2 overflow-x-auto no-scrollbar px-5 pb-1">
               {filters.map((f) => {
@@ -450,6 +521,7 @@ export default function Leads() {
                     lead={l}
                     index={i}
                     userId={user.id}
+                    isAdmin={isAdmin}
                     action={actions[l.id]}
                     visit={visits[l.id]}
                     onOpen={() => setDetailLeadId(l.id)}
@@ -505,7 +577,7 @@ export default function Leads() {
   );
 }
 
-function LeadCard({ lead: l, index, userId, action, visit, onOpen, onVisit }) {
+function LeadCard({ lead: l, index, userId, isAdmin, action, visit, onOpen, onVisit }) {
   const hot = isHot(l, l._score);
   const tag = leadTag(l, hot);
   const waNum = waNumberFor(l.phone);
@@ -515,7 +587,12 @@ function LeadCard({ lead: l, index, userId, action, visit, onOpen, onVisit }) {
       ? `from ${(l.created_by_name || "owner").split(" ")[0]}`
       : `with ${(l.assigned_to_name || "colleague").split(" ")[0]}`
     : "";
-  const sub = [l.budget && `₹${String(l.budget).replace(/^₹/, "")}`, l.preferred_location, withLine].filter(Boolean).join(" · ");
+  const byLine = l.previous_owner_name
+    ? `was ${l.previous_owner_name.split(" ")[0]}'s`
+    : isAdmin && l.created_by && l.created_by !== userId && l.created_by_name
+    ? `by ${l.created_by_name.split(" ")[0]}`
+    : "";
+  const sub = [l.budget && `₹${String(l.budget).replace(/^₹/, "")}`, l.preferred_location, byLine, withLine].filter(Boolean).join(" · ");
   const stageText =
     l.status === "lost"
       ? "Lost"
