@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useAnimationControls } from "framer-motion";
-import { Phone, MessageCircle, Search, Plus, Trash2, Clock, ChevronDown, CheckCheck } from "lucide-react";
+import { Phone, MessageCircle, Search, Plus, Trash2, Clock, ChevronDown, CheckCheck, Star } from "lucide-react";
 import { sb } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
@@ -9,6 +9,8 @@ import { leadScore } from "../lib/leadScore";
 import { JOURNEY, journeyStep, isOpenLead, isHot, nextAction, needsFollowUp, buildQueue, tomorrowMorning, visitLabel } from "../lib/leadNext";
 import LeadFormModal from "../components/leads/LeadFormModal";
 import LeadDetailModal from "../components/leads/LeadDetailModal";
+import LeadListsSheet from "../components/leads/LeadListsSheet";
+import { fetchLists, fetchMemberships, createList, addToList, removeFromList, DEFAULT_LIST_NAME } from "../lib/leadLists";
 import ScheduleVisitModal from "../components/leads/ScheduleVisitModal";
 import ScheduleCallModal from "../components/leads/ScheduleCallModal";
 import CallOutcomeWatcher from "../components/leads/CallOutcomeWatcher";
@@ -70,6 +72,9 @@ export default function Leads() {
   const [visits, setVisits] = useState({});
   const [filter, setFilter] = useState("All");
   const [showStages, setShowStages] = useState(false);
+  const [lists, setLists] = useState([]); // this person's own lists (private)
+  const [listMap, setListMap] = useState(() => new Map()); // leadId -> [listId]
+  const [listsLead, setListsLead] = useState(null); // lead whose "add to list" sheet is open
   const [owner, setOwner] = useState("all"); // admin only: show the leads one team member added
   const [search, setSearch] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
@@ -105,6 +110,38 @@ export default function Leads() {
       if (!map[row.lead_id]) map[row.lead_id] = row; // soonest first
     });
     setVisits(map);
+    const [ls, mm] = await Promise.all([fetchLists(), fetchMemberships()]);
+    setLists(ls);
+    setListMap(mm);
+  }
+
+  // Star on a row. With one list (or none yet) it is a one-tap toggle; with several it opens the picker.
+  async function starLead(lead) {
+    if (lists.length > 1) return setListsLead(lead);
+    let list = lists[0];
+    if (!list) {
+      const { data, error } = await createList(DEFAULT_LIST_NAME, []);
+      if (error || !data) return showToast("Couldn't create your Favourites list.");
+      list = data;
+      setLists([data]);
+    }
+    const inList = (listMap.get(lead.id) || []).includes(list.id);
+    const flip = (on) =>
+      setListMap((prev) => {
+        const m = new Map(prev);
+        const cur = new Set(m.get(lead.id) || []);
+        if (on) cur.add(list.id); else cur.delete(list.id);
+        m.set(lead.id, [...cur]);
+        return m;
+      });
+    flip(!inList);
+    const { error } = inList ? await removeFromList(list.id, lead.id) : await addToList(list.id, lead.id);
+    if (error) {
+      flip(inList);
+      showToast("Couldn't update your list. Try again.");
+    } else if (!inList) {
+      showToast(`★ ${lead.name} added to ${list.name}`);
+    }
   }
 
   async function loadDeleted() {
@@ -160,6 +197,9 @@ export default function Leads() {
     return [...m.values()].sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
   }, [allScored, isAdmin]);
   const ownerValid = owner === "all" || owners.some((o) => o.id === owner);
+  useEffect(() => {
+    if (filter.startsWith("list:") && filter !== "list:none" && leads !== null && !lists.some((l) => `list:${l.id}` === filter)) setFilter("All");
+  }, [lists, filter, leads]);
   const scored = useMemo(
     () => (isAdmin && owner !== "all" && ownerValid ? allScored.filter((l) => (l.created_by || "none") === owner) : allScored),
     [allScored, owner, ownerValid, isAdmin]
@@ -194,6 +234,7 @@ export default function Leads() {
     if (filter === "Hot") return isHot(l, l._score);
     if (filter === "FollowUp") return needsFollowUp(actions[l.id]);
     if (filter === "Shared") return !!l.assigned_to;
+    if (filter.startsWith("list:")) return (listMap.get(l.id) || []).includes(filter.slice(5));
     return l.status === filter;
   });
 
@@ -242,6 +283,9 @@ export default function Leads() {
 
   const filters = [
     { id: "All", label: "All", n: scored.length },
+    ...(lists.length
+      ? lists.map((l) => ({ id: `list:${l.id}`, label: l.name, color: l.color, n: scored.filter((x) => (listMap.get(x.id) || []).includes(l.id)).length }))
+      : [{ id: "list:none", label: DEFAULT_LIST_NAME, color: "#D9A431", n: 0 }]),
     { id: "Hot", label: "Hot", n: hotCount },
     { id: "FollowUp", label: "Follow up", n: followCount },
     ...(sharedCount > 0 || filter === "Shared" ? [{ id: "Shared", label: "Shared", n: sharedCount }] : []),
@@ -472,6 +516,7 @@ export default function Leads() {
                       active ? "bg-ink text-cream" : "border border-[#E0D3BE] bg-[#FEFCFA] text-ink/75"
                     }`}
                   >
+                    {f.color && <Star className="mr-1 inline h-3.5 w-3.5 -translate-y-px" style={{ color: f.color, fill: f.color }} />}
                     {f.label} <span className="ml-0.5 opacity-60">{f.n}</span>
                   </button>
                 );
@@ -522,6 +567,9 @@ export default function Leads() {
                     index={i}
                     userId={user.id}
                     isAdmin={isAdmin}
+                    lists={lists}
+                    inLists={listMap.get(l.id) || []}
+                    onStar={() => starLead(l)}
                     action={actions[l.id]}
                     visit={visits[l.id]}
                     onOpen={() => setDetailLeadId(l.id)}
@@ -572,14 +620,16 @@ export default function Leads() {
       />
       <ScheduleVisitModal target={visitTarget} onClose={() => setVisitTarget(null)} onSaved={() => { setVisitTarget(null); refresh(); }} />
       <ScheduleCallModal target={callTarget} onClose={() => setCallTarget(null)} onSaved={() => setCallTarget(null)} />
+      <LeadListsSheet open={!!listsLead} lead={listsLead} onClose={() => setListsLead(null)} onChanged={refresh} />
       <CallOutcomeWatcher onLogged={refresh} />
     </div>
   );
 }
 
-function LeadCard({ lead: l, index, userId, isAdmin, action, visit, onOpen, onVisit }) {
+function LeadCard({ lead: l, index, userId, isAdmin, lists, inLists, onStar, action, visit, onOpen, onVisit }) {
   const hot = isHot(l, l._score);
   const tag = leadTag(l, hot);
+  const inListColor = (lists.find((x) => inLists.includes(x.id)) || {}).color;
   const waNum = waNumberFor(l.phone);
   const step = journeyStep(l.status);
   const withLine = l.assigned_to
@@ -631,6 +681,24 @@ function LeadCard({ lead: l, index, userId, isAdmin, action, visit, onOpen, onVi
 
       <div className="mt-2 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
         <span className="min-w-0 flex-1 truncate text-[11px] text-ink/55">{stageText}</span>
+        <button
+          onClick={onStar}
+          aria-label={inLists.length ? `Lists for ${l.name}` : `Add ${l.name} to a list`}
+          aria-pressed={inLists.length > 0}
+          className="inline-flex h-7 shrink-0 items-center justify-center gap-1 rounded-full bg-[#FBF3DD] px-[7px] active:scale-90 transition-transform"
+        >
+          {lists.length > 1 && inLists.length > 1 && (
+            <span className="flex gap-0.5">
+              {lists.filter((x) => inLists.includes(x.id)).slice(0, 3).map((x) => (
+                <span key={x.id} className="h-1.5 w-1.5 rounded-full" style={{ background: x.color }} />
+              ))}
+            </span>
+          )}
+          <Star
+            className="h-3.5 w-3.5"
+            style={inListColor ? { color: inListColor, fill: inListColor } : { color: "#B89B54" }}
+          />
+        </button>
         <a
           href={`tel:${l.phone}`}
           data-lead-id={l.id}

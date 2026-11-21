@@ -5,7 +5,8 @@ import { useToast } from "../../hooks/useToast";
 import { STATUS_LABELS, STATUS_TEXT, SOURCE_LABELS, waNumberFor } from "../../lib/leadConstants";
 import { JOURNEY, journeyStep, nextAction } from "../../lib/leadNext";
 import { leadScore } from "../../lib/leadScore";
-import { Phone, MessageCircle, CalendarDays, CalendarClock, Send, UserRound, Trash2, AlertTriangle, Share2, Pencil, Lightbulb } from "lucide-react";
+import LeadListsSheet from "./LeadListsSheet";
+import { Phone, MessageCircle, CalendarDays, CalendarClock, Send, UserRound, Trash2, AlertTriangle, Share2, Pencil, Lightbulb, Star } from "lucide-react";
 import { Sheet } from "../ui/Sheet";
 import AiAssistPanel from "./AiAssistPanel";
 import VoiceMic, { appendSpoken } from "./VoiceMic";
@@ -35,6 +36,8 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
   const { user, profile, isAdmin } = useAuth();
   const showToast = useToast();
   const [lead, setLead] = useState(null);
+  const [inList, setInList] = useState(false); // is this lead in any of my lists
+  const [listsOpen, setListsOpen] = useState(false);
   const [visit, setVisit] = useState(null);
   const [call, setCall] = useState(null);
   const [timeline, setTimeline] = useState([]);
@@ -65,6 +68,8 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
     const { data: l } = await sb.from("leads").select("*").eq("id", leadId).maybeSingle();
     if (!l) return;
     setLead(l);
+    const { data: li } = await sb.from("lead_list_items").select("list_id").eq("lead_id", leadId).limit(1);
+    setInList(!!(li && li.length));
 
     if (l.possible_duplicate_of) {
       const { data: d } = await sb
@@ -227,6 +232,7 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
         {[
           { key: "call", label: "Call", Icon: Phone, href: `tel:${lead.phone}`, primary: true, attrs: { "data-lead-id": lead.id, "data-lead-name": lead.name || "" } },
           { key: "wa", label: "WhatsApp", Icon: MessageCircle, href: `https://wa.me/${waNumberFor(lead.phone)}`, external: true },
+          { key: "fav", label: "List", Icon: Star, onClick: () => setListsOpen(true), active: inList },
           { key: "visit", label: "Visit", Icon: CalendarDays, onClick: openVisitScheduler },
           ...(canTransferTop ? [{ key: "share", label: "Share", Icon: Share2, onClick: () => setTransferOpen(true) }] : []),
         ].map((b) => {
@@ -238,7 +244,7 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
                   <b.Icon className="h-[19px] w-[19px]" />
                 </a>
               ) : (
-                <button onClick={b.onClick} aria-label={b.label} className={cls}><b.Icon className="h-[19px] w-[19px]" /></button>
+                <button onClick={b.onClick} aria-label={b.key === "fav" ? "Add to a list" : b.label} aria-pressed={b.active} className={cls}><b.Icon className={`h-[19px] w-[19px] ${b.active ? "fill-[#D9A431] text-[#D9A431]" : ""}`} /></button>
               )}
               <span className="text-[11px] font-medium text-ink/60">{b.label}</span>
             </div>
@@ -514,6 +520,7 @@ export default function LeadDetailModal({ leadId, onClose, onChanged, onEdit, on
         </button>
       </div>
     </Sheet>
+    <LeadListsSheet open={listsOpen} lead={lead} onClose={() => setListsOpen(false)} onChanged={(n) => { setInList(n > 0); onChanged(); }} />
     <TransferLeadSheet open={transferOpen} lead={lead} onClose={() => setTransferOpen(false)} onDone={() => { setTransferOpen(false); load(); onChanged(); }} />
     </>
   );
