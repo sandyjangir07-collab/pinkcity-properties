@@ -1,6 +1,6 @@
 node_modules
-dist
-.env
+.next
+out
 .env.local
 *.local
 .DS_Store

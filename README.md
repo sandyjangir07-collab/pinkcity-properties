@@ -1,38 +1,32 @@
-# PinkCity CRM (React/Vite)
+# PinkCity Web (Next.js)
 
-Step one of the HTML → React migration: the Employee Management Module, reconstructed
-to match the live `employees.html` feature-for-feature, **plus** the Plots & Token
-Submission/Review workflow that wasn't ported yet.
+Phase 2 of the HTML → React migration: the **public, SEO-critical site** —
+separate from `pinkcity-crm` (the internal tool), because this one needs
+server rendering to protect search rankings, not a client-side SPA.
 
-This was rebuilt from scratch against the actual Supabase schema, RLS policies and
-RPC definitions (not guessed), and the Plots/Token modals were ported line-for-line
-from the production logic in `listing.html`, so the UI language, validation, and
-approve/reject behavior should match exactly.
+## What's here (foundation + homepage)
 
-## What's here
+- Next.js 14 (App Router), same design tokens as everywhere else
+- `app/globals.css` — the production site's actual CSS, copied verbatim
+  from `index.html`'s `<style>` block (1,456 lines) for exact visual fidelity,
+  rather than hand-retyped
+- Shared `Navbar` / `Footer` / `WhatsAppFab`, matching production exactly
+  (scroll state, Resources dropdown, mobile menu, the "Sign In" text link)
+- SEO infrastructure: `lib/seo.js` (per-page metadata builder — canonical,
+  OG, Twitter card), `components/JsonLd.jsx` (RealEstateAgent schema),
+  `app/sitemap.js` and `app/robots.js` matching the live ones exactly
+- Homepage (`app/page.js`): real hero section, plus a **server-rendered**
+  Featured Properties grid pulling live data from Supabase (`revalidate =
+  300`, so it refreshes every 5 minutes without a full redeploy)
 
-- **Auth** — Google OAuth + email/password, matching `login.html`. Auto-links an
-  employee record created by an admin to your account the first time you log in
-  with that email.
-- **Team Directory** (admin) — hierarchy-nested list, stat cards (Members, Fully
-  Verified, Total Sales), add team member.
-- **Self-signup** — `Create Your Profile` → `pending_review` → admin approval queue.
-- **Employee Profile** — Identity (photo upload), Commission (₹/Gaj rate, slab
-  history, deal-based totals), Compliance (Aadhaar/PAN/Police Verification upload +
-  admin review), Personal Info, Employment, Hierarchy (request/approve), Activity.
-- **Plots & Tokens** *(new)* — pick a project, see the plot grid (green/yellow/red),
-  tap a green plot to submit a token (client + associate name + payment
-  screenshot), admin taps a yellow plot to review it (approve with sale amount +
-  credited associate, or reject with a reason). Approving flips the plot to Sold
-  and feeds the employee's commission totals.
-- **Admin: Pending Approvals** — profile approvals + hierarchy requests in one queue.
-- **Admin: Commission Slabs** — create/deactivate ₹-per-Gaj slabs.
+## Not built yet
 
-## Not carried over yet
-
-- Employee-specific push notifications (`employee_notifications` table + `send-push`
-  wiring) — still only exists in the HTML CRM.
-- Document-expiry reminder cron.
+Every other public page: `/areas`, `/founders`, `/govt-resources`, the 4
+location pages, `/calculator`, `/why`, `/verified`, `/investment`,
+`/reviews`, `/blog` (+ individual posts), and `/listing/[id]` (individual
+property detail pages). Same step-by-step approach as the CRM build —
+one page at a time, each grounded in the actual production HTML rather than
+guessed at.
 
 ## Setup
 
@@ -41,30 +35,28 @@ npm install
 npm run dev
 ```
 
-`.env` already has the project's Supabase URL and anon key (the anon key is safe to
-ship client-side — every table is RLS-protected). Copy `.env.example` instead if you
-ever need to point this at a different Supabase project.
+`.env.local` already has the Supabase URL and anon key.
 
-## Getting this into GitHub + Vercel (so it doesn't happen again)
+## Deploy
+
+New GitHub repo + new Vercel project — don't reuse `pinkcity-crm` or
+`pinkcity-properties`, this is a genuinely separate app:
 
 ```bash
 git init
 git add .
-git commit -m "Reconstruct Employee Management Module + Plots/Token workflow"
+git commit -m "Foundation + homepage"
 git branch -M main
-git remote add origin https://github.com/sandyjangir07-collab/pinkcity-crm.git
+git remote add origin https://github.com/sandyjangir07-collab/pinkcity-web.git
 git push -u origin main
 ```
 
-Then in the Vercel dashboard: `pinkcity-crm` project → Settings → Git → Connect Git
-Repository → pick this repo → confirm `main` as the Production branch. Every push
-will auto-deploy from then on.
+Then import that repo as a new project in Vercel (Next.js is
+auto-detected, no config needed) and add the same two environment
+variables from `.env.local` in the project's Settings → Environment
+Variables (Next.js doesn't read committed `.env.local` files the way Vite
+does — these need to be set in Vercel's dashboard directly).
 
-## Build
-
-```bash
-npm run build
-```
-
-Outputs to `dist/`. `vercel.json` isn't needed — Vite's default build output works
-with Vercel's auto-detected framework preset.
+**Do not point `pinkcityproperties.com` at this until it covers the whole
+site** — right now it's only the homepage; swapping the domain over early
+would take down every other page.

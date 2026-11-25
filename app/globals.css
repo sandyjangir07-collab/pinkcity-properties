@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: auto; /* Lenis owns smooth scroll instead */
+  }
+  body {
+    @apply bg-sand text-ink font-sans antialiased;
+  }
+  ::selection {
+    @apply bg-stone-500 text-sand;
+  }
+}
+
+@layer components {
+  .field-input {
+    @apply w-full bg-white border border-ink/10 rounded-xl px-4 py-3 text-sm text-ink outline-none transition-colors focus:border-stone-500;
+  }
+}
+
+/* Subtle paper grain — keeps the warm background from feeling flat/digital */
+.grain {
+  position: relative;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.prose-post {
+  font-size: 17px;
+  line-height: 1.75;
+  color: theme("colors.ink / 80%");
+}
+.prose-post h2 {
+  font-family: var(--font-display, serif);
+  font-size: 28px;
+  margin: 2.2em 0 0.6em;
+  color: theme("colors.ink");
+}
+.prose-post h3 {
+  font-family: var(--font-display, serif);
+  font-size: 22px;
+  margin: 1.8em 0 0.5em;
+  color: theme("colors.ink");
+}
+.prose-post p {
+  margin: 1.1em 0;
+}
+.prose-post ul, .prose-post ol {
+  margin: 1.1em 0;
+  padding-left: 1.4em;
+}
+.prose-post li {
+  margin: 0.4em 0;
+}
+.prose-post a {
+  color: theme("colors.stone.600");
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose-post blockquote {
+  border-left: 3px solid theme("colors.stone.400");
+  padding-left: 1.2em;
+  margin: 1.6em 0;
+  font-style: italic;
+  color: theme("colors.ink / 65%");
+}
+.prose-post img {
+  border-radius: 20px;
+  margin: 1.6em 0;
+}
+.prose-post strong {
+  font-weight: 600;
+  color: theme("colors.ink");
+}
+
+/* Visible keyboard focus everywhere, per accessibility floor */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #C43868;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
