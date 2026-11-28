@@ -15,6 +15,7 @@ export function notificationTarget(n, employeeId) {
   if (type.startsWith("hierarchy") || type === "commission_changed" || type.startsWith("document_") || type.startsWith("profile_")) {
     return employeeId ? { path: `/employees/${employeeId}` } : { path: "/team" };
   }
+  if (type.startsWith("calls_target")) return { path: "/calls" };
   if (type.startsWith("visit")) return { path: "/schedule" };
   if (type.startsWith("token") || type.startsWith("approval")) return { path: "/approvals" };
   if (type.startsWith("resale")) return { path: "/resale" };

@@ -4,12 +4,13 @@ import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
 import { Sheet, SheetHeader, Field } from "../ui/Sheet";
 import { Button } from "../ui/button";
+import { logCall, setCallOutcome, NOTES_EVENT } from "../../lib/calls";
 
 const PRESETS = [
-  { label: "🟢 Interested", value: "Interested — following up" },
-  { label: "🔴 Not interested", value: "Not interested" },
-  { label: "⚪ No answer", value: "No answer" },
-  { label: "🟡 Call back later", value: "Asked to call back later" },
+  { label: "🟢 Interested", value: "Interested — following up", outcome: "interested" },
+  { label: "🔴 Not interested", value: "Not interested", outcome: "not_interested" },
+  { label: "⚪ No answer", value: "No answer", outcome: "no_answer" },
+  { label: "🟡 Call back later", value: "Asked to call back later", outcome: "call_back" },
 ];
 
 export default function CallOutcomeWatcher({ onLogged }) {
@@ -23,7 +24,8 @@ export default function CallOutcomeWatcher({ onLogged }) {
     function onClick(e) {
       const btn = e.target.closest('a[href^="tel:"][data-lead-id]');
       if (!btn) return;
-      pendingRef.current = { id: btn.dataset.leadId, name: btn.dataset.leadName, at: Date.now() };
+      // The tap itself is the call: count it now, whether or not the outcome gets logged later.
+      pendingRef.current = { id: btn.dataset.leadId, name: btn.dataset.leadName, at: Date.now(), callId: logCall(btn.dataset.leadId) };
     }
     function onVisibility() {
       if (document.visibilityState !== "visible" || !pendingRef.current) return;
@@ -35,7 +37,7 @@ export default function CallOutcomeWatcher({ onLogged }) {
       const call = pendingRef.current;
       pendingRef.current = null;
       setNote("");
-      setPrompt({ id: call.id, name: call.name || "this lead" });
+      setPrompt({ id: call.id, name: call.name || "this lead", callId: call.callId });
     }
     document.addEventListener("click", onClick);
     document.addEventListener("visibilitychange", onVisibility);
@@ -47,6 +49,7 @@ export default function CallOutcomeWatcher({ onLogged }) {
 
   async function save(preset) {
     const typed = note.trim();
+    const presetItem = PRESETS.find((p) => p.value === preset);
     const finalNote = preset && typed ? `${preset} — ${typed}` : preset || typed;
     if (!prompt || !finalNote) {
       setPrompt(null);
@@ -62,6 +65,9 @@ export default function CallOutcomeWatcher({ onLogged }) {
         created_at: new Date().toISOString(),
       });
       await sb.from("leads").update({ updated_at: new Date().toISOString() }).eq("id", prompt.id);
+      // Attach the outcome to the call that was counted when Call was tapped.
+      setCallOutcome(await prompt.callId, presetItem?.outcome || "other");
+      window.dispatchEvent(new Event(NOTES_EVENT));
       showToast("✓ Logged");
       onLogged && onLogged();
     } catch (e) {

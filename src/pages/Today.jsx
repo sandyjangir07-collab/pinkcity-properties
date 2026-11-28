@@ -12,7 +12,8 @@ import LeadFormModal from "../components/leads/LeadFormModal";
 import LeadDetailModal from "../components/leads/LeadDetailModal";
 import ScheduleVisitModal from "../components/leads/ScheduleVisitModal";
 import ScheduleCallModal from "../components/leads/ScheduleCallModal";
-import CallOutcomeWatcher from "../components/leads/CallOutcomeWatcher";
+import { useWindowEvent } from "../hooks/useWindowEvent";
+import { NOTES_EVENT } from "../lib/calls";
 import { FollowupCard, VisitCard } from "../components/home/TaskCards";
 import { ReviewTokenModal } from "./Plots";
 import { BrandedLoader } from "../components/ui/BrandedLoader";
@@ -78,6 +79,8 @@ export default function Today() {
     loadTokens();
     refreshCounts();
   }
+
+  useWindowEvent(NOTES_EVENT, refreshAll);
 
   const caughtUp = followups && followups.length === 0 && visits.length === 0;
 
@@ -153,7 +156,6 @@ export default function Today() {
       <ScheduleVisitModal target={visitTarget} onClose={() => setVisitTarget(null)} onSaved={() => { setVisitTarget(null); refreshAll(); }} />
       <ScheduleCallModal target={callTarget} onClose={() => setCallTarget(null)} onSaved={() => setCallTarget(null)} />
       <ReviewTokenModal unitId={reviewUnitId} onClose={() => setReviewUnitId(null)} profile={profile} onDecided={() => { setReviewUnitId(null); loadTokens(); refreshCounts(); }} />
-      <CallOutcomeWatcher onLogged={refreshAll} />
     </div>
   );
 }

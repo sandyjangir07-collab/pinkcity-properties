@@ -6,6 +6,8 @@ import { useToast } from "../hooks/useToast";
 import { formatINR, compressImageFile, fileToUploadableBuffer } from "../lib/utils";
 import { BrandedLoader } from "../components/ui/BrandedLoader";
 import { BUCKET_PLANS, BUCKET_OWNER_DOCS, RESALE_STATUS, FACINGS, fileExt, friendlyError } from "../lib/resale";
+import { loadPlanPages, renderFilePages } from "../lib/planPages";
+import SitePlanReader, { ReadPlanCard } from "../components/resale/SitePlanReader";
 
 const EMPTY = { location: "", scheme: "", plot_number: "", area: "", facing: "", dimensions: "", rate: "", registration: "", notes: "", status: "available", allowDownload: true, isPublic: false, featured: false };
 
@@ -19,10 +21,10 @@ async function uploadFile(bucket, path, file, maxDim) {
 
 const uid = () => (globalThis.crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
-function Label({ text, children }) {
+function Label({ text, children, fromPlan }) {
   return (
     <label className="mb-3.5 block">
-      <span className="mb-1.5 block text-[13px] font-semibold text-ink/80">{text}</span>
+      <span className="mb-1.5 block text-[13px] font-semibold text-ink/80">{text}{fromPlan && <span className="ml-2 rounded-full bg-emerald-50 px-2 py-0.5 text-[10.5px] font-semibold text-emerald-700">from site plan</span>}</span>
       {children}
     </label>
   );
@@ -48,7 +50,24 @@ export default function ResalePlotForm() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
-  const set = (k, v) => setF((x) => ({ ...x, [k]: v }));
+  const [reader, setReader] = useState(null); // { load } while the plan reader sheet is open
+  const [fromPlan, setFromPlan] = useState({}); // fields filled from the plan and not edited since
+  const set = (k, v) => {
+    setF((x) => ({ ...x, [k]: v }));
+    setFromPlan((m) => (m[k] ? { ...m, [k]: false } : m));
+  };
+  // The reader's field names -> this form's names
+  const FORM_KEY = { scheme: "scheme", location: "location", plot_number: "plot_number", area: "area", dimensions: "dimensions", facing: "facing" };
+  function applyPlan(values) {
+    setF((x) => ({ ...x, ...Object.fromEntries(Object.entries(values).map(([k, v]) => [FORM_KEY[k], v])) }));
+    setFromPlan((m) => ({ ...m, ...Object.fromEntries(Object.keys(values).map((k) => [FORM_KEY[k], true])) }));
+    showToast("Details added. Please check them, then fill in the rate and save.");
+  }
+  function readNewFile(file) {
+    setPlanFile(file);
+    setRemovePlan(false);
+    setReader({ load: () => renderFilePages(file) });
+  }
   const total = Math.round((Number(f.area) || 0) * (Number(f.rate) || 0));
 
   useEffect(() => {
@@ -176,22 +195,35 @@ export default function ResalePlotForm() {
       <datalist id="resale-schemes">{hints.schemes.map((s) => <option key={s} value={s} />)}</datalist>
       <datalist id="resale-locations">{hints.locations.map((s) => <option key={s} value={s} />)}</datalist>
 
+      <ReadPlanCard
+        onPick={readNewFile}
+        hasCurrent={!!planPath && !planFile && !removePlan}
+        onReadCurrent={() => setReader({ load: () => loadPlanPages({ site_plan_path: planPath }, { maxPages: 2 }) })}
+      />
+      <SitePlanReader
+        open={!!reader}
+        onClose={() => setReader(null)}
+        load={reader?.load || (async () => ({ pages: [] }))}
+        current={{ scheme: f.scheme, location: f.location, plot_number: f.plot_number, area: f.area, dimensions: f.dimensions, facing: f.facing }}
+        onApply={applyPlan}
+      />
+
       {/* Property information */}
       <div className="mt-5 rounded-[22px] border border-ink/[0.06] bg-surface p-5 shadow-soft">
         <div className="mb-4 text-[15px] font-semibold text-ink">Property Information</div>
-        <Label text="Location"><input className="field-input" list="resale-locations" value={f.location} onChange={(e) => set("location", e.target.value)} placeholder="e.g. Tonk Road, Jaipur" /></Label>
-        <Label text="Scheme / Township"><input className="field-input" list="resale-schemes" value={f.scheme} onChange={(e) => set("scheme", e.target.value)} placeholder="e.g. Kailash Dham Township" /></Label>
-        <Label text="Plot Number"><input className="field-input" value={f.plot_number} onChange={(e) => set("plot_number", e.target.value)} placeholder="e.g. 96" /></Label>
+        <Label text="Location" fromPlan={fromPlan.location}><input className="field-input" list="resale-locations" value={f.location} onChange={(e) => set("location", e.target.value)} placeholder="e.g. Tonk Road, Jaipur" /></Label>
+        <Label text="Scheme / Township" fromPlan={fromPlan.scheme}><input className="field-input" list="resale-schemes" value={f.scheme} onChange={(e) => set("scheme", e.target.value)} placeholder="e.g. Kailash Dham Township" /></Label>
+        <Label text="Plot Number" fromPlan={fromPlan.plot_number}><input className="field-input" value={f.plot_number} onChange={(e) => set("plot_number", e.target.value)} placeholder="e.g. 96" /></Label>
         <div className="grid grid-cols-2 gap-3">
-          <Label text="Area (Gaj)"><input className="field-input" type="number" inputMode="decimal" value={f.area} onChange={(e) => set("area", e.target.value)} placeholder="e.g. 102" /></Label>
-          <Label text="Facing">
+          <Label text="Area (Gaj)" fromPlan={fromPlan.area}><input className="field-input" type="number" inputMode="decimal" value={f.area} onChange={(e) => set("area", e.target.value)} placeholder="e.g. 102" /></Label>
+          <Label text="Facing" fromPlan={fromPlan.facing}>
             <select className="field-input" value={f.facing} onChange={(e) => set("facing", e.target.value)}>
               <option value="">Select…</option>
               {FACINGS.map((x) => <option key={x} value={x}>{x}</option>)}
             </select>
           </Label>
         </div>
-        <Label text="Plot Dimensions"><input className="field-input" value={f.dimensions} onChange={(e) => set("dimensions", e.target.value)} placeholder="e.g. 27 × 34 ft" /></Label>
+        <Label text="Plot Dimensions" fromPlan={fromPlan.dimensions}><input className="field-input" value={f.dimensions} onChange={(e) => set("dimensions", e.target.value)} placeholder="e.g. 27 × 34 ft" /></Label>
         <div className="grid grid-cols-2 gap-3">
           <Label text="Demand Rate per Gaj (₹)"><input className="field-input" type="number" inputMode="decimal" value={f.rate} onChange={(e) => set("rate", e.target.value)} placeholder="e.g. 18000" /></Label>
           <div className="mb-3.5">
@@ -216,7 +248,7 @@ export default function ResalePlotForm() {
           <label className="flex min-h-[72px] cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-stone-100 bg-stone-50/50 px-4 text-center text-[13.5px] font-semibold text-stone-700">
             <Upload className="h-4 w-4 shrink-0" />
             <span className="truncate">{planFile ? planFile.name : planPath ? "Replace site plan (image or PDF)" : "Upload site plan (image or PDF)"}</span>
-            <input type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => { setPlanFile(e.target.files[0] || null); setRemovePlan(false); }} />
+            <input type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => { const file = e.target.files[0] || null; if (file) readNewFile(file); else setPlanFile(null); }} />
           </label>
           <label className="mt-2.5 flex items-center gap-2.5 text-[13px] text-ink/65">
             <input type="checkbox" className="h-4 w-4 accent-stone-600" checked={f.allowDownload} onChange={(e) => set("allowDownload", e.target.checked)} />

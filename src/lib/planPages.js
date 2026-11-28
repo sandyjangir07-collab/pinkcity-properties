@@ -93,3 +93,12 @@ export async function loadPlanPages(plot, opts = {}) {
   const data = await res.arrayBuffer();
   return renderPdfToPages(await loadPdfjs(), data, { maxPages: opts.maxPages || 3, maxDim: opts.maxDim || 2000 });
 }
+
+// Browser: turn a file the admin just picked (image or PDF) into plan page pictures.
+export async function renderFilePages(file, opts = {}) {
+  if (file.type && file.type.startsWith("image/")) {
+    return { pages: [await imageBlobToPage(file, opts.maxDim || 2000)], total: 1 };
+  }
+  const data = await file.arrayBuffer();
+  return renderPdfToPages(await loadPdfjs(), data, { maxPages: opts.maxPages || 2, maxDim: opts.maxDim || 2000 });
+}

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { motion, useAnimationControls } from "framer-motion";
 import { Phone, MessageCircle, Search, Plus, Trash2, Clock, ChevronDown, CheckCheck, Star } from "lucide-react";
 import { sb } from "../lib/supabase";
@@ -13,7 +14,9 @@ import LeadListsSheet from "../components/leads/LeadListsSheet";
 import { fetchLists, fetchMemberships, createList, addToList, removeFromList, DEFAULT_LIST_NAME } from "../lib/leadLists";
 import ScheduleVisitModal from "../components/leads/ScheduleVisitModal";
 import ScheduleCallModal from "../components/leads/ScheduleCallModal";
-import CallOutcomeWatcher from "../components/leads/CallOutcomeWatcher";
+import { useWindowEvent } from "../hooks/useWindowEvent";
+import { useMyCalls } from "../hooks/useMyCalls";
+import { NOTES_EVENT, DAILY_CALL_TARGET } from "../lib/calls";
 import { BrandedLoader } from "../components/ui/BrandedLoader";
 
 const EASE = [0.22, 1, 0.36, 1];
@@ -264,6 +267,8 @@ export default function Leads() {
   function refresh() {
     setRefreshKey((k) => k + 1);
   }
+  useWindowEvent(NOTES_EVENT, refresh);
+  const myCalls = useMyCalls();
 
   function snoozeLead(lead) {
     const next = { ...readSnooze(user.id), [lead.id]: tomorrowMorning() };
@@ -301,6 +306,7 @@ export default function Leads() {
           <div>
             <div className="text-[12.5px] font-medium text-ink/55">
               {today} · {openCount} open · {hotCount} hot
+              {myCalls && <> · <Link to="/calls" className="font-semibold text-crimson">{myCalls.calls}/{DAILY_CALL_TARGET} calls today</Link></>}
             </div>
             <h1 className="mt-1.5 font-display text-[30px] font-medium leading-[1.05] tracking-tight text-ink">What needs you now</h1>
           </div>
@@ -621,7 +627,6 @@ export default function Leads() {
       <ScheduleVisitModal target={visitTarget} onClose={() => setVisitTarget(null)} onSaved={() => { setVisitTarget(null); refresh(); }} />
       <ScheduleCallModal target={callTarget} onClose={() => setCallTarget(null)} onSaved={() => setCallTarget(null)} />
       <LeadListsSheet open={!!listsLead} lead={listsLead} onClose={() => setListsLead(null)} onChanged={refresh} />
-      <CallOutcomeWatcher onLogged={refresh} />
     </div>
   );
 }

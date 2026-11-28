@@ -6,6 +6,7 @@ import JaliPattern from "./JaliPattern";
 import NotificationBell from "./NotificationBell";
 import { NotificationOpenerProvider } from "./NotificationOpener";
 import BottomNav, { TABS } from "./BottomNav";
+import CallOutcomeWatcher from "./leads/CallOutcomeWatcher";
 import { NAV_LINKS as LINKS } from "../lib/navLinks";
 import { EXTRA_LABELS, activeTab } from "../lib/menuConfig";
 
@@ -124,6 +125,9 @@ function LayoutInner() {
       <div className="pb-[calc(84px+env(safe-area-inset-bottom))] md:pb-0">
         <Outlet />
       </div>
+
+      {/* counts every tap on a lead's Call button, wherever it is in the app */}
+      <CallOutcomeWatcher />
 
       <BottomNav pathname={path} taskCount={taskCount} />
     </div>

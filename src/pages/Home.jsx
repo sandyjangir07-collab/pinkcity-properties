@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import { Phone, CalendarDays, MapPinned, ArrowUpRight, ChevronRight, BellRing, Receipt, Ruler } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useTaskCounts } from "../hooks/useTaskCounts";
+import { useMyCalls } from "../hooks/useMyCalls";
+import { DAILY_CALL_TARGET } from "../lib/calls";
 import { actionItems } from "../lib/taskItems";
 import NotRegistered from "./NotRegistered";
 import PendingApprovalNotice from "./PendingApprovalNotice";
@@ -38,7 +40,7 @@ function QuickAction({ a }) {
   );
 }
 
-function Stat({ to, value, label, tone, Icon }) {
+function Stat({ to, value, label, tone, Icon, className = "" }) {
   const body = (
     <>
       <Icon className="h-[17px] w-[17px] opacity-70" />
@@ -46,13 +48,14 @@ function Stat({ to, value, label, tone, Icon }) {
       <div className="mt-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-ink/40">{label}</div>
     </>
   );
-  const cls = `block rounded-[22px] border p-4 ${tone}`;
+  const cls = `block rounded-[22px] border p-4 ${tone} ${className}`;
   return to ? <Link to={to} className={`${cls} transition-transform active:scale-[0.98]`}>{body}</Link> : <div className={cls}>{body}</div>;
 }
 
 function Dashboard() {
   const { profile, isAdmin, employee } = useAuth();
   const { counts } = useTaskCounts();
+  const myCalls = useMyCalls();
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const firstName = (profile?.full_name || "").split(" ")[0] || "there";
@@ -110,6 +113,7 @@ function Dashboard() {
           <Stat to="/today" value={counts?.overdue} label="Overdue" tone="border-crimson/20 bg-crimson/[0.06]" Icon={BellRing} />
           <Stat to="/schedule" value={counts?.visitsToday} label="Visits today" tone="border-royal/25 bg-royal/[0.07]" Icon={Ruler} />
           <Stat to={isAdmin ? "/sales" : undefined} value={counts?.soldThisMonth} label="Plots sold this month" tone="border-forest/25 bg-forest/[0.07]" Icon={Receipt} />
+          <Stat to="/calls" value={myCalls ? `${myCalls.calls} / ${DAILY_CALL_TARGET}` : undefined} label="Calls made today · goal 50" tone="border-crimson/20 bg-crimson/[0.06]" Icon={Phone} className="col-span-2" />
         </div>
 
         <MySalesCard />

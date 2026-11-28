@@ -4,7 +4,7 @@ import { NAV_LINKS } from "./navLinks";
 // daily shortcuts; everything else is reached from here (or the bottom tabs).
 
 export const MENU_CATEGORIES = [
-  { id: "daily", title: "Daily Work", caption: "Your day, follow-ups and site visits", paths: ["/today", "/schedule"] },
+  { id: "daily", title: "Daily Work", caption: "Your day, follow-ups and site visits", paths: ["/today", "/calls", "/schedule"] },
   { id: "sales", title: "Sales & Leads", caption: "Pipeline, quotes and closed deals", paths: ["/leads", "/quotation", "/sales"] },
   { id: "inventory", title: "Property Inventory", caption: "Listings, plots, tokens and resale", paths: ["/listings", "/plots", "/resale"] },
   { id: "money", title: "Money", caption: "Commissions and payouts", paths: ["/commissions", "/commission-slabs"] },
@@ -13,6 +13,7 @@ export const MENU_CATEGORIES = [
 
 export const MODULE_INFO = {
   "/today": { desc: "Follow-ups and visits due today", keywords: "follow up visits daily due overdue calls" },
+  "/calls": { desc: "How many calls you and the team made", keywords: "calls made daily count dial phone activity" },
   "/schedule": { desc: "Site visits and calls on the calendar", keywords: "site visit calendar appointments calls upcoming" },
   "/leads": { desc: "Lead pipeline, follow-ups and conversion", keywords: "pipeline enquiries clients follow-up site visit duplicate" },
   "/quotation": { desc: "Price quotes you can share as a PDF", keywords: "quote price cost pdf charges" },
@@ -33,6 +34,7 @@ export const MODULE_TONE = {
   "/listings": { bg: "bg-emerald-100", text: "text-emerald-600" },
   "/plots": { bg: "bg-violet-100", text: "text-violet-600" },
   "/schedule": { bg: "bg-teal-100", text: "text-teal-600" },
+  "/calls": { bg: "bg-blue-100", text: "text-blue-600" },
   "/quotation": { bg: "bg-amber-100", text: "text-amber-700" },
   "/team": { bg: "bg-stone-100", text: "text-stone-600" },
   "/sales": { bg: "bg-rose-100", text: "text-rose-600" },
@@ -74,7 +76,7 @@ export const EXTRA_LABELS = { "/tasks": "Tasks", "/menu": "Menu" };
 
 // Which bottom tab a page belongs to (so the right tab stays lit inside sub-pages).
 export function activeTab(pathname) {
-  if (pathname === "/" || pathname.startsWith("/today") || pathname.startsWith("/resale") || pathname.startsWith("/sales")) return "home";
+  if (pathname === "/" || pathname.startsWith("/today") || pathname.startsWith("/calls") || pathname.startsWith("/resale") || pathname.startsWith("/sales")) return "home";
   if (pathname.startsWith("/leads")) return "leads";
   if (pathname.startsWith("/tasks") || pathname.startsWith("/schedule") || pathname.startsWith("/approvals")) return "tasks";
   return "menu";

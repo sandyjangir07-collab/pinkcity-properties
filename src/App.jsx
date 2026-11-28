@@ -10,6 +10,7 @@ import Today from "./pages/Today";
 import Schedule from "./pages/Schedule";
 import Quotation from "./pages/Quotation";
 import Performance from "./pages/Performance";
+import Calls from "./pages/Calls";
 import Blogs from "./pages/Blogs";
 import EmployeeProfile from "./pages/EmployeeProfile";
 import Leads from "./pages/Leads";
@@ -49,6 +50,7 @@ export default function App() {
               <Route path="/menu" element={<Menu />} />
               <Route path="/team" element={<Directory />} />
               <Route path="/today" element={<Today />} />
+              <Route path="/calls" element={<Calls />} />
               <Route path="/schedule" element={<Schedule />} />
               <Route path="/quotation" element={<Quotation />} />
               <Route
